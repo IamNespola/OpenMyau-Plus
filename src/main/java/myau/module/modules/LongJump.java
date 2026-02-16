@@ -9,6 +9,7 @@ import myau.events.*;
 import myau.management.RotationState;
 import myau.mixin.IAccessorPlayerControllerMP;
 import myau.module.Module;
+import myau.property.properties.BooleanProperty;
 import myau.util.*;
 import myau.property.properties.FloatProperty;
 import myau.property.properties.PercentProperty;
@@ -33,6 +34,8 @@ public class LongJump extends Module {
     public final FloatProperty motion = new FloatProperty("motion", 1.0F, 1.0F, 20.0F);
     public final FloatProperty speedMotion = new FloatProperty("speed-motion", 1.0F, 1.0F, 20.0F);
     public final PercentProperty strafe = new PercentProperty("strafe", 0);
+    public final BooleanProperty onyaw = new BooleanProperty("yaw", false);
+    public final BooleanProperty autolag = new BooleanProperty("AutoLag", false);
 
     private int findFireballInHotbar() {
         if (mc.thePlayer == null) {
@@ -172,8 +175,12 @@ public class LongJump extends Module {
                     return;
                 }
                 this.readyToUseFireball = true;
-                float yaw = RotationUtil.quantizeAngle(mc.thePlayer.rotationYaw - 180.0F - RandomUtil.nextFloat(0.0F, 1.0F));
+                float yaw = !onyaw.getValue()
+                        ? mc.thePlayer.rotationYaw
+                        : RotationUtil.quantizeAngle(mc.thePlayer.rotationYaw - 180.0F - RandomUtil.nextFloat(0.0F, 1.0F));
+
                 float pitch = RotationUtil.quantizeAngle(89.0F + RandomUtil.nextFloat(-0.25F, 0.25F));
+
                 event.setRotation(yaw, pitch, 4);
                 event.setPervRotation(yaw, 4);
             }
@@ -239,6 +246,8 @@ public class LongJump extends Module {
         if (this.isAutoMode() && this.findFireballInHotbar() == -1) {
             this.setEnabled(false);
             ChatUtil.sendFormatted(String.format("%s%s: &cNo fireball found in your hotbar!&r", Myau.clientName, this.getName()));
+        } else {
+            if (autolag.getValue()) Myau.moduleManager.modules.get(ServerLag.class).setEnabled(true);
         }
     }
 

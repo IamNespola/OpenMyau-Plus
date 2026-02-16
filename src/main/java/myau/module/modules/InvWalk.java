@@ -102,7 +102,7 @@ public class InvWalk extends Module {
             case 1: // Legit
                 if (!(mc.currentScreen instanceof GuiInventory)) return false;
                 return this.pendingStatus != null && this.clickQueue.isEmpty();
-            case 2: // Hypixel
+            case 2: // HypixelDisabler
                 return this.delayTicks == 0 && this.clickQueue.isEmpty();
             case 3: // Legit+
                 if (!(mc.currentScreen instanceof GuiInventory)) return false;
@@ -246,7 +246,7 @@ public class InvWalk extends Module {
                         }
                     }
                     break;
-                case 2: // Hypixel
+                case 2: // HypixelDisabler
                     if ((packet.getMode() == 3 || packet.getMode() == 4) && packet.getSlotId() == -999) {
                         event.setCancelled(true);
                     } else {

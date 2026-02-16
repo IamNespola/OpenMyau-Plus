@@ -10,6 +10,7 @@ import net.minecraft.client.network.NetworkPlayerInfo;
 import net.minecraft.entity.EntityLivingBase;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.util.ResourceLocation;
+
 import javax.vecmath.Vector4d;
 import java.awt.Color;
 
@@ -65,11 +66,10 @@ public class TargetHUDIsland implements CustomIslandTrigger {
 
     @Override
     public void renderIsland(Render2DEvent event, float x, float y, float w, float h, float progress) {
-        if (progress < 0.8f) return;
+        if (progress < 0.82f) return;
         EntityLivingBase target = parent == null ? null : parent.getTarget();
-        if (target == null) return; // safety
+        if (target == null) return;
 
-        // Choose skin: try player skin when available
         ResourceLocation skin = new ResourceLocation("textures/entity/steve.png");
         if (target instanceof EntityPlayer) {
             try {
@@ -82,16 +82,33 @@ public class TargetHUDIsland implements CustomIslandTrigger {
             mc.getTextureManager().bindTexture(skin);
         } catch (Exception ignored) {}
 
-        Gui.drawScaledCustomSizeModalRect((int) x + 5, (int) y + 5, 8, 8, 8, 8, 20, 20, 64, 64);
+        int faceSize = 22;
+        int pad = 6;
+        Gui.drawScaledCustomSizeModalRect((int) x + pad, (int) y + (int) (h - faceSize) / 2, 8, 8, 8, 8, faceSize, faceSize, 64, 64);
 
         String name = target.getName();
-        mc.fontRendererObj.drawStringWithShadow(name == null ? "Unknown" : name, x + 30, y + 6, -1);
+        float nameY = y + (h - mc.fontRendererObj.FONT_HEIGHT) / 2f - 4f;
+        mc.fontRendererObj.drawStringWithShadow(name == null ? "Unknown" : name, x + pad + faceSize + 6, nameY, -1);
+
+        float barY = y + h - 10;
+        float barW = Math.max(12f, w - (pad + faceSize + 6) - pad);
+        float barH = 4f;
+        float barX = x + pad + faceSize + 6;
 
         float maxHealth = target.getMaxHealth() <= 0.0001f ? 1.0f : target.getMaxHealth();
         float healthPercent = Math.max(0f, Math.min(1f, target.getHealth() / maxHealth));
-        float barWidth = Math.max(10f, w - 40f);
-        RenderUtil.drawRect(x + 30, y + 18, x + 30 + barWidth, y + 22, new Color(0, 0, 0, 100).getRGB());
-        RenderUtil.drawRect(x + 30, y + 18, x + 30 + (barWidth * healthPercent), y + 22, getHealthColor(healthPercent));
+
+        RenderUtil.enableRenderState();
+        RenderUtil.drawRoundedRect((int) barX, (int) barY, (int) barW, (int) barH, 2, new Color(0, 0, 0, 220).getRGB());
+        if (healthPercent > 0.001f) {
+            int fillW = (int) Math.max(2, barW * healthPercent);
+            if (fillW >= 4) {
+                RenderUtil.drawRoundedRect((int) barX, (int) barY, fillW, (int) barH, 2, getHealthColor(healthPercent));
+            } else {
+                RenderUtil.drawRect(barX, barY, barX + fillW, barY + barH, getHealthColor(healthPercent));
+            }
+        }
+        RenderUtil.disableRenderState();
     }
 
     private int getHealthColor(float pct) {

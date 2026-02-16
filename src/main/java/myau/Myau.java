@@ -85,13 +85,14 @@ public class Myau {
         moduleManager.modules.put(Eagle.class, new Eagle());
         moduleManager.modules.put(ESP.class, new ESP());
         moduleManager.modules.put(FastPlace.class, new FastPlace());
-        moduleManager.modules.put(Freeze.class, new Freeze());
+        moduleManager.modules.put(ServerLag.class, new ServerLag());
         moduleManager.modules.put(Fly.class, new Fly());
         moduleManager.modules.put(FakeLag.class, new FakeLag());
         moduleManager.modules.put(FullBright.class, new FullBright());
         moduleManager.modules.put(GhostHand.class, new GhostHand());
         moduleManager.modules.put(GuiModule.class, new GuiModule());
         moduleManager.modules.put(HitSelect.class, new HitSelect());
+        moduleManager.modules.put(AutoHypixel.class, new AutoHypixel());
         moduleManager.modules.put(HUD.class, new HUD());
         moduleManager.modules.put(MoreKB.class, new MoreKB());
         moduleManager.modules.put(Indicators.class, new Indicators());

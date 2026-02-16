@@ -3,26 +3,6 @@ package myau.util;
 import myau.enums.ChatColors;
 import myau.mixin.IAccessorEntityRenderer;
 import myau.mixin.IAccessorMinecraft;
-import org.lwjgl.opengl.GL11;
-import net.minecraft.client.entity.AbstractClientPlayer;
-import net.minecraft.client.shader.Framebuffer;
-import net.minecraft.enchantment.Enchantment;
-import net.minecraft.enchantment.EnchantmentHelper;
-
-import net.minecraft.entity.Entity;
-import net.minecraft.entity.EntityLivingBase;
-import net.minecraft.entity.player.EntityPlayer;
-import java.util.List;
-import net.minecraft.item.*;
-import net.minecraft.util.*;
-import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.Gui;
-import net.minecraft.client.gui.ScaledResolution;
-import net.minecraft.client.renderer.*;
-import net.minecraft.client.renderer.culling.Frustum;
-import net.minecraft.client.renderer.vertex.DefaultVertexFormats;
-import org.lwjgl.opengl.Display;
-import org.lwjgl.util.glu.GLU;
 import myau.mixin.IAccessorRenderManager;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Gui;
@@ -34,7 +14,6 @@ import net.minecraft.client.shader.Framebuffer;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.init.Items;
-import org.lwjgl.util.Color;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagList;
 import net.minecraft.potion.Potion;
@@ -96,6 +75,55 @@ public class RenderUtil {
             }
         }
         return ChatColors.GRAY;
+    }
+
+    public static org.lwjgl.util.Color interpolateColorHue(org.lwjgl.util.Color color1, org.lwjgl.util.Color color2, float amount) {
+        amount = Math.min(1, Math.max(0, amount));
+
+        float[] color1HSB = java.awt.Color.RGBtoHSB(color1.getRed(), color1.getGreen(), color1.getBlue(), null);
+        float[] color2HSB = java.awt.Color.RGBtoHSB(color2.getRed(), color2.getGreen(), color2.getBlue(), null);
+
+        java.awt.Color resultAWT = java.awt.Color.getHSBColor(interpolateFloat(color1HSB[0], color2HSB[0], amount),
+                interpolateFloat(color1HSB[1], color2HSB[1], amount), interpolateFloat(color1HSB[2], color2HSB[2], amount));
+
+        org.lwjgl.util.Color resultColor = new org.lwjgl.util.Color((byte)resultAWT.getRed(), (byte)resultAWT.getGreen(), (byte)resultAWT.getBlue());
+
+        return applyOpacity(resultColor, interpolateInt(color1.getAlpha(), color2.getAlpha(), amount) / 255f);
+    }
+
+
+    public static org.lwjgl.util.Color interpolateColorsBackAndForth(int speed, int index, org.lwjgl.util.Color start, org.lwjgl.util.Color end, boolean trueColor) {
+        int angle = (int) (((System.currentTimeMillis()) / speed + index) % 360);
+        angle = (angle >= 180 ? 360 - angle : angle) * 2;
+        return trueColor ? interpolateColorHue(start, end, angle / 360f) : interpolateColorC(start, end, angle / 360f);
+    }
+
+    public static float interpolateFloat(float oldValue, float newValue, double interpolationValue) {
+        return (float) interpolate(oldValue, newValue, (float) interpolationValue);
+    }
+
+    public static int interpolateInt(int oldValue, int newValue, double interpolationValue) {
+        return (int) interpolate(oldValue, newValue, (float) interpolationValue);
+    }
+
+    public static Color applyOpacity(Color color, float opacity) {
+        opacity = Math.min(1, Math.max(0, opacity));
+        return new Color(color.getRed(), color.getGreen(), color.getBlue(), (int) (color.getAlpha() * opacity));
+    }
+
+    public static Color interpolateColorC(Color color1, Color color2, float amount) {
+        amount = Math.min(1, Math.max(0, amount));
+        return new Color(interpolateInt(color1.getRed(), color2.getRed(), amount),
+                interpolateInt(color1.getGreen(), color2.getGreen(), amount),
+                interpolateInt(color1.getBlue(), color2.getBlue(), amount),
+                interpolateInt(color1.getAlpha(), color2.getAlpha(), amount));
+    }
+
+    public static float interpolate(float old,
+                                    float now,
+                                    float partialTicks) {
+
+        return old + (now - old) * partialTicks;
     }
 
     public static void drawOutlinedString(String text, float x, float y) {
@@ -171,52 +199,18 @@ public class RenderUtil {
         GlStateManager.popMatrix();
     }
 
-    public static float interpolateFloat(float oldValue, float newValue, double interpolationValue) {
-        return (float) interpolate(oldValue, newValue, (float) interpolationValue);
-    }
-
-    public static int interpolateInt(int oldValue, int newValue, double interpolationValue) {
-        return (int) interpolate(oldValue, newValue, (float) interpolationValue);
-    }
-
-    public static Color applyOpacity(Color color, float opacity) {
-        opacity = Math.min(1, Math.max(0, opacity));
-        return new Color(color.getRed(), color.getGreen(), color.getBlue(), (int) (color.getAlpha() * opacity));
-    }
-
-    public static Color interpolateColorC(Color color1, Color color2, float amount) {
-        amount = Math.min(1, Math.max(0, amount));
-        return new Color(interpolateInt(color1.getRed(), color2.getRed(), amount),
-                interpolateInt(color1.getGreen(), color2.getGreen(), amount),
-                interpolateInt(color1.getBlue(), color2.getBlue(), amount),
-                interpolateInt(color1.getAlpha(), color2.getAlpha(), amount));
-    }
-
-    public static org.lwjgl.util.Color interpolateColorHue(org.lwjgl.util.Color color1, org.lwjgl.util.Color color2, float amount) {
-        amount = Math.min(1, Math.max(0, amount));
-
-        float[] color1HSB = java.awt.Color.RGBtoHSB(color1.getRed(), color1.getGreen(), color1.getBlue(), null);
-        float[] color2HSB = java.awt.Color.RGBtoHSB(color2.getRed(), color2.getGreen(), color2.getBlue(), null);
-
-        java.awt.Color resultAWT = java.awt.Color.getHSBColor(interpolateFloat(color1HSB[0], color2HSB[0], amount),
-                interpolateFloat(color1HSB[1], color2HSB[1], amount), interpolateFloat(color1HSB[2], color2HSB[2], amount));
-
-        org.lwjgl.util.Color resultColor = new org.lwjgl.util.Color((byte)resultAWT.getRed(), (byte)resultAWT.getGreen(), (byte)resultAWT.getBlue());
-
-        return applyOpacity(resultColor, interpolateInt(color1.getAlpha(), color2.getAlpha(), amount) / 255f);
-    }
-
-    public static org.lwjgl.util.Color interpolateColorsBackAndForth(int speed, int index, org.lwjgl.util.Color start, org.lwjgl.util.Color end, boolean trueColor) {
-        int angle = (int) (((System.currentTimeMillis()) / speed + index) % 360);
-        angle = (angle >= 180 ? 360 - angle : angle) * 2;
-        return trueColor ? interpolateColorHue(start, end, angle / 360f) : interpolateColorC(start, end, angle / 360f);
-    }
-
-    public static float interpolate(float old,
-                                    float now,
-                                    float partialTicks) {
-
-        return old + (now - old) * partialTicks;
+    public static void drawRect(float x1, float y1, float x2, float y2, int color) {
+        if (color == 0) {
+            return;
+        }
+        RenderUtil.setColor(color);
+        GL11.glBegin(GL11.GL_POLYGON);
+        GL11.glVertex2f(x1, y1);
+        GL11.glVertex2f(x1, y2);
+        GL11.glVertex2f(x2, y2);
+        GL11.glVertex2f(x2, y1);
+        GL11.glEnd();
+        GlStateManager.resetColor();
     }
 
     public static void drawRect3D(float x1, float y1, float x2, float y2, int color) {
@@ -374,12 +368,12 @@ public class RenderUtil {
         GlStateManager.resetColor();
     }
 
-
     public static void drawRoundedRect(int x, int y, int width, int height, int radius, int color) {
         drawRect(x + radius, y, x + width - radius, y + height, color);
         drawRect(x, y + radius, x + radius, y + height - radius, color);
         drawRect(x + width - radius, y + radius, x + width, y + height - radius, color);
 
+        // Corners
         drawCircle(x + radius, y + radius, radius, color);
         drawCircle(x + width - radius, y + radius, radius, color);
         drawCircle(x + radius, y + height - radius, radius, color);
@@ -415,32 +409,6 @@ public class RenderUtil {
 
         GlStateManager.enableTexture2D();
         GlStateManager.disableBlend();
-    }
-
-    public static void drawRect(float left, float top, float width, float height, java.awt.Color color) {
-        drawRect(left, top, width, height, color.getRGB());
-    }
-
-
-    public static void drawRect(float left, float top, float width, float height, int color) {
-        float right = left + width, bottom = top + height;
-        if (left < right) {
-            float i = left;
-            left = right;
-            right = i;
-        }
-
-        if (top < bottom) {
-            float j = top;
-            top = bottom;
-            bottom = j;
-        }
-
-        Gui.drawRect((int) left, (int) top, (int) right, (int) bottom, color);
-    }
-
-    public static void bindTexture(int texture) {
-        GlStateManager.bindTexture(texture);
     }
 
     public static void drawCircle(double centerX, double centerY, double centerZ, double radius, int segments,

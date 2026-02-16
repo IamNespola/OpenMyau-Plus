@@ -33,7 +33,7 @@ public class ClickGui extends GuiScreen {
         combatModules.add(Myau.moduleManager.getModule(KillAura.class));
         combatModules.add(Myau.moduleManager.getModule(Wtap.class));
         combatModules.add(Myau.moduleManager.getModule(Velocity.class));
-        combatModules.add(Myau.moduleManager.getModule(Freeze.class));
+        combatModules.add(Myau.moduleManager.getModule(ServerLag.class));
         combatModules.add(Myau.moduleManager.getModule(Reach.class));
         combatModules.add(Myau.moduleManager.getModule(TargetStrafe.class));
         combatModules.add(Myau.moduleManager.getModule(NoHitDelay.class));
@@ -119,6 +119,7 @@ public class ClickGui extends GuiScreen {
         miscModules.add(Myau.moduleManager.getModule(InventoryClicker.class));
         miscModules.add(Myau.moduleManager.getModule(Disabler.class));
         miscModules.add(Myau.moduleManager.getModule(ClientSpoofer.class));
+        miscModules.add(Myau.moduleManager.getModule(AutoHypixel.class));
 
         Comparator<Module> comparator = Comparator.comparing(m -> m.getName().toLowerCase());
         combatModules.sort(comparator);

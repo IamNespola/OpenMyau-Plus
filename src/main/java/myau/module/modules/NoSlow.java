@@ -23,22 +23,28 @@ import net.minecraft.util.BlockPos;
 
 public class NoSlow extends Module {
     private static final Minecraft mc = Minecraft.getMinecraft();
-    private int lastSlot = -1;
-    public final ModeProperty swordMode = new ModeProperty("sword-mode", 1, new String[]{"NONE", "VANILLA"});
-    public final PercentProperty swordMotion = new PercentProperty("sword-motion", 100, () -> this.swordMode.getValue() != 0);
+    public final ModeProperty swordMode = new ModeProperty("sword-mode", 1, new String[]{"NONE", "VANILLA", "GRIM"});
+    public final PercentProperty swordMotion = new PercentProperty("sword-motion", 100, () -> this.swordMode.getValue() == 1);
     public final BooleanProperty swordSprint = new BooleanProperty("sword-sprint", true, () -> this.swordMode.getValue() != 0);
-    public final ModeProperty foodMode = new ModeProperty("food-mode", 0, new String[]{"NONE", "VANILLA", "FLOAT"});
-    public final PercentProperty foodMotion = new PercentProperty("food-motion", 100, () -> this.foodMode.getValue() != 0);
+    public final BooleanProperty killauraonly = new BooleanProperty("killaura-only", false, () -> this.swordMode.getValue() != 0);
+    public final ModeProperty foodMode = new ModeProperty("food-mode", 0, new String[]{"NONE", "VANILLA", "GRIM"});
+    public final PercentProperty foodMotion = new PercentProperty("food-motion", 100, () -> this.foodMode.getValue() == 1);
     public final BooleanProperty foodSprint = new BooleanProperty("food-sprint", true, () -> this.foodMode.getValue() != 0);
-    public final ModeProperty bowMode = new ModeProperty("bow-mode", 0, new String[]{"NONE", "VANILLA", "FLOAT"});
-    public final PercentProperty bowMotion = new PercentProperty("bow-motion", 100, () -> this.bowMode.getValue() != 0);
+    public final ModeProperty bowMode = new ModeProperty("bow-mode", 0, new String[]{"NONE", "VANILLA", "GRIM"});
+    public final PercentProperty bowMotion = new PercentProperty("bow-motion", 100, () -> this.bowMode.getValue() == 1);
     public final BooleanProperty bowSprint = new BooleanProperty("bow-sprint", true, () -> this.bowMode.getValue() != 0);
+    private int count;
 
     public NoSlow() {
         super("NoSlow", false);
     }
 
     public boolean isSwordActive() {
+        KillAura killAura = (KillAura) Myau.moduleManager.modules.get(KillAura.class);
+        if (killauraonly.getValue()) {
+            if (!killAura.isEnabled()) return false;
+            if (killAura.getTarget() == null) return false;
+        }
         return this.swordMode.getValue() != 0 && ItemUtil.isHoldingSword();
     }
 
@@ -50,55 +56,47 @@ public class NoSlow extends Module {
         return this.bowMode.getValue() != 0 && ItemUtil.isUsingBow();
     }
 
-    public boolean isFloatMode() {
-        return this.foodMode.getValue() == 2 && ItemUtil.isEating()
-                || this.bowMode.getValue() == 2 && ItemUtil.isUsingBow();
-    }
-
     public boolean isAnyActive() {
         return mc.thePlayer.isUsingItem() && (this.isSwordActive() || this.isFoodActive() || this.isBowActive());
     }
 
     public boolean canSprint() {
-        return this.isSwordActive() && this.swordSprint.getValue()
-                || this.isFoodActive() && this.foodSprint.getValue()
-                || this.isBowActive() && this.bowSprint.getValue();
+        return (this.isSwordActive() && this.swordSprint.getValue())
+                || (this.isFoodActive() && this.foodSprint.getValue())
+                || (this.isBowActive() && this.bowSprint.getValue());
     }
 
     public int getMotionMultiplier() {
+        count++;
         if (ItemUtil.isHoldingSword()) {
+            if (swordMode.getValue() == 2) {
+                if (count % 2 == 0) {
+                    return 100;
+                } else {
+                    return 20;
+                }
+            }
             return this.swordMotion.getValue();
         } else if (ItemUtil.isEating()) {
+            if (foodMode.getValue() == 2) {
+                if (count % 2 == 0) {
+                    return 100;
+                } else {
+                    return 20;
+                }
+            }
             return this.foodMotion.getValue();
-        } else {
-            return ItemUtil.isUsingBow() ? this.bowMotion.getValue() : 100;
-        }
-    }
-
-    @EventTarget
-    public void onLivingUpdate(LivingUpdateEvent event) {
-        if (this.isEnabled() && this.isAnyActive()) {
-            float multiplier = (float) this.getMotionMultiplier() / 100.0F;
-            mc.thePlayer.movementInput.moveForward *= multiplier;
-            mc.thePlayer.movementInput.moveStrafe *= multiplier;
-            if (!this.canSprint()) {
-                mc.thePlayer.setSprinting(false);
+        } else if (ItemUtil.isUsingBow()) {
+            if (bowMode.getValue() == 2) {
+                if (count % 2 == 0) {
+                    return 100;
+                } else {
+                    return 20;
+                }
             }
+            return this.bowMotion.getValue();
         }
-    }
-
-    @EventTarget(Priority.LOW)
-    public void onPlayerUpdate(PlayerUpdateEvent event) {
-        if (this.isEnabled() && this.isFloatMode()) {
-            int item = mc.thePlayer.inventory.currentItem;
-            if (this.lastSlot != item && PlayerUtil.isUsingItem()) {
-                this.lastSlot = item;
-                Myau.floatManager.setFloatState(true, FloatModules.NO_SLOW);
-            }
-        } else {
-            this.lastSlot = -1;
-            Myau.floatManager.setFloatState(false, FloatModules.NO_SLOW);
-        }
+        return 100;
     }
 
     @EventTarget
@@ -120,11 +118,8 @@ public class NoSlow extends Module {
                         if (entityHit instanceof EntityLivingBase && TeamUtil.isShop((EntityLivingBase) entityHit)) {
                             return;
                         }
+                        break;
                 }
-            }
-            if (this.isFloatMode() && !Myau.floatManager.isPredicted() && mc.thePlayer.onGround) {
-                event.setCancelled(true);
-                mc.thePlayer.motionY = 0.42F;
             }
         }
     }
