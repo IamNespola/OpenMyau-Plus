@@ -22,8 +22,16 @@ import net.minecraft.client.network.NetworkPlayerInfo;
 import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.util.ResourceLocation;
 import org.lwjgl.opengl.GL11;
+import myau.font.CFontRenderer;
+import myau.font.CFont;
+import myau.font.FontProcess;
+import myau.property.properties.*;
+
+
+import java.awt.*;
 
 public class WaterMark extends Module {
+    CFontRenderer fontRenderer = FontProcess.getFont("sans");
     private static final Minecraft mc = Minecraft.getMinecraft();
     private static final Color ACCENT_PINK = new Color(255, 100, 150);
     private static final Color ACCENT_PURPLE = new Color(170, 100, 255);
@@ -121,7 +129,7 @@ public class WaterMark extends Module {
                 int pinkColor = ACCENT_PINK.getRGB();
                 int whiteColor = (new Color(200, 200, 200)).getRGB();
                 mc.fontRendererObj.drawStringWithShadow(clientName, x, y, pinkColor);
-                float var24 = x + (float) mc.fontRendererObj.getStringWidth(clientName);
+                float var24 = x + (float) fontRenderer.getStringWidth(clientName);
                 if (this.showTime.getValue()) {
                     mc.fontRendererObj.drawStringWithShadow(" | ", var24, y, whiteColor);
                     var24 += (float) mc.fontRendererObj.getStringWidth(" | ");

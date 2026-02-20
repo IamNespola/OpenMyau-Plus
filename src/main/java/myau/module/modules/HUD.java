@@ -7,6 +7,8 @@ import myau.event.EventTarget;
 import myau.event.types.EventType;
 import myau.events.Render2DEvent;
 import myau.events.TickEvent;
+import myau.font.CFontRenderer;
+import myau.font.FontProcess;
 import myau.mixin.IAccessorGuiChat;
 import myau.module.Module;
 import myau.util.ColorUtil;
@@ -53,6 +55,7 @@ public class HUD extends Module {
     public final BooleanProperty blinkTimer = new BooleanProperty("blink-timer", true);
     public final BooleanProperty toggleSound = new BooleanProperty("toggle-sounds", true);
     public final BooleanProperty toggleAlerts = new BooleanProperty("toggle-alerts", false);
+    public final ModeProperty fontMode = new ModeProperty("font-mode", 0, new String[]{"SANS", "MINECRAFT"});
 
     private String getModuleName(Module module) {
         String moduleName = module.getName();
@@ -61,6 +64,10 @@ public class HUD extends Module {
         }
         return moduleName;
     }
+
+    CFontRenderer fontRenderer;
+    private final net.minecraft.client.gui.FontRenderer mcFont = mc.fontRendererObj;
+    private int lastFontMode = -1; // Cache to prevent unnecessary updates
 
     private String[] getModuleSuffix(Module module) {
         String[] moduleSuffix = module.getSuffix();
@@ -72,6 +79,7 @@ public class HUD extends Module {
         return moduleSuffix;
     }
 
+
     private int getModuleWidth(Module module) {
         return this.calculateStringWidth(
                 this.getModuleName(module), this.getModuleSuffix(module)
@@ -79,10 +87,28 @@ public class HUD extends Module {
     }
 
     private int calculateStringWidth(String string, String[] arr) {
-        int width = mc.fontRendererObj.getStringWidth(string);
+        int width;
+        switch (fontMode.getValue()) {
+            case 0: // SANS
+                width = fontRenderer.getStringWidth(string);
+                break;
+            case 1: // MINECRAFT
+                width = mcFont.getStringWidth(string);
+                break;
+            default:
+                width = fontRenderer.getStringWidth(string);
+                break;
+        }
         if (this.suffixes.getValue()) {
             for (String str : arr) {
-                width += 3 + mc.fontRendererObj.getStringWidth(str);
+                switch (fontMode.getValue()) {
+                    case 1: // MINECRAFT
+                        width += 3 + mcFont.getStringWidth(str);
+                        break;
+                    default:
+                        width += 3 + fontRenderer.getStringWidth(str);
+                        break;
+                }
             }
         }
         return width;
@@ -95,6 +121,33 @@ public class HUD extends Module {
 
     public HUD() {
         super("HUD", true, true);
+        updateFontRenderer();
+    }
+
+    private void updateFontRenderer() {
+        // Only update if font mode actually changed
+        if (lastFontMode == fontMode.getValue()) {
+            return;
+        }
+        
+        lastFontMode = fontMode.getValue();
+        
+        switch (fontMode.getValue()) {
+            case 0: // SANS
+                fontRenderer = FontProcess.getFont("sans");
+                break;
+            case 1: // MINECRAFT - handled separately
+                fontRenderer = FontProcess.getFont("sans");
+                break;
+            default:
+                fontRenderer = FontProcess.getFont("sans");
+                break;
+        }
+        
+        // Debug: Check if font renderer is null
+        if (fontRenderer == null) {
+            fontRenderer = FontProcess.getFont("sans");
+        }
     }
 
     public Color getColor(long time) {
@@ -154,6 +207,9 @@ public class HUD extends Module {
 
     @EventTarget
     public void onRender2D(Render2DEvent event) {
+        // Update font renderer to ensure it uses current setting
+        updateFontRenderer();
+        
         if (this.chatOutline.getValue() && mc.currentScreen instanceof GuiChat) {
             String text = ((IAccessorGuiChat) mc.currentScreen).getInputField().getText().trim();
             if (Myau.commandManager != null && Myau.commandManager.isTypingCommand(text)) {
@@ -171,7 +227,7 @@ public class HUD extends Module {
             }
         }
         if (this.isEnabled() && !mc.gameSettings.showDebugInfo) {
-            float height = (float) mc.fontRendererObj.FONT_HEIGHT - 1.0F;
+            float height = (float) fontRenderer.FONT_HEIGHT - 1.0F;
             float x = (float) this.offsetX.getValue()
                     + (1.0F + (this.showBar.getValue() ? (this.shadow.getValue() ? 2.0F : 1.0F) : 0.0F)) * this.scale.getValue();
             float y = (float) this.offsetY.getValue() + 1.0F * this.scale.getValue();
@@ -231,40 +287,77 @@ public class HUD extends Module {
                 RenderUtil.disableRenderState();
                 GlStateManager.disableDepth();
                 if (this.shadow.getValue()) {
-                    mc.fontRendererObj
-                            .drawStringWithShadow(moduleName, x / this.scale.getValue() - (this.posX.getValue() == 1 ? totalWidth : 0.0F), y / this.scale.getValue(), color);
+                    if (fontMode.getValue() == 1) { // MINECRAFT
+                        mcFont.drawStringWithShadow(moduleName, x / this.scale.getValue() - (this.posX.getValue() == 1 ? totalWidth : 0.0F), y / this.scale.getValue(), color);
+                    } else {
+                        fontRenderer.drawStringWithShadow(moduleName, x / this.scale.getValue() - (this.posX.getValue() == 1 ? totalWidth : 0.0F), y / this.scale.getValue(), color);
+                    }
                 } else {
-                    mc.fontRendererObj
-                            .drawString(
-                                    moduleName,
-                                    x / this.scale.getValue() - (this.posX.getValue() == 1 ? totalWidth : 0.0F),
-                                    y / this.scale.getValue() + (this.posY.getValue() == 1 ? 1.0F : 0.0F),
-                                    color,
-                                    false
-                            );
+                    if (fontMode.getValue() == 1) { // MINECRAFT
+                        mcFont.drawString(
+                                moduleName,
+                                x / this.scale.getValue() - (this.posX.getValue() == 1 ? totalWidth : 0.0F),
+                                y / this.scale.getValue() + (this.posY.getValue() == 1 ? 1.0F : 0.0F),
+                                color,
+                                false
+                        );
+                    } else {
+                        fontRenderer.drawString(
+                                moduleName,
+                                x / this.scale.getValue() - (this.posX.getValue() == 1 ? totalWidth : 0.0F),
+                                y / this.scale.getValue() + (this.posY.getValue() == 1 ? 1.0F : 0.0F),
+                                color,
+                                false
+                        );
+                    }
                 }
                 if (this.suffixes.getValue() && moduleSuffix.length > 0) {
-                    float width = (float) mc.fontRendererObj.getStringWidth(moduleName) + 3.0F;
+                    float width;
+                    switch (fontMode.getValue()) {
+                        case 1: // MINECRAFT
+                            width = (float) mcFont.getStringWidth(moduleName) + 3.0F;
+                            break;
+                        default:
+                            width = (float) fontRenderer.getStringWidth(moduleName) + 3.0F;
+                            break;
+                    }
                     for (String string : moduleSuffix) {
                         if (this.shadow.getValue()) {
-                            mc.fontRendererObj
-                                    .drawStringWithShadow(
-                                            string,
-                                            x / this.scale.getValue() - (this.posX.getValue() == 1 ? totalWidth : 0.0F) + width,
-                                            y / this.scale.getValue(),
-                                            ChatColors.GRAY.toAwtColor()
-                                    );
+                            if (fontMode.getValue() == 1) { // MINECRAFT
+                                mcFont.drawStringWithShadow(
+                                        string,
+                                        x / this.scale.getValue() - (this.posX.getValue() == 1 ? totalWidth : 0.0F) + width,
+                                        y / this.scale.getValue(),
+                                        ChatColors.GRAY.toAwtColor()
+                                );
+                            } else {
+                                fontRenderer.drawStringWithShadow(
+                                        string,
+                                        x / this.scale.getValue() - (this.posX.getValue() == 1 ? totalWidth : 0.0F) + width,
+                                        y / this.scale.getValue(),
+                                        ChatColors.GRAY.toAwtColor()
+                                );
+                            }
                         } else {
-                            mc.fontRendererObj
-                                    .drawString(
-                                            string,
-                                            x / this.scale.getValue() - (this.posX.getValue() == 1 ? totalWidth : 0.0F) + width,
-                                            y / this.scale.getValue() + (this.posY.getValue() == 1 ? 1.0F : 0.0F),
-                                            ChatColors.GRAY.toAwtColor(),
-                                            false
-                                    );
+                            if (fontMode.getValue() == 1) { // MINECRAFT
+                                mcFont.drawString(
+                                        string,
+                                        x / this.scale.getValue() - (this.posX.getValue() == 1 ? totalWidth : 0.0F) + width,
+                                        y / this.scale.getValue() + (this.posY.getValue() == 1 ? 1.0F : 0.0F),
+                                        ChatColors.GRAY.toAwtColor(),
+                                        false
+                                );
+                            } else {
+                                fontRenderer.drawString(
+                                        string,
+                                        x / this.scale.getValue() - (this.posX.getValue() == 1 ? totalWidth : 0.0F) + width,
+                                        y / this.scale.getValue() + (this.posY.getValue() == 1 ? 1.0F : 0.0F),
+                                        ChatColors.GRAY.toAwtColor(),
+                                        false
+                                );
+                            }
                         }
-                        width += (float) mc.fontRendererObj.getStringWidth(string) + (this.shadow.getValue() ? 3.0F : 2.0F);
+                        width += (fontMode.getValue() == 1 ? (float) mcFont.getStringWidth(string) : (float) fontRenderer.getStringWidth(string)) + (this.shadow.getValue() ? 3.0F : 2.0F);
                     }
                 }
                 y += (height + (this.shadow.getValue() ? 1.0F : 0.0F)) * this.scale.getValue() * (this.posY.getValue() == 0 ? 1.0F : -1.0F);
@@ -277,15 +370,25 @@ public class HUD extends Module {
                     if (movementPacketSize > 0L) {
                         GlStateManager.enableBlend();
                         GlStateManager.blendFunc(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA);
-                        mc.fontRendererObj
-                                .drawString(
-                                        String.valueOf(movementPacketSize),
-                                        (float) new ScaledResolution(mc).getScaledWidth() / 2.0F / this.scale.getValue()
-                                                - (float) mc.fontRendererObj.getStringWidth(String.valueOf(movementPacketSize)) / 2.0F,
-                                        (float) new ScaledResolution(mc).getScaledHeight() / 5.0F * 3.0F / this.scale.getValue(),
-                                        this.getColor(l, offset).getRGB() & 16777215 | -1090519040,
-                                        this.shadow.getValue()
-                                );
+                        if (fontMode.getValue() == 1) { // MINECRAFT
+                            mcFont.drawString(
+                                    String.valueOf(movementPacketSize),
+                                    (float) new ScaledResolution(mc).getScaledWidth() / 2.0F / this.scale.getValue()
+                                            - (float) mcFont.getStringWidth(String.valueOf(movementPacketSize)) / 2.0F,
+                                    (float) new ScaledResolution(mc).getScaledHeight() / 5.0F * 3.0F / this.scale.getValue(),
+                                    this.getColor(l, offset).getRGB() & 16777215 | -1090519040,
+                                    this.shadow.getValue()
+                            );
+                        } else {
+                            fontRenderer.drawString(
+                                    String.valueOf(movementPacketSize),
+                                    (float) new ScaledResolution(mc).getScaledWidth() / 2.0F / this.scale.getValue()
+                                            - (float) fontRenderer.getStringWidth(String.valueOf(movementPacketSize)) / 2.0F,
+                                    (float) new ScaledResolution(mc).getScaledHeight() / 5.0F * 3.0F / this.scale.getValue(),
+                                    this.getColor(l, offset).getRGB() & 16777215 | -1090519040,
+                                    this.shadow.getValue()
+                            );
+                        }
                         GlStateManager.disableBlend();
                     }
                 }
@@ -300,8 +403,6 @@ public class HUD extends Module {
                 }
             }
         }
-
-
         // Render bottom-right transient notifications (e.g., module toggles)
         try {
             if (Myau.notificationManager != null) {
@@ -352,3 +453,6 @@ public class HUD extends Module {
         }
     }
 }
+
+
+

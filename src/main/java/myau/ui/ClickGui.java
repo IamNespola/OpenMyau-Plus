@@ -4,12 +4,14 @@ import com.google.gson.GsonBuilder;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import myau.Myau;
+import myau.font.FontProcess;
 import myau.module.Module;
 import myau.module.modules.*;
 import myau.module.modules.Timer;
 import myau.ui.components.CategoryComponent;
 import net.minecraft.client.gui.GuiScreen;
 import org.lwjgl.input.Mouse;
+import myau.font.CFontRenderer;
 
 import java.awt.*;
 import java.io.File;
@@ -20,12 +22,14 @@ import java.util.*;
 import java.util.List;
 
 public class ClickGui extends GuiScreen {
+    CFontRenderer fontRenderer = FontProcess.getFont("sans");
     private static ClickGui instance;
     private final File configFile = new File("./config/Myau/", "clickgui.txt");
     private final ArrayList<CategoryComponent> categoryList;
 
     public ClickGui() {
         instance = this;
+
 
         List<Module> combatModules = new ArrayList<>();
         combatModules.add(Myau.moduleManager.getModule(AimAssist.class));
@@ -48,6 +52,7 @@ public class ClickGui extends GuiScreen {
         combatModules.add(Myau.moduleManager.getModule(ClickAssits.class));
         combatModules.add(Myau.moduleManager.getModule(Criticals.class));
         combatModules.add(Myau.moduleManager.getModule(BlockHit.class));
+        combatModules.add(Myau.moduleManager.getModule(SprintReset.class));
 
         List<Module> movementModules = new ArrayList<>();
         movementModules.add(Myau.moduleManager.getModule(AntiAFK.class));
@@ -88,6 +93,9 @@ public class ClickGui extends GuiScreen {
         renderModules.add(Myau.moduleManager.getModule(Radar.class));
         renderModules.add(Myau.moduleManager.getModule(FPScounter.class));
         renderModules.add(Myau.moduleManager.getModule(WaterMark.class));
+        renderModules.add(Myau.moduleManager.getModule(HitParticleEffects.class));
+        renderModules.add(Myau.moduleManager.getModule(TeamHealthDisplay.class));
+        renderModules.add(Myau.moduleManager.getModule(SeasonDisplay.class));
 
         List<Module> playerModules = new ArrayList<>();
         playerModules.add(Myau.moduleManager.getModule(AutoHeal.class));
@@ -105,6 +113,7 @@ public class ClickGui extends GuiScreen {
         playerModules.add(Myau.moduleManager.getModule(MCF.class));
         playerModules.add(Myau.moduleManager.getModule(AntiDebuff.class));
         playerModules.add(Myau.moduleManager.getModule(FlagDetector.class));  // i mean this use S08PacketPlayerPosLook so it suck
+        playerModules.add(Myau.moduleManager.getModule(AutoGapple.class));
 
         List<Module> miscModules = new ArrayList<>();
         miscModules.add(Myau.moduleManager.getModule(Spammer.class));
@@ -182,11 +191,11 @@ public class ClickGui extends GuiScreen {
     public void drawScreen(int x, int y, float p) {
         drawRect(0, 0, this.width, this.height, new Color(0, 0, 0, 100).getRGB());
 
-        mc.fontRendererObj.drawStringWithShadow("Myau+ " + Myau.version, 4, this.height - 3 - mc.fontRendererObj.FONT_HEIGHT * 2, new Color(60, 162, 253).getRGB());
-        mc.fontRendererObj.drawStringWithShadow("dev, nespola", 4, this.height - 3 - mc.fontRendererObj.FONT_HEIGHT, new Color(60, 162, 253).getRGB());
+        fontRenderer.drawStringWithShadow("Myau+ " + Myau.version, 4, this.height - 3 - fontRenderer.FONT_HEIGHT * 2, new Color(60, 162, 253).getRGB());
+        fontRenderer.drawStringWithShadow("dev, nespola", 4, this.height - 3 - fontRenderer.FONT_HEIGHT, new Color(60, 162, 253).getRGB());
 
         for (CategoryComponent category : categoryList) {
-            category.render(this.fontRendererObj);
+            category.render(this.mc.fontRendererObj);
             category.handleDrag(x, y);
 
             for (Component module : category.getModules()) {

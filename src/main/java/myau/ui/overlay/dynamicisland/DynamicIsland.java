@@ -6,6 +6,7 @@ import myau.module.modules.TargetHUD;
 import myau.util.RenderUtil;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.ScaledResolution;
+import myau.util.RoundedUtils;
 import java.awt.Color;
 import java.util.ArrayList;
 import java.util.List;
@@ -73,7 +74,7 @@ public class DynamicIsland {
 
         RenderUtil.drawRect(x, y, x + w, y + 1.5f, new Color(255, 255, 255, 100).getRGB());
 
-        RenderUtil.drawOutlineRect(x - 0.5f, y - 0.5f, x + w + 0.5f, y + h + 0.5f, 0.5f, 0, new Color(0, 0, 0, 100).getRGB());
+        RoundedUtils.drawOutlineRect(x - 0.5f, y - 0.5f, x + w + 0.5f, y + h + 0.5f, 0.5f, 0, new Color(0, 0, 0, 100).getRGB());
         RenderUtil.disableRenderState();
 
         float progress = Math.min(1.0f, animW / targetW);

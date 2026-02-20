@@ -125,12 +125,14 @@ public class Myau {
         moduleManager.modules.put(NoSlow.class, new NoSlow());
         moduleManager.modules.put(ClickAssits.class, new ClickAssits());
         moduleManager.modules.put(Timer.class, new Timer());
+        moduleManager.modules.put(SprintReset.class, new SprintReset());
         moduleManager.modules.put(Radar.class, new Radar());
         moduleManager.modules.put(Reach.class, new Reach());
         moduleManager.modules.put(Refill.class, new Refill());
         moduleManager.modules.put(SafeWalk.class, new SafeWalk());
         moduleManager.modules.put(Scaffold.class, new Scaffold());
         moduleManager.modules.put(AutoBlockIn.class, new AutoBlockIn());
+        moduleManager.modules.put(SeasonDisplay.class, new SeasonDisplay());
         moduleManager.modules.put(Spammer.class, new Spammer());
         moduleManager.modules.put(Speed.class, new Speed());
         moduleManager.modules.put(SpeedMine.class, new SpeedMine());
@@ -144,7 +146,10 @@ public class Myau {
         moduleManager.modules.put(ViewClip.class, new ViewClip());
         moduleManager.modules.put(Wtap.class, new Wtap());
         moduleManager.modules.put(Xray.class, new Xray());
+        moduleManager.modules.put(TeamHealthDisplay.class, new TeamHealthDisplay());
         // moduleManager.modules.put(.class, new myau.module.modules.());
+        moduleManager.modules.put(AutoGapple.class, new AutoGapple());
+        moduleManager.modules.put(HitParticleEffects.class, new HitParticleEffects());
         commandManager.commands.add(new BindCommand());
         commandManager.commands.add(new ConfigCommand());
         commandManager.commands.add(new DenickCommand());
