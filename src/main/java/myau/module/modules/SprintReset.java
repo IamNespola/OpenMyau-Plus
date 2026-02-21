@@ -19,6 +19,7 @@ public class SprintReset extends Module {
     private final BooleanProperty onlyWhileMoving = new BooleanProperty("Only While Moving", true);
     private final BooleanProperty resetOnCrit = new BooleanProperty("Reset On Crit", true);
     private final BooleanProperty smartReset = new BooleanProperty("Smart Reset", false);
+    private final BooleanProperty fastReset = new BooleanProperty("Fast Reset", false);
     private static final Minecraft mc = Minecraft.getMinecraft();
     private boolean attacked = false;
     private boolean needsReset = false;
@@ -60,6 +61,9 @@ public class SprintReset extends Module {
         if (smartReset.getValue()) {
             if (((EntityLivingBase) target).getHealth() <= 0) return;
             if (mc.thePlayer.getDistanceToEntity(target) > 6.0f) return;
+        }
+        if (fastReset.getValue() && lastTarget != null && lastTarget != target) {
+            handlePacketReset();
         }
 
         lastTarget = target;

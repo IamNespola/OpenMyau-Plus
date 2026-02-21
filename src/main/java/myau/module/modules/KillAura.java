@@ -30,7 +30,8 @@ import net.minecraft.entity.passive.EntityBat;
 import net.minecraft.entity.passive.EntitySquid;
 import net.minecraft.entity.passive.EntityVillager;
 import net.minecraft.entity.player.EntityPlayer;
-import net.minecraft.item.*;
+import net.minecraft.item.ItemStack;
+import net.minecraft.item.ItemSword;
 import net.minecraft.network.play.client.C02PacketUseEntity;
 import net.minecraft.network.play.client.C02PacketUseEntity.Action;
 import net.minecraft.network.play.client.C07PacketPlayerDigging;
@@ -67,7 +68,6 @@ public class KillAura extends Module {
     public final ModeProperty sort;
     public final ModeProperty autoBlock;
     public final BooleanProperty autoBlockRequirePress;
-    public final BooleanProperty legitfulldelay;
     public final FloatProperty autoBlockMinCPS;
     public final FloatProperty autoBlockMaxCPS;
     public final FloatProperty autoBlockRange;
@@ -97,8 +97,6 @@ public class KillAura extends Module {
     public final BooleanProperty teams;
     public final ModeProperty showTarget;
     public final ModeProperty debugLog;
-    private boolean test;
-    private boolean resetblockingtest;
 
     private long getAttackDelay() {
         return this.isBlocking ? (long) (1000.0F / RandomUtil.nextLong(this.autoBlockMinCPS.getValue().longValue(), this.autoBlockMaxCPS.getValue().longValue())) : 1000L / RandomUtil.nextLong(this.minCPS.getValue(), this.maxCPS.getValue());
@@ -180,18 +178,23 @@ public class KillAura extends Module {
             } else if ((ItemUtil.isEating() || ItemUtil.isUsingBow()) && PlayerUtil.isUsingItem()) {
                 return false;
             } else {
-                BedNuker bedNuker = (BedNuker) Myau.moduleManager.modules.get(BedNuker.class);
-                AutoBlockIn autoBlockIn = (AutoBlockIn) Myau.moduleManager.modules.get(AutoBlockIn.class);
-                if (bedNuker.isEnabled() && bedNuker.isReady()) {
+                AutoHeal autoHeal = (AutoHeal) Myau.moduleManager.modules.get(AutoHeal.class);
+                if (autoHeal.isEnabled() && autoHeal.isSwitching()) {
                     return false;
-                } else if (Myau.moduleManager.modules.get(Scaffold.class).isEnabled()) {
-                    return false;
-                } else if (autoBlockIn.isEnabled()) {
-                    return false;
-                } else if (this.requirePress.getValue()) {
-                    return PlayerUtil.isAttacking();
                 } else {
-                    return !this.allowMining.getValue() || !mc.objectMouseOver.typeOfHit.equals(MovingObjectType.BLOCK) || !PlayerUtil.isAttacking();
+                    BedNuker bedNuker = (BedNuker) Myau.moduleManager.modules.get(BedNuker.class);
+                    AutoBlockIn autoBlockIn = (AutoBlockIn) Myau.moduleManager.modules.get(AutoBlockIn.class);
+                    if (bedNuker.isEnabled() && bedNuker.isReady()) {
+                        return false;
+                    } else if (Myau.moduleManager.modules.get(Scaffold.class).isEnabled()) {
+                        return false;
+                    } else if (autoBlockIn.isEnabled()) {
+                        return false;
+                    } else if (this.requirePress.getValue()) {
+                        return PlayerUtil.isAttacking();
+                    } else {
+                        return !this.allowMining.getValue() || !mc.objectMouseOver.typeOfHit.equals(MovingObjectType.BLOCK) || !PlayerUtil.isAttacking();
+                    }
                 }
             }
         } else {
@@ -324,10 +327,9 @@ public class KillAura extends Module {
         this.mode = new ModeProperty("mode", 0, new String[]{"SINGLE", "SWITCH"});
         this.sort = new ModeProperty("sort", 0, new String[]{"DISTANCE", "HEALTH", "HURT_TIME", "FOV"});
         this.autoBlock = new ModeProperty(
-                "auto-block", 2, new String[]{"NONE", "VANILLA", "SPOOF", "HYPIXEL", "BLINK", "INTERACT", "SWAP", "LEGIT", "FAKE", "LEGITFULL"}
+                "auto-block", 2, new String[]{"NONE", "VANILLA", "SPOOF", "HYPIXEL", "BLINK", "INTERACT", "SWAP", "LEGIT", "FAKE"}
         );
         this.autoBlockRequirePress = new BooleanProperty("auto-block-require-press", false);
-        this.legitfulldelay = new BooleanProperty("BlockDelay", false, () -> this.autoBlock.getValue() == 9);
         this.autoBlockMinCPS = new FloatProperty("auto-block-min-aps", 8.0F, 1.0F, 20.0F);
         this.autoBlockMaxCPS = new FloatProperty("auto-block-max-aps", 10.0F, 1.0F, 20.0F);
         this.autoBlockRange = new FloatProperty("auto-block-range", 6.0F, 3.0F, 8.0F);
@@ -403,11 +405,6 @@ public class KillAura extends Module {
             Myau.blinkManager.setBlinkState(false, BlinkModules.AUTO_BLOCK);
             Myau.blinkManager.setBlinkState(true, BlinkModules.AUTO_BLOCK);
         }
-        if (resetblockingtest) {
-            PacketUtil.sendPacket(new C09PacketHeldItemChange(mc.thePlayer.inventory.currentItem));
-            resetblockingtest = false;
-            test = false;
-        }
         if (this.isEnabled() && event.getType() == EventType.PRE) {
             if (this.attackDelayMS > 0L) {
                 this.attackDelayMS -= 50L;
@@ -419,25 +416,6 @@ public class KillAura extends Module {
                 this.isBlocking = false;
                 this.fakeBlockState = false;
                 this.blockTick = 0;
-            }
-            resetblockingtest = false;
-            if (this.autoBlock.getValue() == 3) {
-                boolean outOfAttackRange = target != null && mc.thePlayer.getDistanceToEntity(target.getEntity()) > autoBlockRange.getValue();
-                if ((target == null || outOfAttackRange) && test && Myau.moduleManager.modules.get(NoSlow.class).isEnabled()) {
-                    int randomSlot = new Random().nextInt(9);
-                    while (true) {
-                        ItemStack itemStack = mc.thePlayer.inventory.mainInventory[randomSlot];
-                        boolean isRightClickable = itemStack != null && (itemStack.getItem() instanceof ItemSword || itemStack.getItem() instanceof ItemFood || itemStack.getItem() instanceof ItemBow || itemStack.getItem() instanceof ItemPotion);
-                        if (randomSlot != mc.thePlayer.inventory.currentItem && !isRightClickable) {
-                            break;
-                        }
-                        randomSlot = new Random().nextInt(9);
-                    }
-                    PacketUtil.sendPacket(new C09PacketHeldItemChange(randomSlot));
-                    this.stopBlock();
-                    test = false;
-                    resetblockingtest = true;
-                }
             }
             if (attack) {
                 boolean swap = false;
@@ -507,20 +485,13 @@ public class KillAura extends Module {
                                                 swap = true;
                                             }
                                             blocked = true;
-                                            test = true;
                                             this.blockTick = 1;
                                             break;
                                         case 1:
                                             if (this.isPlayerBlocking()) {
                                                 if(Myau.moduleManager.modules.get(NoSlow.class).isEnabled()){
                                                     int randomSlot = new Random().nextInt(9);
-                                                    while (true) {
-                                                        ItemStack itemStack = mc.thePlayer.inventory.mainInventory[randomSlot];
-                                                        boolean isRightClickable = itemStack != null && (itemStack.getItem() instanceof ItemSword || itemStack.getItem() instanceof ItemFood || itemStack.getItem() instanceof ItemBow || itemStack.getItem() instanceof ItemPotion);
-
-                                                        if (randomSlot != mc.thePlayer.inventory.currentItem && !isRightClickable) {
-                                                            break;
-                                                        }
+                                                    while (randomSlot == mc.thePlayer.inventory.currentItem) {
                                                         randomSlot = new Random().nextInt(9);
                                                     }
                                                     PacketUtil.sendPacket(new C09PacketHeldItemChange(randomSlot));
@@ -695,51 +666,6 @@ public class KillAura extends Module {
                                     && !Myau.playerStateManager.placing) {
                                 swap = true;
                             }
-                        case 9: // LEGITFULL
-                            if (this.hasValidTarget()) {
-                                if (!Myau.playerStateManager.digging && !Myau.playerStateManager.placing) {
-                                    switch (this.blockTick) {
-                                        case 0:
-                                            if (this.legitfulldelay.getValue()) {
-                                                this.blockTick = 1;
-                                            } else {
-                                                if (!this.isPlayerBlocking()) {
-                                                    swap = true;
-                                                }
-                                                this.blockTick = 2;
-                                            }
-                                            break;
-                                        case 1:
-                                            if (!this.isPlayerBlocking()) {
-                                                swap = true;
-                                            }
-                                            this.blockTick = 2;
-                                            break;
-                                        case 2:
-                                        case 3:
-                                            attack = false;
-                                            this.blockTick++;
-                                            break;
-                                        case 4:
-                                            if (this.isPlayerBlocking()) {
-                                                this.stopBlock();
-                                            }
-                                            attack = false;
-                                            this.blockTick = 0;
-                                            break;
-                                        default:
-                                            this.blockTick = 0;
-                                    }
-                                }
-                                Myau.blinkManager.setBlinkState(false, BlinkModules.AUTO_BLOCK);
-                                this.isBlocking = true;
-                                this.fakeBlockState = false;
-                            } else {
-                                Myau.blinkManager.setBlinkState(false, BlinkModules.AUTO_BLOCK);
-                                this.isBlocking = false;
-                                this.fakeBlockState = false;
-                            }
-                            break;
                     }
                 }
                 boolean attacked = false;
@@ -1015,8 +941,7 @@ public class KillAura extends Module {
                 || this.autoBlock.getValue() == 4
                 || this.autoBlock.getValue() == 5
                 || this.autoBlock.getValue() == 6
-                || this.autoBlock.getValue() == 7
-                || this.autoBlock.getValue() == 9;
+                || this.autoBlock.getValue() == 7;
         if (!this.autoBlock.getName().equals(value)) {
             if (this.swingRange.getName().equals(value)) {
                 if (this.swingRange.getValue() < this.attackRange.getValue()) {

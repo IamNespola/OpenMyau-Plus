@@ -20,6 +20,10 @@ import myau.property.properties.FloatProperty;
 import myau.property.properties.IntProperty;
 import myau.property.properties.ModeProperty;
 import myau.property.properties.TextProperty;
+import net.minecraft.network.play.client.C0BPacketEntityAction;
+import net.minecraft.network.play.client.C0DPacketCloseWindow;
+import net.minecraft.network.play.client.C0EPacketClickWindow;
+
 import myau.util.LatePacket;
 import myau.util.MoveUtil;
 import myau.util.PacketUtil;
@@ -57,6 +61,7 @@ public class Disabler extends Module {
     public final BooleanProperty verusCombat = new BooleanProperty("verus-combat", false);
     public final BooleanProperty onlyCombat = new BooleanProperty("only-combat", true);
     public final BooleanProperty intaveFly = new BooleanProperty("intave-fly", false);
+    public final BooleanProperty moveDisabler = new BooleanProperty("move-disabler", false);
     private boolean shouldDelay = false;
     // use diamond operator to avoid raw type warnings
     private final LinkedBlockingQueue<Packet<INetHandlerPlayClient>> packets = new LinkedBlockingQueue<>();
@@ -248,7 +253,6 @@ public class Disabler extends Module {
                     this.packets.add((Packet<INetHandlerPlayClient>) packet);
                 }
             }
-
             if (this.verusCombat.getValue()) {
                 if (mc.thePlayer.ticksExisted <= 20) {
                     this.isOnCombat = false;
