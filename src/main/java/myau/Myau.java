@@ -148,7 +148,7 @@ public class Myau {
         moduleManager.modules.put(Wtap.class, new Wtap());
         moduleManager.modules.put(Xray.class, new Xray());
         moduleManager.modules.put(TeamHealthDisplay.class, new TeamHealthDisplay());
-        // moduleManager.modules.put(.class, new myau.module.modules.());
+        moduleManager.modules.put(Animations.class, new Animations());
         moduleManager.modules.put(AutoGapple.class, new AutoGapple());
         moduleManager.modules.put(HitParticleEffects.class, new HitParticleEffects());
         commandManager.commands.add(new BindCommand());
