@@ -97,6 +97,7 @@ public class ClickGui extends GuiScreen {
         renderModules.add(Myau.moduleManager.getModule(ESP2D.class));
         renderModules.add(Myau.moduleManager.getModule(TeamHealthDisplay.class));
         renderModules.add(Myau.moduleManager.getModule(SeasonDisplay.class));
+        renderModules.add(Myau.moduleManager.getModule(Animations.class));
 
         List<Module> playerModules = new ArrayList<>();
         playerModules.add(Myau.moduleManager.getModule(AutoHeal.class));

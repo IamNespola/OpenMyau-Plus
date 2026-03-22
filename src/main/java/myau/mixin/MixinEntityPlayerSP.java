@@ -145,7 +145,10 @@ public abstract class MixinEntityPlayerSP extends MixinEntityPlayer {
     )
     private boolean isUsing(EntityPlayerSP entityPlayerSP) {
         NoSlow noSlow = (NoSlow) Myau.moduleManager.modules.get(NoSlow.class);
-        return (!noSlow.isEnabled() || !noSlow.isAnyActive()) && entityPlayerSP.isUsingItem();
+        if (!noSlow.isEnabled() || !noSlow.isAnyActive()) {
+            return entityPlayerSP.isUsingItem();
+        }
+        return false;
     }
 
     @Redirect(
