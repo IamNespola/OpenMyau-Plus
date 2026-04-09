@@ -108,6 +108,7 @@ public class Myau {
         moduleManager.modules.put(ItemESP.class, new ItemESP());
         moduleManager.modules.put(Jesus.class, new Jesus());
         moduleManager.modules.put(Disabler.class, new Disabler());
+        moduleManager.modules.put(Displace.class, new Displace());
         moduleManager.modules.put(KeepSprint.class, new KeepSprint());
         moduleManager.modules.put(FlagDetector.class, new FlagDetector());
         moduleManager.modules.put(HitBox.class, new HitBox());
