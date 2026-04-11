@@ -54,7 +54,8 @@ public class ClickGuiScreen extends GuiScreen {
                 Myau.moduleManager.getModule(ClickAssits.class),
                 Myau.moduleManager.getModule(Criticals.class),
                 Myau.moduleManager.getModule(BlockHit.class),
-                Myau.moduleManager.getModule(SprintReset.class)
+                Myau.moduleManager.getModule(SprintReset.class),
+                Myau.moduleManager.getModule(Displace.class)
         );
 
         List<Module> movementModules = Arrays.asList(
