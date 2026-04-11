@@ -68,6 +68,8 @@ public class Myau {
         moduleManager.modules.put(AntiVoid.class, new AntiVoid());
         moduleManager.modules.put(AutoClicker.class, new AutoClicker());
         moduleManager.modules.put(AutoAnduril.class, new AutoAnduril());
+        moduleManager.modules.put(KnockbackDelay.class, new KnockbackDelay());
+        moduleManager.modules.put(TargetESP.class, new TargetESP());
         moduleManager.modules.put(AutoHeal.class, new AutoHeal());
         moduleManager.modules.put(AutoTool.class, new AutoTool());
         moduleManager.modules.put(AutoSwap.class, new AutoSwap());
@@ -198,6 +200,8 @@ public class Myau {
             targetManager.load();
         }
         Runtime.getRuntime().addShutdownHook(new Thread(config::save));
+
+        me.ksyz.accountmanager.AccountManager.init();
 
         try (InputStreamReader reader = new InputStreamReader(Objects.requireNonNull(Myau.class.getResourceAsStream("/version.json")), StandardCharsets.UTF_8)) {
             JsonObject modInfo = new JsonParser().parse(reader).getAsJsonObject();

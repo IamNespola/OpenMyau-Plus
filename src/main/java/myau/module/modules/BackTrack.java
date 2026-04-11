@@ -7,7 +7,6 @@ import myau.events.PacketEvent;
 import myau.events.Render3DEvent;
 import myau.events.UpdateEvent;
 import myau.module.Module;
-import myau.module.modules.KillAura;
 import myau.module.modules.Scaffold;
 import myau.property.properties.BooleanProperty;
 import myau.property.properties.FloatProperty;
@@ -36,28 +35,28 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 
 public class BackTrack extends Module {
 
-private static final Minecraft mc = Minecraft.getMinecraft();
+   private static final Minecraft mc = Minecraft.getMinecraft();
 
    public final BooleanProperty legit =
-         new BooleanProperty("Legit", false);
+           new BooleanProperty("Legit", false);
 
    public final BooleanProperty releaseOnHit =
-         new BooleanProperty("ReleaseOnHit", true, () -> this.legit.getValue());
+           new BooleanProperty("ReleaseOnHit", true, () -> this.legit.getValue());
 
    public final IntProperty delay =
-         new IntProperty("Delay", 400, 0, 1000);
+           new IntProperty("Delay", 400, 0, 1000);
 
    public final FloatProperty hitRange =
-         new FloatProperty("Range", 3.0f, 3.0f, 10.0f);
+           new FloatProperty("Range", 3.0f, 3.0f, 10.0f);
 
    public final BooleanProperty onlyIfNeeded =
-         new BooleanProperty("OnlyIfNeeded", true);
+           new BooleanProperty("OnlyIfNeeded", true);
 
    public final BooleanProperty esp =
-         new BooleanProperty("ESP", true);
+           new BooleanProperty("ESP", true);
 
    public final ModeProperty espMode =
-         new ModeProperty("ESPMODE", 0, new String[]{"Hitbox", "None"});
+           new ModeProperty("ESPMODE", 0, new String[]{"Hitbox", "None"});
 
    private final Queue<Packet> incomingPackets = new LinkedList<>();
    private final Queue<Packet> outgoingPackets = new LinkedList<>();
@@ -66,7 +65,6 @@ private static final Minecraft mc = Minecraft.getMinecraft();
 
    private final MSTimer timer = new MSTimer();
 
-   private KillAura killAura;
    private EntityLivingBase target;
    private Vec3 lastRealPos;
 
@@ -76,11 +74,6 @@ private static final Minecraft mc = Minecraft.getMinecraft();
 
    @Override
    public void onEnabled() {
-      Module m = Myau.moduleManager.getModule(KillAura.class);
-      if (m instanceof KillAura) {
-         killAura = (KillAura) m;
-      }
-
       incomingPackets.clear();
       outgoingPackets.clear();
       realPositions.clear();
@@ -99,7 +92,7 @@ private static final Minecraft mc = Minecraft.getMinecraft();
 
    @EventTarget
    public void onPacket(PacketEvent event) {
-      if (!isEnabled() || mc.thePlayer == null || mc.theWorld == null || killAura == null)
+      if (!isEnabled() || mc.thePlayer == null || mc.theWorld == null)
          return;
 
       Module scaffold = Myau.moduleManager.getModule(Scaffold.class);
@@ -109,8 +102,6 @@ private static final Minecraft mc = Minecraft.getMinecraft();
          outgoingPackets.clear();
          return;
       }
-
-      target = killAura.getTarget();
 
       if (event.getType() == EventType.RECEIVE) {
          handleIncoming(event);
@@ -131,20 +122,20 @@ private static final Minecraft mc = Minecraft.getMinecraft();
          Vec3 pos = realPositions.getOrDefault(id, new Vec3(0, 0, 0));
 
          realPositions.put(
-                  id,
-                  pos.addVector(
-                        p.func_149062_c() / 32.0,
-                        p.func_149061_d() / 32.0,
-                        p.func_149064_e() / 32.0
-                  )
+                 id,
+                 pos.addVector(
+                         p.func_149062_c() / 32.0,
+                         p.func_149061_d() / 32.0,
+                         p.func_149064_e() / 32.0
+                 )
          );
       }
 
       if (packet instanceof S18PacketEntityTeleport) {
          S18PacketEntityTeleport p = (S18PacketEntityTeleport) packet;
          realPositions.put(
-                  p.getEntityId(),
-                  new Vec3(p.getX() / 32.0, p.getY() / 32.0, p.getZ() / 32.0)
+                 p.getEntityId(),
+                 new Vec3(p.getX() / 32.0, p.getY() / 32.0, p.getZ() / 32.0)
          );
       }
 
@@ -166,8 +157,8 @@ private static final Minecraft mc = Minecraft.getMinecraft();
 
       if (shouldQueue()) {
          if (blockOutgoing(packet)) {
-               outgoingPackets.add(packet);
-               event.setCancelled(true);
+            outgoingPackets.add(packet);
+            event.setCancelled(true);
          }
       } else {
          releaseOutgoing();
@@ -177,11 +168,13 @@ private static final Minecraft mc = Minecraft.getMinecraft();
    @EventTarget
    public void onUpdate(UpdateEvent e) {
       if (!isEnabled() || mc.thePlayer == null) return;
-      
-      if (target != killAura.getTarget()) {
+
+      EntityLivingBase newTarget = getClosestEntity();
+      if (newTarget != target) {
          releaseAll();
          lastRealPos = null;
       }
+      target = newTarget;
 
       if (target == null)
          return;
@@ -208,19 +201,19 @@ private static final Minecraft mc = Minecraft.getMinecraft();
 
          if (lastRealPos != null) {
             double lastDist = mc.thePlayer.getDistance(
-                     lastRealPos.xCoord,
-                     lastRealPos.yCoord,
-                     lastRealPos.zCoord
+                    lastRealPos.xCoord,
+                    lastRealPos.yCoord,
+                    lastRealPos.zCoord
             );
 
             if (distReal < lastDist) {
-                  releaseAll();
+               releaseAll();
             }
          }
       }
 
       if (legit.getValue() && releaseOnHit.getValue() && target.hurtTime == 1) {
-      releaseAll();
+         releaseAll();
       }
 
       lastRealPos = real;
@@ -238,35 +231,35 @@ private static final Minecraft mc = Minecraft.getMinecraft();
          return;
 
       Vec3 real = realPositions.get(target.getEntityId());
-         if (real == null)
-            return;
+      if (real == null)
+         return;
 
-         double x = real.xCoord - mc.getRenderManager().viewerPosX;
-         double y = real.yCoord - mc.getRenderManager().viewerPosY;
-         double z = real.zCoord - mc.getRenderManager().viewerPosZ;
+      double x = real.xCoord - mc.getRenderManager().viewerPosX;
+      double y = real.yCoord - mc.getRenderManager().viewerPosY;
+      double z = real.zCoord - mc.getRenderManager().viewerPosZ;
 
-         AxisAlignedBB box = new AxisAlignedBB(
-                x - target.width / 2,
-                y,
-                z - target.width / 2,
-                x + target.width / 2,
-                y + target.height,
-                z + target.width / 2
-         );
+      AxisAlignedBB box = new AxisAlignedBB(
+              x - target.width / 2,
+              y,
+              z - target.width / 2,
+              x + target.width / 2,
+              y + target.height,
+              z + target.width / 2
+      );
 
-         GlStateManager.pushMatrix();
-         GlStateManager.disableTexture2D();
-         GlStateManager.disableDepth();
-         GlStateManager.depthMask(false);
+      GlStateManager.pushMatrix();
+      GlStateManager.disableTexture2D();
+      GlStateManager.disableDepth();
+      GlStateManager.depthMask(false);
 
-         GlStateManager.color(1F, 0F, 0F, 0.4F);
+      GlStateManager.color(1F, 0F, 0F, 0.4F);
 
-         RenderGlobal.drawOutlinedBoundingBox(box, 255, 0, 0, 153);
+      RenderGlobal.drawOutlinedBoundingBox(box, 255, 0, 0, 153);
 
-         GlStateManager.depthMask(true);
-         GlStateManager.enableDepth();
-         GlStateManager.enableTexture2D();
-         GlStateManager.popMatrix();
+      GlStateManager.depthMask(true);
+      GlStateManager.enableDepth();
+      GlStateManager.enableTexture2D();
+      GlStateManager.popMatrix();
    }
 
    private boolean shouldQueue() {
@@ -279,15 +272,15 @@ private static final Minecraft mc = Minecraft.getMinecraft();
 
       if (!onlyIfNeeded.getValue()) {
          double distReal = mc.thePlayer.getDistance(
-                  real.xCoord, real.yCoord, real.zCoord);
+                 real.xCoord, real.yCoord, real.zCoord);
          double distCurrent = mc.thePlayer.getDistanceToEntity(target);
 
          return distReal + 0.15 < distCurrent
-                  && !timer.hasTimePassed(delay.getValue());
+                 && !timer.hasTimePassed(delay.getValue());
       }
 
       double distReal = mc.thePlayer.getDistance(
-               real.xCoord, real.yCoord, real.zCoord
+              real.xCoord, real.yCoord, real.zCoord
       );
       double distCurrent = mc.thePlayer.getDistanceToEntity(target);
 
@@ -295,14 +288,14 @@ private static final Minecraft mc = Minecraft.getMinecraft();
    }
 
    private void releaseIncoming() {
-   if (mc.getNetHandler() == null)
-      return;
+      if (mc.getNetHandler() == null)
+         return;
 
-   while (!incomingPackets.isEmpty()) {
-      incomingPackets.poll().processPacket(mc.getNetHandler());
+      while (!incomingPackets.isEmpty()) {
+         incomingPackets.poll().processPacket(mc.getNetHandler());
+      }
+      timer.reset();
    }
-   timer.reset();
-}
 
    private void releaseOutgoing() {
       while (!outgoingPackets.isEmpty()) {
@@ -320,35 +313,51 @@ private static final Minecraft mc = Minecraft.getMinecraft();
       if (!onlyIfNeeded.getValue()) {
 
          if (p instanceof S12PacketEntityVelocity
-                  || p instanceof S27PacketExplosion) {
-               return false;
+                 || p instanceof S27PacketExplosion) {
+            return false;
          }
 
          return p instanceof S14PacketEntity
-                  || p instanceof S18PacketEntityTeleport
-                  || p instanceof S19PacketEntityHeadLook
-                  || p instanceof S0FPacketSpawnMob;
+                 || p instanceof S18PacketEntityTeleport
+                 || p instanceof S19PacketEntityHeadLook
+                 || p instanceof S0FPacketSpawnMob;
       }
 
       return p instanceof S12PacketEntityVelocity
-            || p instanceof S27PacketExplosion
-            || p instanceof S14PacketEntity
-            || p instanceof S18PacketEntityTeleport
-            || p instanceof S19PacketEntityHeadLook
-            || p instanceof S0FPacketSpawnMob;
+              || p instanceof S27PacketExplosion
+              || p instanceof S14PacketEntity
+              || p instanceof S18PacketEntityTeleport
+              || p instanceof S19PacketEntityHeadLook
+              || p instanceof S0FPacketSpawnMob;
 
    }
 
    private boolean blockOutgoing(Packet<?> p) {
       return p instanceof C03PacketPlayer
-               || p instanceof C02PacketUseEntity
-               || p instanceof C0APacketAnimation
-               || p instanceof C0BPacketEntityAction
-               || p instanceof C08PacketPlayerBlockPlacement
-               || p instanceof C07PacketPlayerDigging
-               || p instanceof C09PacketHeldItemChange
-               || p instanceof C00PacketKeepAlive
-               || p instanceof C01PacketPing;
+              || p instanceof C02PacketUseEntity
+              || p instanceof C0APacketAnimation
+              || p instanceof C0BPacketEntityAction
+              || p instanceof C08PacketPlayerBlockPlacement
+              || p instanceof C07PacketPlayerDigging
+              || p instanceof C09PacketHeldItemChange
+              || p instanceof C00PacketKeepAlive
+              || p instanceof C01PacketPing;
+   }
+
+   private EntityLivingBase getClosestEntity() {
+      EntityLivingBase closest = null;
+      double closestDist = Double.MAX_VALUE;
+      for (Entity entity : mc.theWorld.loadedEntityList) {
+         if (entity instanceof EntityLivingBase && entity != mc.thePlayer) {
+            double dist = mc.thePlayer.getDistanceToEntity(entity);
+            if (dist < closestDist && dist <= hitRange.getValue()) {
+               closestDist = dist;
+               closest = (EntityLivingBase) entity;
+            }
+         }
+      }
+      return closest;
    }
 }
+
 

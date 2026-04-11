@@ -32,7 +32,6 @@ public class DynamicIsland extends Module { // nah bro i took 2 hour just to did
         super("DynamicIsland", true, false);
     }
 
-
     @EventTarget
     public void onRender2D(Render2DEvent event) {
         Scaffold scaffold = (Scaffold) myau.Myau.moduleManager.getModule(Scaffold.class);
@@ -67,8 +66,7 @@ public class DynamicIsland extends Module { // nah bro i took 2 hour just to did
                 "Myau+",
                 (int) startX,
                 (int) textY,
-                accentRGB
-        );
+                accentRGB);
 
         String part1 = "  ·  " + username + "  ·  ";
         float part1Width = mc.fontRendererObj.getStringWidth("Myau+");
@@ -76,8 +74,7 @@ public class DynamicIsland extends Module { // nah bro i took 2 hour just to did
                 part1,
                 (int) (startX + part1Width),
                 (int) textY,
-                0xFFFFFF
-        );
+                0xFFFFFF);
 
         String part2 = ping + "ms";
         float part2Width = mc.fontRendererObj.getStringWidth("Myau+" + part1);
@@ -85,9 +82,7 @@ public class DynamicIsland extends Module { // nah bro i took 2 hour just to did
                 part2,
                 (int) (startX + part2Width),
                 (int) textY,
-                accentRGB
-        );
-
+                accentRGB);
 
         String rest = " to " + server + "  ·  " + fps + "fps";
         float restWidth = mc.fontRendererObj.getStringWidth("Myau+" + part1 + part2);
@@ -95,32 +90,55 @@ public class DynamicIsland extends Module { // nah bro i took 2 hour just to did
                 rest,
                 (int) (startX + restWidth),
                 (int) textY,
-                0xFFFFFF
-        );
+                0xFFFFFF);
     }
 
     private void drawBackground(float x, float y, float w, float h) {
         RenderUtil.enableRenderState();
 
+        Color accent = new Color(this.textColor.getValue());
+
+        // ── Drop shadow (dark, offset downward) ──
+        GlowUtils.drawGlow(
+                x + 2f, y + 4f,
+                w, h,
+                40,
+                new Color(0, 0, 0, 120));
+
         if (this.enableGlow.getValue()) {
+            // ── Outer bloom – large, faint ──
             GlowUtils.drawGlow(
-                    x,
-                    y,
-                    w,
-                    h,
-                    60,
-                    new Color(this.textColor.getValue())
-            );
+                    x, y,
+                    w, h,
+                    90,
+                    new Color(accent.getRed(), accent.getGreen(), accent.getBlue(), 35));
+
+            // ── Mid bloom – medium, moderate ──
+            GlowUtils.drawGlow(
+                    x, y,
+                    w, h,
+                    55,
+                    new Color(accent.getRed(), accent.getGreen(), accent.getBlue(), 70));
+
+            // ── Inner bloom – tight, vibrant ──
+            GlowUtils.drawGlow(
+                    x, y,
+                    w, h,
+                    25,
+                    new Color(accent.getRed(), accent.getGreen(), accent.getBlue(), 110));
         }
 
         RoundedUtils.drawRoundedRect(
-                x,
-                y,
-                w,
-                h,
+                x, y,
+                w, h,
                 this.radius,
-                new Color(0, 0, 0, this.bgAlpha).getRGB()
-        );
+                new Color(0, 0, 0, this.bgAlpha).getRGB());
+
+        RoundedUtils.drawRoundedRect(
+                x + 0.5f, y + 0.5f,
+                w - 1f, h - 1f,
+                this.radius - 0.5f,
+                new Color(255, 255, 255, 18).getRGB());
 
         RenderUtil.disableRenderState();
     }

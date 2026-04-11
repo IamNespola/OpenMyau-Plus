@@ -35,7 +35,7 @@ public class TeamHealthDisplay extends Module {
 
     @EventTarget
     public void onPacket(PacketEvent event) {
-        if (!event.isCancelled() && mc.thePlayer != null && mc.theWorld != null) {
+        if (this.isEnabled() && mc.thePlayer != null && mc.theWorld != null && !event.isCancelled()) {
             if (event.getPacket() instanceof S1CPacketEntityMetadata) {
                 S1CPacketEntityMetadata packet = (S1CPacketEntityMetadata) event.getPacket();
                 Entity entity = mc.theWorld.getEntityByID(packet.getEntityId());
@@ -102,4 +102,3 @@ public class TeamHealthDisplay extends Module {
         }
     }
 }
-

@@ -198,6 +198,11 @@ public class GuiMainMenu extends GuiScreen implements GuiYesNoCallback
             this.mc.shutdown();
         }
 
+        if (button.id == 14)
+        {
+            this.mc.displayGuiScreen(new me.ksyz.accountmanager.gui.GuiAccountManager(this));
+        }
+
         if (button.id == 11)
         {
             this.mc.launchIntegratedServer("Demo_World", "Demo_World", DemoWorldServer.demoWorldSettings);
