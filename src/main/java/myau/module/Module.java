@@ -1,11 +1,15 @@
 package myau.module;
 
 import myau.Myau;
-import myau.module.modules.HUD;
+import myau.module.modules.render.HUD;
 import myau.util.KeyBindUtil;
+import net.minecraft.client.Minecraft;
 
 public abstract class Module {
+    protected final Minecraft mc = Minecraft.getMinecraft();
+
     protected final String name;
+    protected final Category category; 
     protected final boolean defaultEnabled;
     protected final int defaultKey;
     protected final boolean defaultHidden;
@@ -13,12 +17,13 @@ public abstract class Module {
     protected int key;
     protected boolean hidden;
 
-    public Module(String name, boolean enabled) {
-        this(name, enabled, false);
+    public Module(String name, Category category, boolean enabled) {
+        this(name, category, enabled, false);
     }
 
-    public Module(String name, boolean enabled, boolean hidden) {
+    public Module(String name, Category category, boolean enabled, boolean hidden) {
         this.name = name;
+        this.category = category; // Asignación de la categoría
         this.enabled = this.defaultEnabled = enabled;
         this.key = this.defaultKey = 0;
         this.hidden = this.defaultHidden = hidden;
@@ -26,6 +31,10 @@ public abstract class Module {
 
     public String getName() {
         return this.name;
+    }
+
+    public Category getCategory() {
+        return this.category;
     }
 
     public String formatModule() {
@@ -64,11 +73,9 @@ public abstract class Module {
                 Myau.moduleManager.playSound();
             }
 
-            // Add a transient in-game notification for toggles
             try {
                 if (Myau.notificationManager != null) {
                     String action = this.enabled ? "was toggled successfully" : "was untoggled successfully";
-                    // green for enabled, red for disabled
                     int color = this.enabled ? 0x00FF00 : 0xFF0000;
                     Myau.notificationManager.add(this.getName() + " " + action, color);
                 }
@@ -105,5 +112,4 @@ public abstract class Module {
 
     public void verifyValue(String string) {
     }
-
 }

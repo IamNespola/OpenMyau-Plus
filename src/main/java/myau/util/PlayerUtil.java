@@ -1,7 +1,7 @@
 package myau.util;
 
 import myau.Myau;
-import myau.module.modules.KeepSprint;
+import myau.module.modules.movement.KeepSprint;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockAir;
 import net.minecraft.client.Minecraft;
@@ -113,26 +113,26 @@ public class PlayerUtil {
     }
 
     public static boolean canMove(double x, double z) {
-        return PlayerUtil.canMove(x, z, -1.0);
+        return canMove(x, z, -1.0);
     }
 
     public static boolean canMove(double x, double z, double y) {
-        AxisAlignedBB boundingBox = PlayerUtil.mc.thePlayer.getEntityBoundingBox().offset(x, y, z);
-        return PlayerUtil.mc.theWorld.getCollidingBoundingBoxes(PlayerUtil.mc.thePlayer, boundingBox).isEmpty();
+        AxisAlignedBB boundingBox = mc.thePlayer.getEntityBoundingBox().offset(x, y, z);
+        return mc.theWorld.getCollidingBoundingBoxes(mc.thePlayer, boundingBox).isEmpty();
     }
 
     public static boolean isAirBelow() {
-        AxisAlignedBB axisAlignedBB = PlayerUtil.mc.thePlayer.getEntityBoundingBox().offset(0.0, -1.0, 0.0);
-        return !PlayerUtil.mc.theWorld.getCollidingBoundingBoxes(PlayerUtil.mc.thePlayer, axisAlignedBB).isEmpty();
+        AxisAlignedBB axisAlignedBB = mc.thePlayer.getEntityBoundingBox().offset(0.0, -1.0, 0.0);
+        return !mc.theWorld.getCollidingBoundingBoxes(mc.thePlayer, axisAlignedBB).isEmpty();
     }
 
     public static boolean isAirAbove() {
-        AxisAlignedBB axisAlignedBB = PlayerUtil.mc.thePlayer.getEntityBoundingBox().offset(0.0, 1.0, 0.0);
-        return !PlayerUtil.mc.theWorld.getCollidingBoundingBoxes(PlayerUtil.mc.thePlayer, axisAlignedBB).isEmpty();
+        AxisAlignedBB axisAlignedBB = mc.thePlayer.getEntityBoundingBox().offset(0.0, 1.0, 0.0);
+        return !mc.theWorld.getCollidingBoundingBoxes(mc.thePlayer, axisAlignedBB).isEmpty();
     }
 
     public static boolean canReach(BlockPos blockPos, double reach) {
-        return PlayerUtil.isBlockWithinReach(blockPos, PlayerUtil.mc.thePlayer.posX, PlayerUtil.mc.thePlayer.posY + (double) PlayerUtil.mc.thePlayer.getEyeHeight(), PlayerUtil.mc.thePlayer.posZ, reach);
+        return isBlockWithinReach(blockPos, mc.thePlayer.posX, mc.thePlayer.posY + (double) mc.thePlayer.getEyeHeight(), mc.thePlayer.posZ, reach);
     }
 
     public static boolean isBlockWithinReach(BlockPos blockPos, double x, double y, double z, double reach) {

@@ -27,7 +27,6 @@ public class FontUtil {
                 font = font.deriveFont(Font.PLAIN, size);
             }
         } catch (Exception exception) {
-            exception.printStackTrace();
             font = new Font("default", Font.PLAIN, size);
         }
         return font;

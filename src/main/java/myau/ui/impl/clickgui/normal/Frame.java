@@ -2,11 +2,12 @@ package myau.ui.impl.clickgui.normal;
 
 import lombok.Getter;
 import myau.module.Module;
-import myau.module.modules.ClickGUIModule;
+import myau.module.modules.render.ClickGUIModule;
 import myau.ui.impl.clickgui.normal.component.Component;
 import myau.ui.impl.clickgui.normal.component.ModuleEntry;
 import myau.util.RenderUtil;
 import myau.util.font.FontManager;
+import myau.util.shader.Shader2D;
 import myau.util.shader.ShadowShader;
 
 import java.awt.*;
@@ -58,28 +59,32 @@ public class Frame extends Component {
         if (alpha < 5) return;
 
         ClickGUIModule clickGUIModule = (ClickGUIModule) myau.Myau.moduleManager.getModule("ClickGUI");
+        
         boolean shadowEnabled = clickGUIModule != null && clickGUIModule.shadow.getValue();
         if (shadowEnabled) {
             int shadowAlpha = Math.min(120, (int) (alpha * 0.5));
-            int shadowColor = new Color(0, 0, 0, shadowAlpha).getRGB();
-            ShadowShader.drawShadow(x, scrolledY, width, currentHeight, MaterialTheme.CORNER_RADIUS_FRAME, 12.0f, shadowColor);
+            Color shadowColor = new Color(0, 0, 0, shadowAlpha);
+            ShadowShader.drawShadow(x, scrolledY, width, currentHeight, MaterialTheme.CORNER_RADIUS_FRAME, 12.0f, shadowColor.getRGB());
         }
 
-        boolean showBottomRound = !expanded;
-
-        int frameBgColor = new Color(15, 15, 15, alpha).getRGB();
-        RenderUtil.drawRoundedRect(x, scrolledY, width, headerHeight, MaterialTheme.CORNER_RADIUS_FRAME, frameBgColor, true, true, showBottomRound, showBottomRound);
+        float radius = MaterialTheme.CORNER_RADIUS_FRAME;
+        Color headerColor = new Color(15, 15, 15, alpha);
+        
+        Shader2D.drawRoundedRect(x, scrolledY, width, currentHeight, radius, new Color(20, 20, 20, alpha));
 
         if (expanded) {
             float contentH = currentHeight - headerHeight;
-            int listBgColor = new Color(28, 28, 28, alpha).getRGB();
-            RenderUtil.drawRoundedRect(x, scrolledY + headerHeight, width, contentH, MaterialTheme.CORNER_RADIUS_FRAME, listBgColor, false, false, true, true);
+            Color listBgColor = new Color(28, 28, 28, alpha);
+            Shader2D.drawRoundedRect(x, scrolledY + headerHeight, width, contentH, radius, listBgColor);
+            
+            Shader2D.drawRoundedRect(x, scrolledY + headerHeight - 1, width, 1, 0, new Color(255, 255, 255, (int)(alpha * 0.1)));
         }
 
         int textColor = new Color(255, 255, 255, alpha).getRGB();
         if (FontManager.productSans20 != null) {
             float textY = (float) (scrolledY + (headerHeight - FontManager.productSans20.getHeight()) / 2f + 1);
             FontManager.productSans20.drawString(categoryName, x + 8, textY, textColor);
+            
             String displayArrow = expanded ? "-" : "+";
             float arrowW = (float) FontManager.productSans20.getStringWidth(displayArrow);
             FontManager.productSans20.drawString(displayArrow, x + width - arrowW - 8, textY, textColor);
@@ -88,7 +93,7 @@ public class Frame extends Component {
         }
 
         if (expanded) {
-            RenderUtil.scissor(x, scrolledY + headerHeight, width, currentHeight - headerHeight);
+            RenderUtil.scissor(x, scrolledY + (int)headerHeight, width, (int)(currentHeight - headerHeight));
             int currentModuleY = y + (int) headerHeight;
             for (int i = 0; i < moduleEntries.size(); i++) {
                 ModuleEntry entry = moduleEntries.get(i);

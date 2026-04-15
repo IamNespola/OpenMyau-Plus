@@ -1,7 +1,7 @@
 package myau.config;
 
 import myau.Myau;
-import myau.module.modules.Animations;
+import myau.module.modules.render.Animations;
 
 /**
  * Thin wrapper that holds animation settings

@@ -2,7 +2,7 @@ package myau.util;
 
 import myau.Myau;
 import myau.management.RotationState;
-import myau.module.modules.TargetStrafe;
+import myau.module.modules.combat.TargetStrafe;
 import net.minecraft.client.Minecraft;
 import net.minecraft.potion.Potion;
 import net.minecraft.util.BlockPos;
@@ -12,17 +12,17 @@ public class MoveUtil {
     private static final Minecraft mc = Minecraft.getMinecraft();
 
     public static boolean isForwardPressed() {
-        if (MoveUtil.mc.gameSettings.keyBindForward.isKeyDown() != MoveUtil.mc.gameSettings.keyBindBack.isKeyDown())
+        if (mc.gameSettings.keyBindForward.isKeyDown() != mc.gameSettings.keyBindBack.isKeyDown())
             return true;
-        return MoveUtil.mc.gameSettings.keyBindLeft.isKeyDown() != MoveUtil.mc.gameSettings.keyBindRight.isKeyDown();
+        return mc.gameSettings.keyBindLeft.isKeyDown() != mc.gameSettings.keyBindRight.isKeyDown();
     }
 
     public static int getForwardValue() {
         int forwardValue = 0;
-        if (MoveUtil.mc.gameSettings.keyBindForward.isKeyDown()) {
+        if (mc.gameSettings.keyBindForward.isKeyDown()) {
             ++forwardValue;
         }
-        if (MoveUtil.mc.gameSettings.keyBindBack.isKeyDown()) {
+        if (mc.gameSettings.keyBindBack.isKeyDown()) {
             --forwardValue;
         }
         return forwardValue;
@@ -30,17 +30,17 @@ public class MoveUtil {
 
     public static int getLeftValue() {
         int leftValue = 0;
-        if (MoveUtil.mc.gameSettings.keyBindLeft.isKeyDown()) {
+        if (mc.gameSettings.keyBindLeft.isKeyDown()) {
             ++leftValue;
         }
-        if (MoveUtil.mc.gameSettings.keyBindRight.isKeyDown()) {
+        if (mc.gameSettings.keyBindRight.isKeyDown()) {
             --leftValue;
         }
         return leftValue;
     }
 
     public static float getMoveYaw() {
-        return MoveUtil.adjustYaw(RotationState.isActived() ? RotationState.getSmoothedYaw() : MoveUtil.mc.thePlayer.rotationYaw, MoveUtil.mc.thePlayer.movementInput.moveForward, MoveUtil.mc.thePlayer.movementInput.moveStrafe);
+        return adjustYaw(RotationState.isActived() ? RotationState.getSmoothedYaw() : mc.thePlayer.rotationYaw, mc.thePlayer.movementInput.moveForward, mc.thePlayer.movementInput.moveStrafe);
     }
 
     public static float adjustYaw(float yaw, float forward, float strafe) {
@@ -61,16 +61,16 @@ public class MoveUtil {
     }
 
     public static float getDirectionYaw() {
-        if (MoveUtil.getSpeed() == 0.0) {
-            return MathHelper.wrapAngleTo180_float(MoveUtil.mc.thePlayer.rotationYaw);
+        if (getSpeed() == 0.0) {
+            return MathHelper.wrapAngleTo180_float(mc.thePlayer.rotationYaw);
         }
-        return MathHelper.wrapAngleTo180_float((float) Math.toDegrees(Math.atan2(MoveUtil.mc.thePlayer.motionZ, MoveUtil.mc.thePlayer.motionX)) - 90.0f);
+        return MathHelper.wrapAngleTo180_float((float) Math.toDegrees(Math.atan2(mc.thePlayer.motionZ, mc.thePlayer.motionX)) - 90.0f);
     }
 
     public static double getBaseMoveSpeed() {
         double baseSpeed = 0.28015;
-        if (MoveUtil.getSpeedTime() > 0) {
-            baseSpeed = 0.28015 * (1.0 + 0.15 * (double) MoveUtil.getSpeedLevel());
+        if (getSpeedTime() > 0) {
+            baseSpeed = 0.28015 * (1.0 + 0.15 * (double) getSpeedLevel());
         }
         return baseSpeed;
     }
@@ -87,14 +87,14 @@ public class MoveUtil {
 
     public static double getJumpMotion() {
         int speedLevel = 0;
-        if (MoveUtil.getSpeedTime() > 0) {
-            speedLevel = MoveUtil.getSpeedLevel();
+        if (getSpeedTime() > 0) {
+            speedLevel = getSpeedLevel();
         }
-        return MoveUtil.getBaseJumpHigh(speedLevel);
+        return getBaseJumpHigh(speedLevel);
     }
 
     public static double getSpeed() {
-        return MoveUtil.getSpeed(MoveUtil.mc.thePlayer.motionX, MoveUtil.mc.thePlayer.motionZ);
+        return getSpeed(mc.thePlayer.motionX, mc.thePlayer.motionZ);
     }
 
     public static double getSpeed(double motionX, double motionZ) {
@@ -102,51 +102,51 @@ public class MoveUtil {
     }
 
     public static void setSpeed(double speed) {
-        MoveUtil.setSpeed(speed, MoveUtil.getDirectionYaw());
+        setSpeed(speed, getDirectionYaw());
     }
 
     public static void setSpeed(double speed, float yaw) {
-        MoveUtil.mc.thePlayer.motionX = -Math.sin(Math.toRadians(yaw)) * speed;
-        MoveUtil.mc.thePlayer.motionZ = Math.cos(Math.toRadians(yaw)) * speed;
+        mc.thePlayer.motionX = -Math.sin(Math.toRadians(yaw)) * speed;
+        mc.thePlayer.motionZ = Math.cos(Math.toRadians(yaw)) * speed;
     }
 
     public static void addSpeed(double speed, float yaw) {
-        MoveUtil.mc.thePlayer.motionX += -Math.sin(Math.toRadians(yaw)) * speed;
-        MoveUtil.mc.thePlayer.motionZ += Math.cos(Math.toRadians(yaw)) * speed;
+        mc.thePlayer.motionX += -Math.sin(Math.toRadians(yaw)) * speed;
+        mc.thePlayer.motionZ += Math.cos(Math.toRadians(yaw)) * speed;
     }
 
     public static int getSpeedLevel() {
         int speedLevel = 0;
-        if (MoveUtil.mc.thePlayer.isPotionActive(Potion.moveSpeed)) {
-            speedLevel = (MoveUtil.mc.thePlayer.getActivePotionEffect(Potion.moveSpeed).getAmplifier() + 1);
+        if (mc.thePlayer.isPotionActive(Potion.moveSpeed)) {
+            speedLevel = (mc.thePlayer.getActivePotionEffect(Potion.moveSpeed).getAmplifier() + 1);
         }
         return speedLevel;
     }
 
     public static int getSpeedTime() {
-        if (MoveUtil.mc.thePlayer.isPotionActive(Potion.moveSpeed)) {
-            return MoveUtil.mc.thePlayer.getActivePotionEffect(Potion.moveSpeed).getDuration();
+        if (mc.thePlayer.isPotionActive(Potion.moveSpeed)) {
+            return mc.thePlayer.getActivePotionEffect(Potion.moveSpeed).getDuration();
         }
         return 0;
     }
 
     public static float getAllowedHorizontalDistance() {
-        float slipperiness = MoveUtil.mc.thePlayer.worldObj.getBlockState(new BlockPos(MathHelper.floor_double(MoveUtil.mc.thePlayer.posX), MathHelper.floor_double(MoveUtil.mc.thePlayer.getEntityBoundingBox().minY) - 1, MathHelper.floor_double(MoveUtil.mc.thePlayer.posZ))).getBlock().slipperiness * 0.91f;
-        return MoveUtil.mc.thePlayer.getAIMoveSpeed() * (0.16277136f / (slipperiness * slipperiness * slipperiness));
+        float slipperiness = mc.thePlayer.worldObj.getBlockState(new BlockPos(MathHelper.floor_double(mc.thePlayer.posX), MathHelper.floor_double(mc.thePlayer.getEntityBoundingBox().minY) - 1, MathHelper.floor_double(mc.thePlayer.posZ))).getBlock().slipperiness * 0.91f;
+        return mc.thePlayer.getAIMoveSpeed() * (0.16277136f / (slipperiness * slipperiness * slipperiness));
     }
 
     public static double[] predictMovement() {
-        float strafeInput = (float) MoveUtil.getLeftValue() * 0.98f;
-        float forwardInput = (float) MoveUtil.getForwardValue() * 0.98f;
+        float strafeInput = (float) getLeftValue() * 0.98f;
+        float forwardInput = (float) getForwardValue() * 0.98f;
         float inputMagnitude = strafeInput * strafeInput + forwardInput * forwardInput;
         if (inputMagnitude >= 1.0E-4f) {
             inputMagnitude = MathHelper.sqrt_float(inputMagnitude);
             if (inputMagnitude < 1.0f) {
                 inputMagnitude = 1.0f;
             }
-            inputMagnitude = MoveUtil.getAllowedHorizontalDistance() / inputMagnitude;
-            float sinYaw = MathHelper.sin(MoveUtil.mc.thePlayer.rotationYaw * (float) Math.PI / 180.0f);
-            float cosYaw = MathHelper.cos(MoveUtil.mc.thePlayer.rotationYaw * (float) Math.PI / 180.0f);
+            inputMagnitude = getAllowedHorizontalDistance() / inputMagnitude;
+            float sinYaw = MathHelper.sin(mc.thePlayer.rotationYaw * (float) Math.PI / 180.0f);
+            float cosYaw = MathHelper.cos(mc.thePlayer.rotationYaw * (float) Math.PI / 180.0f);
             strafeInput *= inputMagnitude;
             forwardInput *= inputMagnitude;
             return new double[]{strafeInput * cosYaw - forwardInput * sinYaw, forwardInput * cosYaw + strafeInput * sinYaw};
@@ -155,52 +155,52 @@ public class MoveUtil {
     }
 
     public static void fixStrafe(float targetYaw) {
-        float angle = MathHelper.wrapAngleTo180_float(MoveUtil.adjustYaw(MoveUtil.mc.thePlayer.rotationYaw, MoveUtil.getForwardValue(), MoveUtil.getLeftValue()) - targetYaw + 22.5f);
+        float angle = MathHelper.wrapAngleTo180_float(adjustYaw(mc.thePlayer.rotationYaw, getForwardValue(), getLeftValue()) - targetYaw + 22.5f);
         switch ((int) (angle + 180.0f) / 45 % 8) {
             case 0: {
-                MoveUtil.mc.thePlayer.movementInput.moveForward = -1.0f;
-                MoveUtil.mc.thePlayer.movementInput.moveStrafe = 0.0f;
+                mc.thePlayer.movementInput.moveForward = -1.0f;
+                mc.thePlayer.movementInput.moveStrafe = 0.0f;
                 break;
             }
             case 1: {
-                MoveUtil.mc.thePlayer.movementInput.moveForward = -1.0f;
-                MoveUtil.mc.thePlayer.movementInput.moveStrafe = 1.0f;
+                mc.thePlayer.movementInput.moveForward = -1.0f;
+                mc.thePlayer.movementInput.moveStrafe = 1.0f;
                 break;
             }
             case 2: {
-                MoveUtil.mc.thePlayer.movementInput.moveForward = 0.0f;
-                MoveUtil.mc.thePlayer.movementInput.moveStrafe = 1.0f;
+                mc.thePlayer.movementInput.moveForward = 0.0f;
+                mc.thePlayer.movementInput.moveStrafe = 1.0f;
                 break;
             }
             case 3: {
-                MoveUtil.mc.thePlayer.movementInput.moveForward = 1.0f;
-                MoveUtil.mc.thePlayer.movementInput.moveStrafe = 1.0f;
+                mc.thePlayer.movementInput.moveForward = 1.0f;
+                mc.thePlayer.movementInput.moveStrafe = 1.0f;
                 break;
             }
             case 4: {
-                MoveUtil.mc.thePlayer.movementInput.moveForward = 1.0f;
-                MoveUtil.mc.thePlayer.movementInput.moveStrafe = 0.0f;
+                mc.thePlayer.movementInput.moveForward = 1.0f;
+                mc.thePlayer.movementInput.moveStrafe = 0.0f;
                 break;
             }
             case 5: {
-                MoveUtil.mc.thePlayer.movementInput.moveForward = 1.0f;
-                MoveUtil.mc.thePlayer.movementInput.moveStrafe = -1.0f;
+                mc.thePlayer.movementInput.moveForward = 1.0f;
+                mc.thePlayer.movementInput.moveStrafe = -1.0f;
                 break;
             }
             case 6: {
-                MoveUtil.mc.thePlayer.movementInput.moveForward = 0.0f;
-                MoveUtil.mc.thePlayer.movementInput.moveStrafe = -1.0f;
+                mc.thePlayer.movementInput.moveForward = 0.0f;
+                mc.thePlayer.movementInput.moveStrafe = -1.0f;
                 break;
             }
             case 7: {
-                MoveUtil.mc.thePlayer.movementInput.moveForward = -1.0f;
-                MoveUtil.mc.thePlayer.movementInput.moveStrafe = -1.0f;
+                mc.thePlayer.movementInput.moveForward = -1.0f;
+                mc.thePlayer.movementInput.moveStrafe = -1.0f;
                 break;
             }
         }
-        if (MoveUtil.mc.thePlayer.movementInput.sneak) {
-            MoveUtil.mc.thePlayer.movementInput.moveForward *= 0.3f;
-            MoveUtil.mc.thePlayer.movementInput.moveStrafe *= 0.3f;
+        if (mc.thePlayer.movementInput.sneak) {
+            mc.thePlayer.movementInput.moveForward *= 0.3f;
+            mc.thePlayer.movementInput.moveStrafe *= 0.3f;
         }
     }
 }

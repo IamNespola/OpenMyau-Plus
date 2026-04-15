@@ -2,7 +2,7 @@ package myau.command.commands;
 
 import myau.Myau;
 import myau.command.Command;
-import myau.module.modules.ClickGUIModule;
+import myau.module.modules.render.ClickGUIModule;
 import myau.util.ChatUtil;
 
 import java.util.ArrayList;

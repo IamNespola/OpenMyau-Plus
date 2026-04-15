@@ -2,10 +2,10 @@ package myau.mixin;
 
 import myau.Myau;
 import myau.init.Initializer;
+import myau.module.modules.combat.NoHitDelay;
 import myau.event.EventManager;
 import myau.event.types.EventType;
 import myau.events.*;
-import myau.module.modules.NoHitDelay;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.entity.EntityPlayerSP;
 import net.minecraft.client.gui.GuiScreen;

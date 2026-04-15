@@ -42,6 +42,10 @@ public class RenderUtil {
     private static FloatBuffer projectionBuffer;
     private static FloatBuffer vectorBuffer;
     private static Map<Integer, EnchantmentData> enchantmentMap;
+    
+    public static boolean isHovered(float x, float y, float width, float height, int mouseX, int mouseY) {
+        return mouseX >= x && mouseX <= x + width && mouseY >= y && mouseY <= y + height;
+    }
 
     static {
         RenderUtil.mc = Minecraft.getMinecraft();

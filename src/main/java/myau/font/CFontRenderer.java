@@ -30,7 +30,7 @@ public class CFontRenderer extends CFont {
     String nameFontTTF;
 
     public CFontRenderer(String NameFontTTF, float size, int fonttype, boolean antiAlias, boolean fractionalMetrics) {
-        super(getFontFromTTF(new ResourceLocation("client/fonts/" + NameFontTTF+".ttf"), size,fonttype), antiAlias, fractionalMetrics);
+        super(getFontFromTTF(new ResourceLocation("myau/font/" + NameFontTTF+".ttf"), size,fonttype), antiAlias, fractionalMetrics);
         this.nameFontTTF = NameFontTTF;
         this.useMCustomFont = NameFontTTF.equalsIgnoreCase("mc");
         setupMinecraftColorcodes();

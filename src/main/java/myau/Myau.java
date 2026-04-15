@@ -1,23 +1,95 @@
 package myau;
 
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
-import myau.command.CommandManager;
-import myau.command.commands.*;
-import myau.config.Config;
-import myau.event.EventManager;
-import myau.management.*;
-import myau.module.Module;
-import myau.module.ModuleManager;
-import myau.module.modules.*;
-import myau.property.Property;
-import myau.property.PropertyManager;
-
 import java.io.InputStreamReader;
 import java.lang.reflect.Field;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Objects;
+
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
+
+import myau.command.CommandManager;
+import myau.command.commands.BindCommand;
+import myau.command.commands.ClickGuiCommand;
+import myau.command.commands.ConfigCommand;
+import myau.command.commands.DenickCommand;
+import myau.command.commands.FriendCommand;
+import myau.command.commands.HelpCommand;
+import myau.command.commands.HideCommand;
+import myau.command.commands.IgnCommand;
+import myau.command.commands.ItemCommand;
+import myau.command.commands.ListCommand;
+import myau.command.commands.ModuleCommand;
+import myau.command.commands.PlayerCommand;
+import myau.command.commands.ShowCommand;
+import myau.command.commands.TargetCommand;
+import myau.command.commands.ToggleCommand;
+import myau.command.commands.VclipCommand;
+import myau.config.Config;
+import myau.event.EventManager;
+import myau.management.BlinkManager;
+import myau.management.DelayManager;
+import myau.management.FloatManager;
+import myau.management.FriendManager;
+import myau.management.LagManager;
+import myau.management.NotificationManager;
+import myau.management.PlayerStateManager;
+import myau.management.RotationManager;
+import myau.management.TargetManager;
+import myau.module.Module;
+import myau.module.ModuleManager;
+import myau.module.modules.combat.*;
+import myau.module.modules.misc.AntiObbyTrap;
+import myau.module.modules.misc.AntiObfuscate;
+import myau.module.modules.misc.AutoAnduril;
+import myau.module.modules.misc.AutoHypixel;
+import myau.module.modules.misc.BedNuker;
+import myau.module.modules.misc.BedTracker;
+import myau.module.modules.misc.ClientSpoofer;
+import myau.module.modules.misc.Disabler;
+import myau.module.modules.misc.InventoryClicker;
+import myau.module.modules.misc.LightningTracker;
+import myau.module.modules.misc.NickHider;
+import myau.module.modules.misc.NoRotate;
+import myau.module.modules.misc.Spammer;
+import myau.module.modules.movement.AntiAFK;
+import myau.module.modules.movement.AntiVoid;
+import myau.module.modules.movement.Blink;
+import myau.module.modules.movement.Eagle;
+import myau.module.modules.movement.FastBow;
+import myau.module.modules.movement.Fly;
+import myau.module.modules.movement.Jesus;
+import myau.module.modules.movement.KeepSprint;
+import myau.module.modules.movement.LongJump;
+import myau.module.modules.movement.NoFall;
+import myau.module.modules.movement.NoJumpDelay;
+import myau.module.modules.movement.NoSlow;
+import myau.module.modules.movement.SafeWalk;
+import myau.module.modules.movement.Speed;
+import myau.module.modules.movement.Sprint;
+import myau.module.modules.movement.Timer;
+import myau.module.modules.player.AntiDebuff;
+import myau.module.modules.player.AutoBlockIn;
+import myau.module.modules.player.AutoGapple;
+import myau.module.modules.player.AutoHeal;
+import myau.module.modules.player.AutoSwap;
+import myau.module.modules.player.AutoTool;
+import myau.module.modules.player.ChestStealer;
+import myau.module.modules.player.FakeLag;
+import myau.module.modules.player.FastPlace;
+import myau.module.modules.player.FlagDetector;
+import myau.module.modules.player.GhostHand;
+import myau.module.modules.player.InvManager;
+import myau.module.modules.player.InvWalk;
+import myau.module.modules.player.MCF;
+import myau.module.modules.player.Scaffold;
+import myau.module.modules.player.SpeedMine;
+import myau.module.modules.player.ThrowAura;
+import myau.module.modules.render.*;
+import myau.property.Property;
+import myau.property.PropertyManager;
+import myau.util.font.FontManager;
 
 public class Myau {
     public static String clientName = "&7[&cM&6y&ea&au&7z+]&r ";
@@ -40,6 +112,7 @@ public class Myau {
     }
 
     public void init() {
+    	FontManager.initializeFonts();
         rotationManager = new RotationManager();
         floatManager = new FloatManager();
         blinkManager = new BlinkManager();
@@ -92,7 +165,6 @@ public class Myau {
         moduleManager.modules.put(FakeLag.class, new FakeLag());
         moduleManager.modules.put(FullBright.class, new FullBright());
         moduleManager.modules.put(GhostHand.class, new GhostHand());
-        moduleManager.modules.put(GuiModule.class, new GuiModule());
         moduleManager.modules.put(HitSelect.class, new HitSelect());
         moduleManager.modules.put(AutoHypixel.class, new AutoHypixel());
         moduleManager.modules.put(HUD.class, new HUD());

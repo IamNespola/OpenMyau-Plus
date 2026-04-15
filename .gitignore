@@ -1,3 +1,10 @@
+# eclipse ide
+.classpath
+.project
+.settings
+myau_client.launch
+bin/
+
 # Compiled class file
 *.class
 

@@ -1,17 +1,16 @@
 package myau.ui.components;
 
+import java.util.concurrent.atomic.AtomicInteger;
+
+import org.lwjgl.opengl.GL11;
+
 import myau.Myau;
-import myau.module.modules.GuiModule;
-import myau.module.modules.HUD;
+import myau.module.modules.render.ClickGUIModule;
+import myau.module.modules.render.HUD;
 import myau.ui.Component;
 import myau.ui.dataset.BindStage;
 import myau.util.KeyBindUtil;
 import net.minecraft.client.Minecraft;
-import org.lwjgl.input.Keyboard;
-import org.lwjgl.input.Mouse;
-import org.lwjgl.opengl.GL11;
-
-import java.util.concurrent.atomic.AtomicInteger;
 
 public class BindComponent implements Component {
     private boolean isBinding;
@@ -72,7 +71,7 @@ public class BindComponent implements Component {
             }
             
             if (keyCode == 11) { 
-                if (this.parentModule.mod instanceof GuiModule) {
+                if (this.parentModule.mod instanceof ClickGUIModule) {
                     this.parentModule.mod.setKey(54);
                 } else {
                     this.parentModule.mod.setKey(0);

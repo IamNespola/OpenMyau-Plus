@@ -57,7 +57,7 @@ public class ShaderUtil {
 
 
         } catch (IOException e) {
-            e.printStackTrace();
+            //e.printStackTrace();
         }
 
         glLinkProgram(program);
@@ -70,7 +70,7 @@ public class ShaderUtil {
     }
 
     public ShaderUtil(String fragmentShaderLoc) {
-        this(fragmentShaderLoc, "client/shader/vertex.vsh");
+        this(fragmentShaderLoc, "myau/shader/vertex.vsh");
     }
 
     public void init() {
@@ -552,4 +552,6 @@ public class ShaderUtil {
             "\n" +
             "    gl_FragColor = vec4(color, innerAlpha) * step(0.0, -centerAlpha);\n" +
             "}";
+    
+    
 }

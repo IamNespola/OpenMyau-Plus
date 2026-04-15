@@ -1,20 +1,20 @@
 package myau.ui.impl.clickgui.normal;
 
-import myau.Myau;
-import myau.module.Module;
-import myau.module.modules.*;
-import myau.module.modules.Timer;
-import net.minecraft.client.gui.GuiScreen;
-import net.minecraft.client.gui.ScaledResolution;
-import net.minecraft.client.settings.KeyBinding;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
+import java.util.stream.Collectors;
+
 import org.lwjgl.input.Keyboard;
 import org.lwjgl.input.Mouse;
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Comparator;
-import java.util.List;
+import myau.Myau;
+import myau.module.Category;
+import myau.module.Module;
+import net.minecraft.client.gui.GuiScreen;
+import net.minecraft.client.gui.ScaledResolution;
+import net.minecraft.client.settings.KeyBinding;
 
 public class ClickGuiScreen extends GuiScreen {
     private static final double FRICTION = 0.85;
@@ -33,159 +33,29 @@ public class ClickGuiScreen extends GuiScreen {
     public ClickGuiScreen() {
         this.frames = new ArrayList<>();
 
-        List<Module> combatModules = Arrays.asList(
-                Myau.moduleManager.getModule(AimAssist.class),
-                Myau.moduleManager.getModule(AutoClicker.class),
-                Myau.moduleManager.getModule(KillAura.class),
-                Myau.moduleManager.getModule(Wtap.class),
-                Myau.moduleManager.getModule(Velocity.class),
-                Myau.moduleManager.getModule(ServerLag.class),
-                Myau.moduleManager.getModule(Reach.class),
-                Myau.moduleManager.getModule(TargetStrafe.class),
-                Myau.moduleManager.getModule(NoHitDelay.class),
-                Myau.moduleManager.getModule(AntiFireball.class),
-                Myau.moduleManager.getModule(KnockbackDelay.class),
-                Myau.moduleManager.getModule(LagRange.class),
-                Myau.moduleManager.getModule(HitBox.class),
-                Myau.moduleManager.getModule(MoreKB.class),
-                Myau.moduleManager.getModule(Refill.class),
-                Myau.moduleManager.getModule(HitSelect.class),
-                Myau.moduleManager.getModule(BackTrack.class),
-                Myau.moduleManager.getModule(TimerRangev999.class),
-                Myau.moduleManager.getModule(ClickAssits.class),
-                Myau.moduleManager.getModule(Criticals.class),
-                Myau.moduleManager.getModule(BlockHit.class),
-                Myau.moduleManager.getModule(SprintReset.class),
-                Myau.moduleManager.getModule(Displace.class)
-        );
-
-        List<Module> movementModules = Arrays.asList(
-                Myau.moduleManager.getModule(AntiAFK.class),
-                Myau.moduleManager.getModule(Fly.class),
-                Myau.moduleManager.getModule(FastBow.class),
-                Myau.moduleManager.getModule(Timer.class),
-                Myau.moduleManager.getModule(Speed.class),
-                Myau.moduleManager.getModule(LongJump.class),
-                Myau.moduleManager.getModule(Sprint.class),
-                Myau.moduleManager.getModule(SafeWalk.class),
-                Myau.moduleManager.getModule(Jesus.class),
-                Myau.moduleManager.getModule(Blink.class),
-                Myau.moduleManager.getModule(NoFall.class),
-                Myau.moduleManager.getModule(NoSlow.class),
-                Myau.moduleManager.getModule(KeepSprint.class),
-                Myau.moduleManager.getModule(Eagle.class),
-                Myau.moduleManager.getModule(NoJumpDelay.class),
-                Myau.moduleManager.getModule(AntiVoid.class)
-        );
-
-        List<Module> renderModules = Arrays.asList(
-                Myau.moduleManager.getModule(ESP.class),
-                Myau.moduleManager.getModule(Chams.class),
-                Myau.moduleManager.getModule(FullBright.class),
-                Myau.moduleManager.getModule(Tracers.class),
-                Myau.moduleManager.getModule(NameTags.class),
-                Myau.moduleManager.getModule(Xray.class),
-                Myau.moduleManager.getModule(TargetESP.class),
-                Myau.moduleManager.getModule(TargetHUD.class),
-                Myau.moduleManager.getModule(Indicators.class),
-                Myau.moduleManager.getModule(BedESP.class),
-                Myau.moduleManager.getModule(ItemESP.class),
-                Myau.moduleManager.getModule(ViewClip.class),
-                Myau.moduleManager.getModule(NoHurtCam.class),
-                Myau.moduleManager.getModule(HUD.class),
-                Myau.moduleManager.getModule(ChestESP.class),
-                Myau.moduleManager.getModule(Trajectories.class),
-                Myau.moduleManager.getModule(Radar.class),
-                Myau.moduleManager.getModule(FPScounter.class),
-                Myau.moduleManager.getModule(WaterMark.class),
-                Myau.moduleManager.getModule(HitParticleEffects.class),
-                Myau.moduleManager.getModule(DynamicIsland.class),
-                Myau.moduleManager.getModule(ESP2D.class),
-                Myau.moduleManager.getModule(TeamHealthDisplay.class),
-                Myau.moduleManager.getModule(SeasonDisplay.class),
-                Myau.moduleManager.getModule(Animations.class)
-        );
-
-        List<Module> playerModules = Arrays.asList(
-                Myau.moduleManager.getModule(AutoHeal.class),
-                Myau.moduleManager.getModule(FakeLag.class),
-                Myau.moduleManager.getModule(AutoTool.class),
-                Myau.moduleManager.getModule(ChestStealer.class),
-                Myau.moduleManager.getModule(InvManager.class),
-                Myau.moduleManager.getModule(InvWalk.class),
-                Myau.moduleManager.getModule(Scaffold.class),
-                Myau.moduleManager.getModule(AutoBlockIn.class),
-                Myau.moduleManager.getModule(AutoSwap.class),
-                Myau.moduleManager.getModule(SpeedMine.class),
-                Myau.moduleManager.getModule(FastPlace.class),
-                Myau.moduleManager.getModule(GhostHand.class),
-                Myau.moduleManager.getModule(MCF.class),
-                Myau.moduleManager.getModule(AntiDebuff.class),
-                Myau.moduleManager.getModule(FlagDetector.class),
-                Myau.moduleManager.getModule(AutoGapple.class),
-                Myau.moduleManager.getModule(ThrowAura.class)
-        );
-
-        List<Module> miscModules = Arrays.asList(
-                Myau.moduleManager.getModule(Spammer.class),
-                Myau.moduleManager.getModule(BedNuker.class),
-                Myau.moduleManager.getModule(BedTracker.class),
-                Myau.moduleManager.getModule(LightningTracker.class),
-                Myau.moduleManager.getModule(NoRotate.class),
-                Myau.moduleManager.getModule(NickHider.class),
-                Myau.moduleManager.getModule(AntiObbyTrap.class),
-                Myau.moduleManager.getModule(AntiObfuscate.class),
-                Myau.moduleManager.getModule(AutoAnduril.class),
-                Myau.moduleManager.getModule(InventoryClicker.class),
-                Myau.moduleManager.getModule(Disabler.class),
-                Myau.moduleManager.getModule(ClientSpoofer.class),
-                Myau.moduleManager.getModule(AutoHypixel.class)
-        );
-
-        Comparator<Module> comparator = Comparator.comparing(m -> m.getName().toLowerCase());
-        combatModules.sort(comparator);
-        movementModules.sort(comparator);
-        renderModules.sort(comparator);
-        playerModules.sort(comparator);
-        miscModules.sort(comparator);
-
         int currentX = 20;
         int currentY = 20;
         int frameWidth = 110;
         int frameHeight = 24;
 
-        List<Module> combat = new ArrayList<>(combatModules);
-        combat.removeIf(m -> m == null);
-        if (!combat.isEmpty()) {
-            frames.add(new Frame("Combat", combat, currentX, currentY, frameWidth, frameHeight));
-            currentX += (frameWidth + 15);
-        }
+        for (Category category : Category.values()) {
+            List<Module> categoryModules = Myau.moduleManager.modules.values().stream()
+                    .filter(m -> m.getCategory() == category)
+                    .sorted(Comparator.comparing(m -> m.getName().toLowerCase()))
+                    .collect(Collectors.toList());
 
-        List<Module> movement = new ArrayList<>(movementModules);
-        movement.removeIf(m -> m == null);
-        if (!movement.isEmpty()) {
-            frames.add(new Frame("Movement", movement, currentX, currentY, frameWidth, frameHeight));
-            currentX += (frameWidth + 15);
-        }
-
-        List<Module> render = new ArrayList<>(renderModules);
-        render.removeIf(m -> m == null);
-        if (!render.isEmpty()) {
-            frames.add(new Frame("Render", render, currentX, currentY, frameWidth, frameHeight));
-            currentX += (frameWidth + 15);
-        }
-
-        List<Module> player = new ArrayList<>(playerModules);
-        player.removeIf(m -> m == null);
-        if (!player.isEmpty()) {
-            frames.add(new Frame("Player", player, currentX, currentY, frameWidth, frameHeight));
-            currentX += (frameWidth + 15);
-        }
-
-        List<Module> misc = new ArrayList<>(miscModules);
-        misc.removeIf(m -> m == null);
-        if (!misc.isEmpty()) {
-            frames.add(new Frame("Misc", misc, currentX, currentY, frameWidth, frameHeight));
+            if (!categoryModules.isEmpty()) {
+                frames.add(new Frame(
+                    category.getName(), 
+                    categoryModules, 
+                    currentX, 
+                    currentY, 
+                    frameWidth, 
+                    frameHeight
+                ));
+                
+                currentX += (frameWidth + 15);
+            }
         }
     }
 
