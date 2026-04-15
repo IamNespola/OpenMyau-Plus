@@ -11,25 +11,24 @@ Open Myau Plus is an enhanced version of the original OpenMyau client, built wit
 
 ---
 
-# ✨ Features & Improvements
+# Features & Improvements
 
-- Added Click GUI (ported from Raven B3 by blowsy)
 - Various bug fixes and performance improvements
 - Enhanced overall user experience compared to the base version
 
 ---
 
-# 📌 About
+# About
 
 This project is based on OpenMyau, with the goal of refining and extending its capabilities beyond the original implementation.
 
 ---
 
-# 🐛 Issues & Suggestions
+#  Issues & Suggestions
 
 If you encounter any bugs or have ideas for new features, feel free to open an issue:
 
-👉 https://github.com/IamNespola/OpenMyau-Plus/issues
+ https://github.com/IamNespola/OpenMyau-Plus/issues
 
 ---
 
@@ -45,7 +44,7 @@ cd OpenMyau-Plus
 
 ---
 
-# 🤝 Contributing
+#  Contributing
 
 Contributions are welcome! You can:
 
@@ -53,12 +52,12 @@ Contributions are welcome! You can:
 - Submit a pull request
 
 ---
-# ⭐ Support
+#  Support
 
-If you like this project, consider giving it a ⭐ on GitHub — it really helps!
+If you like this project, consider giving it a  on GitHub — it really helps!
 ---
 
-# 📬 Contact
+#  Contact
 
 If you're interested in collaborating or have any questions, feel free to reach out:
 
