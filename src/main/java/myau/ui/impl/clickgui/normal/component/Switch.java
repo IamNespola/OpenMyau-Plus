@@ -3,8 +3,8 @@ package myau.ui.impl.clickgui.normal.component;
 import myau.property.properties.BooleanProperty;
 import myau.ui.impl.clickgui.normal.MaterialTheme;
 import myau.util.AnimationUtil;
-import myau.util.RenderUtil;
 import myau.util.font.FontManager;
+import myau.util.shader.Shader2D;
 
 import java.awt.*;
 
@@ -12,74 +12,70 @@ public class Switch extends Component {
     private final BooleanProperty booleanProperty;
     private float toggleAnim;
 
-    public Switch(BooleanProperty booleanProperty, int x, int y, int width, int height) {
+    public BooleanProperty getProperty() {
+		return booleanProperty;
+	}
+
+	public Switch(BooleanProperty booleanProperty, int x, int y, int width, int height) {
         super(x, y, width, height);
         this.booleanProperty = booleanProperty;
         this.toggleAnim = booleanProperty.getValue() ? 1.0f : 0.0f;
     }
 
-    public BooleanProperty getProperty() {
-        return this.booleanProperty;
-    }
+	@Override
+	public void render(int mouseX, int mouseY, float partialTicks, float animationProgress, boolean isLast, int scrollOffset, float deltaTime) {
+	    if (!booleanProperty.isVisible()) return;
+
+	    int scrolledY = y - scrollOffset;
+	    int alpha = (int) (255 * animationProgress);
+	    if (alpha < 5) return;
+
+	    float target = booleanProperty.getValue() ? 1.0f : 0.0f;
+	    this.toggleAnim = AnimationUtil.animateSmooth(target, this.toggleAnim, 14.0f, deltaTime);
+
+	    if (FontManager.productSans16 != null) {
+	        int textColor = MaterialTheme.getRGBWithAlpha(MaterialTheme.TEXT_COLOR, alpha);
+	        float textY = (float) (scrolledY + (height - FontManager.productSans16.getHeight()) / 2f);
+	        FontManager.productSans16.drawString(booleanProperty.getName(), x + 4, textY, textColor);
+	    }
+
+	    float switchW = 18;
+	    float switchH = 9;
+	    
+	    float rightPadding = 5; 
+	    float switchX = (x + width) - switchW - rightPadding;
+	    float switchY = scrolledY + (height - switchH) / 2f;
+
+	    Color disabledColor = new Color(55, 55, 60, alpha);
+	    Color enabledColor = new Color(MaterialTheme.getRGBWithAlpha(MaterialTheme.PRIMARY_COLOR, alpha));
+	    int backgroundRGB = AnimationUtil.interpolateColor(disabledColor.getRGB(), enabledColor.getRGB(), toggleAnim);
+	    
+	    Shader2D.drawRoundedRect(switchX, switchY, switchW, switchH, switchH / 2f, new Color(backgroundRGB, true));
+
+	    float knobSize = switchH + 2f; 
+
+	    float maxTravel = switchW - knobSize + 2f;
+	    float knobX = (switchX - 1f) + (toggleAnim * maxTravel);
+	    float knobY = switchY + (switchH / 2f) - (knobSize / 2f);
+
+	    Shader2D.drawRoundedRect(knobX, knobY, knobSize, knobSize, knobSize / 2f, new Color(255, 255, 255, alpha));
+	}
 
     @Override
-    public void render(int mouseX, int mouseY, float partialTicks, float animationProgress, boolean isLast, int scrollOffset, float deltaTime) {
-        if (!booleanProperty.isVisible()) {
-            return;
-        }
-
-        int scrolledY = y - scrollOffset;
-        int alpha = (int) (255 * animationProgress);
-        float target = booleanProperty.getValue() ? 1.0f : 0.0f;
-        this.toggleAnim = AnimationUtil.animateSmooth(target, this.toggleAnim, 15.0f, deltaTime);
-        int textColor = MaterialTheme.getRGBWithAlpha(MaterialTheme.TEXT_COLOR, alpha);
-
-        float textY = scrolledY + (height - 8) / 2f;
-        if (FontManager.productSans16 != null) {
-            FontManager.productSans16.drawString(booleanProperty.getName(), x + 2, textY, textColor);
-        } else {
-            mc.fontRendererObj.drawStringWithShadow(booleanProperty.getName(), x + 2, scrolledY + 6, textColor);
-        }
-
-        int switchW = 22;
-        int switchH = 12;
-        int switchX = x + width - switchW - 2;
-        int switchY = scrolledY + (height - switchH) / 2;
-
-        int disabledColor = new Color(60, 60, 65).getRGB();
-        int enabledColor = MaterialTheme.getRGB(MaterialTheme.PRIMARY_COLOR);
-
-        int switchColor = AnimationUtil.interpolateColor(disabledColor, enabledColor, toggleAnim);
-
-        if (alpha < 255) {
-            Color c = new Color(switchColor);
-            switchColor = new Color(c.getRed(), c.getGreen(), c.getBlue(), alpha).getRGB();
-        }
-
-        int knobX = switchX + (int) (toggleAnim * (switchW - switchH));
-        RenderUtil.drawRoundedRect(switchX, switchY, switchW, switchH, switchH / 2f, switchColor, true, true, true, true);
-        RenderUtil.drawRoundedRect(knobX, switchY + 1, switchH - 2, switchH - 2, (switchH - 2) / 2f, -1, true, true, true, true);
-    }
-
-    @Override
-    public boolean mouseClicked(int mouseX, int mouseY, int mouseButton) {
-        return false;
-    }
-
     public boolean mouseClicked(int mouseX, int mouseY, int mouseButton, int scrollOffset) {
+        if (!booleanProperty.isVisible()) return false;
+        
         int scrolledY = y - scrollOffset;
         if (mouseX >= x && mouseX <= x + width && mouseY >= scrolledY && mouseY <= scrolledY + height) {
-            booleanProperty.setValue(!booleanProperty.getValue());
-            return true;
+            if (mouseButton == 0) {
+                booleanProperty.setValue(!booleanProperty.getValue());
+                return true;
+            }
         }
         return false;
     }
 
-    @Override
-    public void mouseReleased(int mouseX, int mouseY, int mouseButton) {
-    }
-
-    @Override
-    public void keyTyped(char typedChar, int keyCode) {
-    }
+    @Override public boolean mouseClicked(int mx, int my, int mb) { return false; }
+    @Override public void mouseReleased(int mx, int my, int mb) {}
+    @Override public void keyTyped(char tc, int kc) {}
 }

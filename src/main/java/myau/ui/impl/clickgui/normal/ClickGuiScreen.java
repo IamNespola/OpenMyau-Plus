@@ -13,62 +13,45 @@ import myau.Myau;
 import myau.module.Category;
 import myau.module.Module;
 import net.minecraft.client.gui.GuiScreen;
-import net.minecraft.client.gui.ScaledResolution;
-import net.minecraft.client.settings.KeyBinding;
 
 public class ClickGuiScreen extends GuiScreen {
-    private static final double FRICTION = 0.85;
-    private static final double SNAP_STRENGTH = 0.15;
     private static final long ANIMATION_DURATION = 250L;
     private static ClickGuiScreen instance;
+    
     private final ArrayList<Frame> frames;
-    private Frame draggingComponent = null;
-    private int scrollY = 0;
-    private int targetScrollY = 0;
-    private double velocity = 0;
+    private Frame draggingFrame = null;
+    private float dragX, dragY;
+    
     private boolean isClosing = false;
     private long openTime = 0L;
     private long lastFrameTime;
 
     public ClickGuiScreen() {
         this.frames = new ArrayList<>();
-
         int currentX = 20;
         int currentY = 20;
         int frameWidth = 110;
-        int frameHeight = 24;
+        int headerHeight = 24;
 
         for (Category category : Category.values()) {
-            List<Module> categoryModules = Myau.moduleManager.modules.values().stream()
+            List<Module> modules = Myau.moduleManager.modules.values().stream()
                     .filter(m -> m.getCategory() == category)
                     .sorted(Comparator.comparing(m -> m.getName().toLowerCase()))
                     .collect(Collectors.toList());
 
-            if (!categoryModules.isEmpty()) {
-                frames.add(new Frame(
-                    category.getName(), 
-                    categoryModules, 
-                    currentX, 
-                    currentY, 
-                    frameWidth, 
-                    frameHeight
-                ));
-                
+            if (!modules.isEmpty()) {
+                frames.add(new Frame(category.getName(), modules, currentX, currentY, frameWidth, headerHeight));
                 currentX += (frameWidth + 15);
             }
         }
     }
 
     public static ClickGuiScreen getInstance() {
-        if (instance == null) {
-            instance = new ClickGuiScreen();
-        }
+        if (instance == null) instance = new ClickGuiScreen();
         return instance;
     }
 
-    public static void resetInstance() {
-        instance = null;
-    }
+    public static void resetInstance() { instance = null; }
 
     @Override
     public void initGui() {
@@ -76,9 +59,6 @@ public class ClickGuiScreen extends GuiScreen {
         this.isClosing = false;
         this.openTime = System.currentTimeMillis();
         this.lastFrameTime = System.nanoTime();
-        this.scrollY = 0;
-        this.targetScrollY = 0;
-        this.velocity = 0;
     }
 
     public void close() {
@@ -92,146 +72,114 @@ public class ClickGuiScreen extends GuiScreen {
         long currentFrameTime = System.nanoTime();
         float deltaTime = (currentFrameTime - lastFrameTime) / 1_000_000_000.0f;
         lastFrameTime = currentFrameTime;
-        updateScroll();
+
         long elapsedTime = System.currentTimeMillis() - openTime;
         if (isClosing && elapsedTime > ANIMATION_DURATION) {
             mc.displayGuiScreen(null);
             return;
         }
-        float screenAlpha = isClosing ? (1.0f - Math.min(1.0f, (float) elapsedTime / ANIMATION_DURATION)) : Math.min(1.0f, (float) elapsedTime / ANIMATION_DURATION);
-        screenAlpha = (float) (1.0 - Math.pow(1.0 - screenAlpha, 3));
-        if (screenAlpha > 0.01f) {
+
+        float alpha = isClosing ? 
+            (1.0f - Math.min(1.0f, (float) elapsedTime / ANIMATION_DURATION)) : 
+            Math.min(1.0f, (float) elapsedTime / ANIMATION_DURATION);
+        alpha = (float) (1.0 - Math.pow(1.0 - alpha, 3));
+
+        if (draggingFrame != null) {
+            draggingFrame.setX(mouseX - (int) dragX);
+            draggingFrame.setY(mouseY - (int) dragY);
+        }
+
+        if (alpha > 0.01f) {
             for (Frame frame : frames) {
-                frame.render(mouseX, mouseY, partialTicks, screenAlpha, false, scrollY, deltaTime);
+                frame.render(mouseX, mouseY, partialTicks, alpha, false, 0, deltaTime);
             }
         }
-        try {
-            Module invWalkModule = Myau.moduleManager.getModule("InvWalk");
-            if (invWalkModule != null && invWalkModule.isEnabled()) {
-                handleInvWalk();
-            }
-        } catch (Exception ignored) {
-        }
+
         super.drawScreen(mouseX, mouseY, partialTicks);
-    }
-
-    private void handleInvWalk() {
-        KeyBinding[] keys = {
-                mc.gameSettings.keyBindForward, mc.gameSettings.keyBindBack,
-                mc.gameSettings.keyBindLeft, mc.gameSettings.keyBindRight,
-                mc.gameSettings.keyBindJump, mc.gameSettings.keyBindSprint,
-                mc.gameSettings.keyBindSneak
-        };
-        for (KeyBinding key : keys) {
-            KeyBinding.setKeyBindState(key.getKeyCode(), Keyboard.isKeyDown(key.getKeyCode()));
-        }
-    }
-
-    @Override
-    public void handleMouseInput() throws IOException {
-        if (isClosing) return;
-        super.handleMouseInput();
-        int wheel = Mouse.getEventDWheel();
-        if (wheel != 0) {
-            velocity += wheel > 0 ? -30 : 30;
-        }
     }
 
     @Override
     protected void mouseClicked(int mouseX, int mouseY, int mouseButton) throws IOException {
-        if (isClosing) return;
-        super.mouseClicked(mouseX, mouseY, mouseButton);
+        if (System.currentTimeMillis() - openTime < 100 || isClosing) return;
+
         for (int i = frames.size() - 1; i >= 0; i--) {
             Frame frame = frames.get(i);
-            if (frame.mouseClicked(mouseX, mouseY, mouseButton, scrollY)) {
-                draggingComponent = frame;
-                frames.remove(i);
-                frames.add(frame);
+            
+            if (mouseX >= frame.getX() && mouseX <= frame.getX() + frame.getWidth() && 
+                mouseY >= frame.getY() && mouseY <= frame.getY() + 24) {
+                if (mouseButton == 0) {
+                    draggingFrame = frame;
+                    dragX = mouseX - frame.getX();
+                    dragY = mouseY - frame.getY();
+                    frames.remove(i);
+                    frames.add(frame);
+                    return;
+                }
+            }
+
+            if (frame.mouseClicked(mouseX, mouseY, mouseButton, 0)) {
                 return;
+            }
+        }
+        super.mouseClicked(mouseX, mouseY, mouseButton);
+    }
+
+    @Override
+    public void handleMouseInput() throws IOException {
+        super.handleMouseInput();
+        int wheel = Mouse.getEventDWheel();
+        if (wheel != 0) {
+            int mouseX = Mouse.getEventX() * this.width / this.mc.displayWidth;
+            int mouseY = this.height - Mouse.getEventY() * this.height / this.mc.displayHeight - 1;
+
+            for (Frame frame : frames) {
+                if (mouseX >= frame.getX() && mouseX <= frame.getX() + frame.getWidth() &&
+                    mouseY >= frame.getY() && mouseY <= frame.getY() + frame.getCurrentHeight()) {
+                    
+                    frame.handleScroll(wheel);
+                    break; 
+                }
             }
         }
     }
 
     @Override
     protected void mouseReleased(int mouseX, int mouseY, int state) {
-        if (isClosing) return;
-        super.mouseReleased(mouseX, mouseY, state);
-        if (draggingComponent != null) {
-            draggingComponent.mouseReleased(mouseX, mouseY, state, scrollY);
-            draggingComponent = null;
-        }
+        draggingFrame = null;
         for (Frame frame : frames) {
-            frame.mouseReleased(mouseX, mouseY, state, scrollY);
+            frame.mouseReleased(mouseX, mouseY, state, 0);
         }
-    }
-
-    @Override
-    protected void mouseClickMove(int mouseX, int mouseY, int clickedMouseButton, long timeSinceLastClick) {
-        if (isClosing) return;
-        super.mouseClickMove(mouseX, mouseY, clickedMouseButton, timeSinceLastClick);
-        if (draggingComponent != null) {
-            draggingComponent.updatePosition(mouseX, mouseY);
-        }
+        super.mouseReleased(mouseX, mouseY, state);
     }
 
     @Override
     protected void keyTyped(char typedChar, int keyCode) throws IOException {
-        if (isClosing) return;
-        if (System.currentTimeMillis() - this.openTime < 100) return;
-        boolean isBindingKey = false;
-        for (Frame frame : frames) {
-            if (frame.isAnyComponentBinding()) {
-                isBindingKey = true;
-                break;
-            }
-        }
-        if (isBindingKey) {
-            for (Frame frame : frames) {
-                frame.keyTyped(typedChar, keyCode);
-            }
+        if (System.currentTimeMillis() - openTime < 100 || isClosing) return;
+
+        if (frames.stream().anyMatch(Frame::isAnyComponentBinding)) {
+            for (Frame frame : frames) frame.keyTyped(typedChar, keyCode);
             return;
         }
-        Module clickGUIModule = Myau.moduleManager.getModule("ClickGUI");
-        if (keyCode == Keyboard.KEY_ESCAPE || (clickGUIModule != null && keyCode == clickGUIModule.getKey())) {
+
+        Module clickGuiModule = Myau.moduleManager.getModule("ClickGUI");
+        int bind = (clickGuiModule != null) ? clickGuiModule.getKey() : Keyboard.KEY_RSHIFT;
+
+        if (keyCode == Keyboard.KEY_ESCAPE || keyCode == bind) {
             close();
             return;
         }
-        for (Frame frame : frames) {
-            frame.keyTyped(typedChar, keyCode);
-        }
+        
+        for (Frame frame : frames) frame.keyTyped(typedChar, keyCode);
     }
 
     @Override
-    public boolean doesGuiPauseGame() {
-        return false;
-    }
-
-    private void updateScroll() {
-        targetScrollY += (int) velocity;
-        velocity *= FRICTION;
-        int maxScroll = getMaxScroll();
-        targetScrollY = Math.max(0, Math.min(targetScrollY, maxScroll));
-        int delta = targetScrollY - scrollY;
-        scrollY += (int) (delta * SNAP_STRENGTH);
-        if (Math.abs(velocity) < 0.5) velocity = 0;
-        if (Math.abs(delta) < 1 && Math.abs(velocity) < 0.5) scrollY = targetScrollY;
-    }
-
-    private int getMaxScroll() {
-        int max = 0;
-        for (Frame frame : frames) {
-            int bottom = frame.getY() + (int) frame.getCurrentHeight();
-            if (bottom > max) max = bottom;
-        }
-        ScaledResolution sr = new ScaledResolution(mc);
-        return Math.max(0, max - sr.getScaledHeight() + 20);
-    }
+    public boolean doesGuiPauseGame() { return false; }
 
     @Override
     public void onGuiClosed() {
         super.onGuiClosed();
         Module guiModule = Myau.moduleManager.getModule("ClickGUI");
-        if (guiModule != null) {
+        if (guiModule != null && guiModule.isEnabled()) {
             guiModule.setEnabled(false);
         }
     }

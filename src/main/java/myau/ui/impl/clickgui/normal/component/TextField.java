@@ -2,8 +2,8 @@ package myau.ui.impl.clickgui.normal.component;
 
 import myau.property.properties.TextProperty;
 import myau.ui.impl.clickgui.normal.MaterialTheme;
-import myau.util.RenderUtil;
 import myau.util.font.FontManager;
+import myau.util.shader.Shader2D;
 import org.lwjgl.input.Keyboard;
 
 import java.awt.*;
@@ -23,78 +23,56 @@ public class TextField extends Component {
         this.cursorPos = currentText.length();
     }
 
-    public TextProperty getProperty() {
-        return this.textProperty;
-    }
-
     @Override
     public void render(int mouseX, int mouseY, float partialTicks, float animationProgress, boolean isLast, int scrollOffset, float deltaTime) {
-        if (!textProperty.isVisible()) {
-            return;
-        }
+        if (!textProperty.isVisible()) return;
 
         int scrolledY = y - scrollOffset;
         int alpha = (int) (255 * animationProgress);
-        int bgColor = new Color(30, 30, 35, alpha).getRGB();
-        int borderColor = focused ? MaterialTheme.getRGBWithAlpha(MaterialTheme.PRIMARY_COLOR, alpha) :
-                new Color(60, 60, 65).getRGB();
+        if (alpha < 5) return;
 
-        RenderUtil.drawRoundedRect(x + 2, scrolledY, width - 4, height, 4.0f, bgColor, true, true, true, true);
-        RenderUtil.drawRoundedRectOutline(x + 2, scrolledY, width - 4, height, 4.0f, 1.0f, borderColor, true, true, true, true);
+        Color bgColor = new Color(25, 25, 30, alpha);
 
-        if (animationProgress > 0.5f) {
-            if (focused) {
-                long currentTime = System.currentTimeMillis();
-                if (currentTime - lastCursorToggle > 500) {
-                    cursorVisible = !cursorVisible;
-                    lastCursorToggle = currentTime;
-                }
-            }
+        Shader2D.drawRoundedRect(x + 2, scrolledY + 2, width - 4, height - 4, 3.0f, bgColor);
 
-            String displayText = currentText.isEmpty() ? textProperty.getName() : currentText;
-            int textColor = currentText.isEmpty() ? new Color(120, 120, 120).getRGB() :
-                    MaterialTheme.getRGBWithAlpha(MaterialTheme.TEXT_COLOR, alpha);
-
-            float textY = scrolledY + (height - 8) / 2f;
-            if (FontManager.productSans16 != null) {
-                float textX = x + 6;
-
-                FontManager.productSans16.drawString(displayText, textX, textY, textColor);
-
-                if (focused && cursorVisible) {
-                    float cursorX = textX + (float) FontManager.productSans16.getStringWidth(displayText.substring(0, Math.min(cursorPos, displayText.length())));
-                    RenderUtil.drawLine(cursorX, textY, cursorX, textY + 10, 1.0f, textColor);
-                }
-            } else {
-                float textX = x + 6;
-                mc.fontRendererObj.drawStringWithShadow(displayText, textX, textY, textColor);
-
-                if (focused && cursorVisible) {
-                    float cursorX = textX + mc.fontRendererObj.getStringWidth(displayText.substring(0, Math.min(cursorPos, displayText.length())));
-                    RenderUtil.drawLine(cursorX, textY, cursorX, textY + 10, 1.0f, textColor);
-                }
+        if (focused) {
+            if (System.currentTimeMillis() - lastCursorToggle > 500) {
+                cursorVisible = !cursorVisible;
+                lastCursorToggle = System.currentTimeMillis();
             }
         }
-    }
 
-    @Override
-    public boolean mouseClicked(int mouseX, int mouseY, int mouseButton) {
-        return false;
+        float textX = x + 6;
+        float textY = (float) (scrolledY + (height - FontManager.productSans16.getHeight()) / 2f);
+        
+        if (currentText.isEmpty() && !focused) {
+            FontManager.productSans16.drawString(textProperty.getName(), textX, textY, new Color(100, 100, 105, alpha).getRGB());
+        } else {
+            FontManager.productSans16.drawString(currentText, textX, textY, MaterialTheme.getRGBWithAlpha(MaterialTheme.TEXT_COLOR, alpha));
+
+            if (focused && cursorVisible) {
+                float cursorOffset = (float) FontManager.productSans16.getStringWidth(currentText.substring(0, Math.min(cursorPos, currentText.length())));
+                float cursorWidth = 1.0f;
+                float cursorHeight = 10.0f;
+                
+                Shader2D.drawRoundedRect(textX + cursorOffset, textY + 1, cursorWidth, cursorHeight, 0.5f, 
+                        new Color(MaterialTheme.getRGBWithAlpha(MaterialTheme.PRIMARY_COLOR, alpha)));
+            }
+        }
     }
 
     @Override
     public boolean mouseClicked(int mouseX, int mouseY, int mouseButton, int scrollOffset) {
         int scrolledY = y - scrollOffset;
+        boolean hovered = mouseX >= x && mouseX <= x + width && mouseY >= scrolledY && mouseY <= scrolledY + height;
 
-        if (mouseX >= x && mouseX <= x + width && mouseY >= scrolledY && mouseY <= scrolledY + height) {
-            if (mouseButton == 0) {
-                focused = true;
-                cursorPos = currentText.length();
-                cursorVisible = true;
-                lastCursorToggle = System.currentTimeMillis();
-                return true;
-            }
-        } else {
+        if (hovered && mouseButton == 0) {
+            focused = true;
+            cursorPos = currentText.length();
+            cursorVisible = true;
+            lastCursorToggle = System.currentTimeMillis();
+            return true;
+        } else if (mouseButton == 0) {
             if (focused) {
                 textProperty.setValue(currentText);
                 focused = false;
@@ -107,40 +85,49 @@ public class TextField extends Component {
     public void keyTyped(char typedChar, int keyCode) {
         if (!focused) return;
 
-        if (keyCode == Keyboard.KEY_BACK) {
-            if (cursorPos > 0 && currentText.length() > 0) {
-                currentText = currentText.substring(0, cursorPos - 1) + currentText.substring(cursorPos);
-                cursorPos--;
-            }
-        } else if (keyCode == Keyboard.KEY_DELETE) {
-            if (cursorPos < currentText.length()) {
-                currentText = currentText.substring(0, cursorPos) + currentText.substring(cursorPos + 1);
-            }
-        } else if (keyCode == Keyboard.KEY_LEFT) {
-            if (cursorPos > 0) {
-                cursorPos--;
-            }
-        } else if (keyCode == Keyboard.KEY_RIGHT) {
-            if (cursorPos < currentText.length()) {
-                cursorPos++;
-            }
-        } else if (keyCode == Keyboard.KEY_HOME) {
-            cursorPos = 0;
-        } else if (keyCode == Keyboard.KEY_END) {
-            cursorPos = currentText.length();
-        } else if (typedChar != '\0' && !Character.isISOControl(typedChar)) {
-            currentText = currentText.substring(0, cursorPos) + typedChar + currentText.substring(cursorPos);
-            cursorPos++;
+        switch (keyCode) {
+            case Keyboard.KEY_ESCAPE:
+            case Keyboard.KEY_RETURN:
+                textProperty.setValue(currentText);
+                focused = false;
+                break;
+            case Keyboard.KEY_BACK:
+                if (cursorPos > 0 && currentText.length() > 0) {
+                    currentText = currentText.substring(0, cursorPos - 1) + currentText.substring(cursorPos);
+                    cursorPos--;
+                }
+                break;
+            case Keyboard.KEY_DELETE:
+                if (cursorPos < currentText.length()) {
+                    currentText = currentText.substring(0, cursorPos) + currentText.substring(cursorPos + 1);
+                }
+                break;
+            case Keyboard.KEY_LEFT:
+                if (cursorPos > 0) cursorPos--;
+                break;
+            case Keyboard.KEY_RIGHT:
+                if (cursorPos < currentText.length()) cursorPos++;
+                break;
+            default:
+                if (typedChar != '\0' && !Character.isISOControl(typedChar)) {
+                    if (FontManager.productSans16.getStringWidth(currentText + typedChar) < width - 15) {
+                        currentText = currentText.substring(0, cursorPos) + typedChar + currentText.substring(cursorPos);
+                        cursorPos++;
+                    }
+                }
+                break;
         }
-
+        
         textProperty.setValue(currentText);
+        cursorVisible = true;
+        lastCursorToggle = System.currentTimeMillis();
     }
 
-    @Override
-    public void mouseReleased(int mouseX, int mouseY, int mouseButton) {
-    }
+    public TextProperty getProperty() {
+		return textProperty;
+	}
 
-    @Override
-    public void mouseReleased(int mouseX, int mouseY, int mouseButton, int scrollOffset) {
-    }
+	@Override public boolean mouseClicked(int mx, int my, int mb) { return false; }
+    @Override public void mouseReleased(int mx, int my, int mb) {}
+    @Override public void mouseReleased(int mx, int my, int mb, int so) {}
 }

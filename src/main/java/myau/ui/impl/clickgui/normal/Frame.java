@@ -23,6 +23,10 @@ public class Frame extends Component {
     @Getter
     private float currentHeight;
 
+    private float scrollY = 0;
+    private float targetScrollY = 0;
+    private final int MAX_VISIBLE_HEIGHT = 280;
+
     public Frame(String categoryName, List<Module> modules, int x, int y, int width, int height) {
         super(x, y, width, height);
         this.categoryName = categoryName;
@@ -31,7 +35,13 @@ public class Frame extends Component {
         this.moduleEntries = new ArrayList<>();
         this.currentHeight = height;
         for (Module module : modules) {
-            this.moduleEntries.add(new ModuleEntry(module, x, 0, width, 22));
+            this.moduleEntries.add(new ModuleEntry(module, x, 0, width, 22, y));
+        }
+    }
+
+    public void handleScroll(int wheel) {
+        if (expanded) {
+            this.targetScrollY += (wheel > 0 ? -35 : 35);
         }
     }
 
@@ -47,12 +57,16 @@ public class Frame extends Component {
     @Override
     public void render(int mouseX, int mouseY, float partialTicks, float animationProgress, boolean isLast, int scrollOffset, float deltaTime) {
         float headerHeight = this.height;
-        float listHeight = 0;
+        float totalListHeight = 0;
         for (ModuleEntry entry : moduleEntries) {
-            listHeight += entry.getCurrentHeight();
+            totalListHeight += entry.getCurrentHeight();
         }
 
-        this.currentHeight = expanded ? (headerHeight + listHeight) : headerHeight;
+        this.currentHeight = expanded ? Math.min(headerHeight + totalListHeight, MAX_VISIBLE_HEIGHT) : headerHeight;
+
+        float maxScroll = Math.max(0, totalListHeight - (MAX_VISIBLE_HEIGHT - headerHeight));
+        targetScrollY = Math.max(0, Math.min(targetScrollY, maxScroll));
+        scrollY += (targetScrollY - scrollY) * 0.15f;
 
         int scrolledY = y - scrollOffset;
         int alpha = (int) (255 * animationProgress);
@@ -62,22 +76,32 @@ public class Frame extends Component {
         
         boolean shadowEnabled = clickGUIModule != null && clickGUIModule.shadow.getValue();
         if (shadowEnabled) {
-            int shadowAlpha = Math.min(120, (int) (alpha * 0.5));
-            Color shadowColor = new Color(0, 0, 0, shadowAlpha);
-            ShadowShader.drawShadow(x, scrolledY, width, currentHeight, MaterialTheme.CORNER_RADIUS_FRAME, 12.0f, shadowColor.getRGB());
+            ShadowShader.drawShadow(x, scrolledY, width, currentHeight, MaterialTheme.CORNER_RADIUS_FRAME, 12.0f, new Color(0, 0, 0, (int)(alpha * 0.45)).getRGB());
         }
 
         float radius = MaterialTheme.CORNER_RADIUS_FRAME;
-        Color headerColor = new Color(15, 15, 15, alpha);
-        
         Shader2D.drawRoundedRect(x, scrolledY, width, currentHeight, radius, new Color(20, 20, 20, alpha));
 
         if (expanded) {
             float contentH = currentHeight - headerHeight;
-            Color listBgColor = new Color(28, 28, 28, alpha);
-            Shader2D.drawRoundedRect(x, scrolledY + headerHeight, width, contentH, radius, listBgColor);
-            
+            Shader2D.drawRoundedRect(x, scrolledY + headerHeight, width, contentH, radius, new Color(28, 28, 28, alpha));
             Shader2D.drawRoundedRect(x, scrolledY + headerHeight - 1, width, 1, 0, new Color(255, 255, 255, (int)(alpha * 0.1)));
+
+            RenderUtil.scissor(x, scrolledY + (int)headerHeight, width, (int)contentH);
+            
+            float currentModuleY = scrolledY + headerHeight - scrollY;
+            for (int i = 0; i < moduleEntries.size(); i++) {
+                ModuleEntry entry = moduleEntries.get(i);
+                entry.setX(x);
+                entry.setY((int) currentModuleY);
+                entry.setWidth(width);
+                
+                if (currentModuleY + entry.getCurrentHeight() > scrolledY + headerHeight && currentModuleY < scrolledY + currentHeight) {
+                    entry.render(mouseX, mouseY, partialTicks, animationProgress, i == moduleEntries.size() - 1, 0, deltaTime);
+                }
+                currentModuleY += entry.getCurrentHeight();
+            }
+            RenderUtil.releaseScissor();
         }
 
         int textColor = new Color(255, 255, 255, alpha).getRGB();
@@ -88,33 +112,12 @@ public class Frame extends Component {
             String displayArrow = expanded ? "-" : "+";
             float arrowW = (float) FontManager.productSans20.getStringWidth(displayArrow);
             FontManager.productSans20.drawString(displayArrow, x + width - arrowW - 8, textY, textColor);
-        } else {
-            mc.fontRendererObj.drawStringWithShadow(categoryName, x + 6, scrolledY + 6, textColor);
-        }
-
-        if (expanded) {
-            RenderUtil.scissor(x, scrolledY + (int)headerHeight, width, (int)(currentHeight - headerHeight));
-            int currentModuleY = y + (int) headerHeight;
-            for (int i = 0; i < moduleEntries.size(); i++) {
-                ModuleEntry entry = moduleEntries.get(i);
-                entry.setX(x);
-                entry.setY(currentModuleY);
-                entry.setWidth(width);
-                entry.render(mouseX, mouseY, partialTicks, animationProgress, i == moduleEntries.size() - 1, scrollOffset, deltaTime);
-                currentModuleY += (int) entry.getCurrentHeight();
-            }
-            RenderUtil.releaseScissor();
         }
     }
 
     @Override
     public void render(int mouseX, int mouseY, float partialTicks, float animationProgress, boolean isLast, int scrollOffset) {
         render(mouseX, mouseY, partialTicks, animationProgress, isLast, scrollOffset, 0.016f);
-    }
-
-    @Override
-    public boolean mouseClicked(int mouseX, int mouseY, int mouseButton) {
-        return mouseClicked(mouseX, mouseY, mouseButton, 0);
     }
 
     @Override
@@ -127,23 +130,40 @@ public class Frame extends Component {
                 return true;
             } else if (mouseButton == 1) {
                 expanded = !expanded;
+                if (!expanded) {
+                    targetScrollY = 0;
+                    scrollY = 0;
+                }
                 return true;
             }
         }
+        
         if (expanded) {
-            if (currentHeight <= height) return false;
-            for (ModuleEntry entry : moduleEntries) {
-                if (entry.mouseClicked(mouseX, mouseY, mouseButton, scrollOffset)) {
-                    return true;
+            int scrolledY = this.y - scrollOffset;
+            if (mouseX >= x && mouseX <= x + width && mouseY >= scrolledY + height && mouseY <= scrolledY + currentHeight) {
+                for (ModuleEntry entry : moduleEntries) {
+                    if (entry.mouseClicked(mouseX, mouseY, mouseButton, 0)) {
+                        return true;
+                    }
                 }
             }
         }
         return false;
     }
 
-    public boolean isMouseOverHeader(int mouseX, int mouseY, int scrollOffset) {
-        int actualY = this.y - scrollOffset;
-        return mouseX >= x && mouseX <= x + width && mouseY >= actualY && mouseY <= actualY + height;
+    @Override
+    public boolean mouseClicked(int mouseX, int mouseY, int mouseButton) {
+        return mouseClicked(mouseX, mouseY, mouseButton, 0);
+    }
+
+    @Override
+    public void mouseReleased(int mouseX, int mouseY, int mouseButton, int scrollOffset) {
+        this.dragging = false;
+        if (expanded) {
+            for (ModuleEntry entry : moduleEntries) {
+                entry.mouseReleased(mouseX, mouseY, mouseButton, 0);
+            }
+        }
     }
 
     @Override
@@ -152,28 +172,23 @@ public class Frame extends Component {
     }
 
     @Override
-    public void mouseReleased(int mouseX, int mouseY, int mouseButton, int scrollOffset) {
-        this.dragging = false;
+    public void keyTyped(char typedChar, int keyCode) {
         if (expanded) {
             for (ModuleEntry entry : moduleEntries) {
-                entry.mouseReleased(mouseX, mouseY, mouseButton, scrollOffset);
+                entry.keyTyped(typedChar, keyCode);
             }
         }
+    }
+
+    public boolean isMouseOverHeader(int mouseX, int mouseY, int scrollOffset) {
+        int actualY = this.y - scrollOffset;
+        return mouseX >= x && mouseX <= x + width && mouseY >= actualY && mouseY <= actualY + height;
     }
 
     public void updatePosition(int mouseX, int mouseY) {
         if (this.dragging) {
             this.x = mouseX - this.dragX;
             this.y = mouseY - this.dragY;
-        }
-    }
-
-    @Override
-    public void keyTyped(char typedChar, int keyCode) {
-        if (expanded) {
-            for (ModuleEntry entry : moduleEntries) {
-                entry.keyTyped(typedChar, keyCode);
-            }
         }
     }
 }
