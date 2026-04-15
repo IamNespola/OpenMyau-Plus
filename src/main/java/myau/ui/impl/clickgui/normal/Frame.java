@@ -1,5 +1,9 @@
 package myau.ui.impl.clickgui.normal;
 
+import java.awt.Color;
+import java.util.ArrayList;
+import java.util.List;
+
 import lombok.Getter;
 import myau.module.Module;
 import myau.module.modules.render.ClickGUIModule;
@@ -8,11 +12,6 @@ import myau.ui.impl.clickgui.normal.component.ModuleEntry;
 import myau.util.RenderUtil;
 import myau.util.font.FontManager;
 import myau.util.shader.Shader2D;
-import myau.util.shader.ShadowShader;
-
-import java.awt.*;
-import java.util.ArrayList;
-import java.util.List;
 
 public class Frame extends Component {
     private final String categoryName;
@@ -71,15 +70,15 @@ public class Frame extends Component {
         int scrolledY = y - scrollOffset;
         int alpha = (int) (255 * animationProgress);
         if (alpha < 5) return;
+        float radius = MaterialTheme.CORNER_RADIUS_FRAME;
 
         ClickGUIModule clickGUIModule = (ClickGUIModule) myau.Myau.moduleManager.getModule("ClickGUI");
         
         boolean shadowEnabled = clickGUIModule != null && clickGUIModule.shadow.getValue();
         if (shadowEnabled) {
-            ShadowShader.drawShadow(x, scrolledY, width, currentHeight, MaterialTheme.CORNER_RADIUS_FRAME, 12.0f, new Color(0, 0, 0, (int)(alpha * 0.45)).getRGB());
+        	Shader2D.drawGlow(x, scrolledY, width, currentHeight, radius, 12.0f, 1, new Color(0, 0, 0, (int)(alpha * 0.45)));
         }
 
-        float radius = MaterialTheme.CORNER_RADIUS_FRAME;
         Shader2D.drawRoundedRect(x, scrolledY, width, currentHeight, radius, new Color(20, 20, 20, alpha));
 
         if (expanded) {

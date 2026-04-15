@@ -23,7 +23,7 @@ public abstract class Module {
 
     public Module(String name, Category category, boolean enabled, boolean hidden) {
         this.name = name;
-        this.category = category; // Asignación de la categoría
+        this.category = category;
         this.enabled = this.defaultEnabled = enabled;
         this.key = this.defaultKey = 0;
         this.hidden = this.defaultHidden = hidden;

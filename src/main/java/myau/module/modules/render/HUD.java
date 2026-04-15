@@ -1,5 +1,14 @@
 package myau.module.modules.render;
 
+import java.awt.Color;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Locale;
+import java.util.stream.Collectors;
+
+import org.lwjgl.opengl.GL11;
+
 import myau.Myau;
 import myau.enums.BlinkModules;
 import myau.enums.ChatColors;
@@ -9,24 +18,23 @@ import myau.events.Render2DEvent;
 import myau.events.TickEvent;
 import myau.font.CFontRenderer;
 import myau.font.FontProcess;
+import myau.management.NotificationManager;
 import myau.mixin.IAccessorGuiChat;
 import myau.module.Category;
 import myau.module.Module;
+import myau.property.properties.BooleanProperty;
+import myau.property.properties.ColorProperty;
+import myau.property.properties.FloatProperty;
+import myau.property.properties.IntProperty;
+import myau.property.properties.ModeProperty;
+import myau.property.properties.PercentProperty;
 import myau.util.ColorUtil;
 import myau.util.RenderUtil;
-import myau.property.properties.*;
-import net.minecraft.client.Minecraft;
+import myau.util.font.FontManager;
+import myau.util.shader.Shader2D;
 import net.minecraft.client.gui.GuiChat;
 import net.minecraft.client.gui.ScaledResolution;
 import net.minecraft.client.renderer.GlStateManager;
-import org.lwjgl.opengl.GL11;
-
-import java.awt.*;
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.List;
-import java.util.Locale;
-import java.util.stream.Collectors;
 
 public class HUD extends Module {
     private List<Module> activeModules = new ArrayList<>();
@@ -397,49 +405,53 @@ public class HUD extends Module {
 
 
         }
-        // Render bottom-right transient notifications (e.g., module toggles)
+
         try {
             if (Myau.notificationManager != null) {
                 java.util.List<myau.management.NotificationManager.NotificationEntry> entries = Myau.notificationManager.getActive();
                 if (!entries.isEmpty()) {
-                    ScaledResolution sr = new ScaledResolution(mc);
-                    float baseX = sr.getScaledWidth() - 6.0F; // right padding
-                    float baseY = sr.getScaledHeight() - 6.0F; // bottom padding
-                    // render newest last, so iterate normally but compute offset from bottom
+                    net.minecraft.client.gui.ScaledResolution sr = new net.minecraft.client.gui.ScaledResolution(mc);
+                    float baseX = sr.getScaledWidth() - 10.0F;
+                    float baseY = sr.getScaledHeight() - 10.0F;
+
+                    int count = 0;
                     for (int i = entries.size() - 1; i >= 0; i--) {
                         myau.management.NotificationManager.NotificationEntry entry = entries.get(i);
+                        
                         String text = entry.message;
-                        float textWidth = mc.fontRendererObj.getStringWidth(text);
-                        float boxWidth = textWidth + 8.0F;
-                        float boxHeight = mc.fontRendererObj.FONT_HEIGHT + 6.0F;
-                        float x = baseX - boxWidth / this.scale.getValue();
-                        float y = baseY - boxHeight / this.scale.getValue() - (entries.size() - 1 - i) * (boxHeight + 4.0F) / this.scale.getValue();
+                        float textWidth = (float) FontManager.nunitoBold18.getStringWidth(text);
+                        float boxWidth = textWidth + 20.0F; 
+                        float boxHeight = 22.0F;
+                        
+                        float x = baseX - boxWidth;
+                        float y = baseY - (count + 1) * (boxHeight + 5.0F);
 
-                        // fade alpha based on remaining time (simple)
                         float age = entry.getAge();
-                        float alpha = 1.0F;
+                        float remainingFactor = 1.0F;
                         if (entry.durationMillis > 0) {
-                            alpha = Math.max(0.0F, Math.min(1.0F, 1.0F - (age / (float) entry.durationMillis)));
+                            remainingFactor = Math.max(0.0F, Math.min(1.0F, 1.0F - (age / (float) entry.durationMillis)));
                         }
-                        int bg = new Color(0, 0, 0, (int) (150 * alpha)).getRGB();
-                        // use entry.color for border/text, applying alpha
+
+                        float alphaFactor = remainingFactor > 0.15F ? 1.0F : (remainingFactor / 0.15F);
+                        int alpha = (int) (255 * alphaFactor);
+                        
+                        if (alpha < 5) continue;
+
                         int baseColor = entry.color;
                         int r = (baseColor >> 16) & 0xFF;
                         int g = (baseColor >> 8) & 0xFF;
-                        int bCol = baseColor & 0xFF;
-                        int border = new Color(r, g, bCol, (int) (200 * alpha)).getRGB();
+                        int b = baseColor & 0xFF;
 
-                        RenderUtil.enableRenderState();
-                        RenderUtil.drawRect(x, y, x + boxWidth / this.scale.getValue(), y + boxHeight / this.scale.getValue(), bg);
-                        RenderUtil.drawOutlineRect(x, y, x + boxWidth / this.scale.getValue(), y + boxHeight / this.scale.getValue(), 1.0F, 0, border);
-                        RenderUtil.disableRenderState();
+                        Shader2D.drawRoundedRect(x, y, boxWidth, boxHeight, 4.0F, new java.awt.Color(20, 20, 23, (int)(180 * alphaFactor)));
 
-                        GlStateManager.pushMatrix();
-                        GlStateManager.scale(this.scale.getValue(), this.scale.getValue(), 0.0F);
-                        // text color with alpha
-                        int textColor = new Color(r, g, bCol, (int) (255 * alpha)).getRGB();
-                        mc.fontRendererObj.drawStringWithShadow(text, x + 4.0F / this.scale.getValue(), y + 3.0F / this.scale.getValue(), textColor);
-                        GlStateManager.popMatrix();
+                        float barHeight = 1.2F;
+                        float barWidth = (boxWidth - 8.0F) * remainingFactor;
+                        Shader2D.drawRoundedRect(x + 4, y + boxHeight - barHeight - 2, barWidth, barHeight, 0.5F, new java.awt.Color(r, g, b, alpha));
+
+                        float textY = (float) (y + (boxHeight - FontManager.nunitoBold18.getHeight()) / 2.0F - 0.5F);
+                        FontManager.nunitoBold18.drawString(text, x + 6, textY, new java.awt.Color(r, g, b, alpha).getRGB());
+                        
+                        count++;
                     }
                 }
             }

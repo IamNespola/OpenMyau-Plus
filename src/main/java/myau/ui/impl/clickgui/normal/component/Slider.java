@@ -64,10 +64,11 @@ public class Slider extends Component {
         if (alpha < 10) return;
 
         String valStr = round(currentValue) + (this.property instanceof PercentProperty ? "%" : "");
+        String nameStr = property.getName().replace("-", " ");
         int textColor = MaterialTheme.getRGBWithAlpha(MaterialTheme.TEXT_COLOR, alpha);
         
         if (FontManager.productSans16 != null) {
-            FontManager.productSans16.drawString(property.getName(), x + 2, scrolledY + 2, textColor);
+            FontManager.productSans16.drawString(nameStr, x + 2, scrolledY + 2, textColor);
             float valW = (float) FontManager.productSans16.getStringWidth(valStr);
             FontManager.productSans16.drawString(valStr, x + width - valW - 2, scrolledY + 2, textColor);
         }

@@ -38,17 +38,27 @@ public class ModuleEntry extends Component {
 
     private void init() {
         int compHeight = 18;
+        
         propertiesComponents.add(new KeybindComponent(module, x, y, width, compHeight));
+        
         if (Myau.propertyManager != null) {
             List<Property<?>> properties = Myau.propertyManager.properties.get(module.getClass());
             if (properties != null) {
                 for (Property<?> property : properties) {
                     Component comp = null;
-                    if (property instanceof BooleanProperty) comp = new Switch((BooleanProperty) property, x, 0, width, compHeight);
-                    else if (property instanceof IntProperty || property instanceof FloatProperty || property instanceof PercentProperty) comp = new Slider(property, x, 0, width, compHeight + 4);
-                    else if (property instanceof ModeProperty) comp = new Dropdown((ModeProperty) property, x, 0, width, compHeight);
-                    else if (property instanceof ColorProperty) comp = new ColorPicker((ColorProperty) property, x, 0, width, 65);
-                    else if (property instanceof TextProperty) comp = new TextField((TextProperty) property, x, 0, width, compHeight + 2);
+                    
+                    if (property instanceof BooleanProperty) {
+                        comp = new Switch((BooleanProperty) property, x, 0, width, compHeight);
+                    } else if (property instanceof IntProperty || property instanceof FloatProperty || property instanceof PercentProperty) {
+                        comp = new Slider(property, x, 0, width, compHeight + 4);
+                    } else if (property instanceof ModeProperty) {
+                        comp = new Dropdown((ModeProperty) property, x, 0, width, compHeight, parentFrameY);
+                    } else if (property instanceof ColorProperty) {
+                        comp = new ColorPicker((ColorProperty) property, x, 0, width, 65);
+                    } else if (property instanceof TextProperty) {
+                        comp = new TextField((TextProperty) property, x, 0, width, compHeight + 2);
+                    }
+
                     if (comp != null) propertiesComponents.add(comp);
                 }
             }

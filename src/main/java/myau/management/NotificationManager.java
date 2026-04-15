@@ -3,6 +3,8 @@ package myau.management;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class NotificationManager {
 
@@ -10,11 +12,7 @@ public class NotificationManager {
         public final String message;
         public final long startMillis;
         public final long durationMillis;
-        public final int color; // RGB
-
-        public NotificationEntry(String message, long durationMillis) {
-            this(message, durationMillis, 0xFFFFFF);
-        }
+        public final int color;
 
         public NotificationEntry(String message, long durationMillis, int color) {
             this.message = message;
@@ -33,6 +31,8 @@ public class NotificationManager {
     }
 
     private final List<NotificationEntry> entries = new ArrayList<>();
+    
+    private final Map<String, Long> messageCooldowns = new ConcurrentHashMap<>();
 
     public synchronized void add(String message) {
         this.add(message, 3000L);
@@ -47,11 +47,15 @@ public class NotificationManager {
     }
 
     public synchronized void add(String message, long durationMillis, int color) {
+        long currentTime = System.currentTimeMillis();
+        
+        if (messageCooldowns.containsKey(message) && (currentTime - messageCooldowns.get(message)) < 600) return;
+
+        messageCooldowns.put(message, currentTime);
         this.entries.add(new NotificationEntry(message, durationMillis, color));
     }
 
     public synchronized List<NotificationEntry> getActive() {
-        // cleanup expired entries and return a copy of active entries (newest last)
         Iterator<NotificationEntry> it = this.entries.iterator();
         while (it.hasNext()) {
             if (it.next().isExpired()) {
@@ -63,5 +67,6 @@ public class NotificationManager {
 
     public synchronized void clear() {
         this.entries.clear();
+        this.messageCooldowns.clear();
     }
 }

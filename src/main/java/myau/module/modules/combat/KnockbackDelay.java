@@ -1,5 +1,9 @@
 package myau.module.modules.combat;
 
+import java.lang.reflect.Field;
+import java.util.Queue;
+import java.util.concurrent.ConcurrentLinkedQueue;
+
 import myau.Myau;
 import myau.event.EventTarget;
 import myau.event.types.EventType;
@@ -17,12 +21,19 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.entity.Entity;
 import net.minecraft.network.Packet;
 import net.minecraft.network.play.INetHandlerPlayClient;
-import net.minecraft.network.play.server.*;
+import net.minecraft.network.play.server.S00PacketKeepAlive;
+import net.minecraft.network.play.server.S02PacketChat;
+import net.minecraft.network.play.server.S03PacketTimeUpdate;
+import net.minecraft.network.play.server.S06PacketUpdateHealth;
+import net.minecraft.network.play.server.S07PacketRespawn;
+import net.minecraft.network.play.server.S13PacketDestroyEntities;
+import net.minecraft.network.play.server.S19PacketEntityStatus;
+import net.minecraft.network.play.server.S25PacketBlockBreakAnim;
+import net.minecraft.network.play.server.S29PacketSoundEffect;
+import net.minecraft.network.play.server.S2BPacketChangeGameState;
+import net.minecraft.network.play.server.S2CPacketSpawnGlobalEntity;
+import net.minecraft.network.play.server.S2FPacketSetSlot;
 import net.minecraft.util.MovingObjectPosition;
-
-import java.lang.reflect.Field;
-import java.util.Queue;
-import java.util.concurrent.ConcurrentLinkedQueue;
 
 /**
  * KnockbackDelay — delays incoming velocity + transaction packets
@@ -55,6 +66,7 @@ public class KnockbackDelay extends Module {
 
     @Override
     public void onDisabled() {
+    	super.onDisabled();
         reset();
     }
 
@@ -100,7 +112,7 @@ public class KnockbackDelay extends Module {
 
         Packet<?> packet = event.getPacket();
 
-        // Always let these critical/cosmetic packets through immediately
+        if (packet instanceof S00PacketKeepAlive) return;
         if (packet instanceof S07PacketRespawn) return;
         if (packet instanceof S03PacketTimeUpdate) return;
         if (packet instanceof S06PacketUpdateHealth) return;
