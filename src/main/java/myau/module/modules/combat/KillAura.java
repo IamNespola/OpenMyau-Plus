@@ -808,85 +808,114 @@ public class KillAura extends Module {
                         }
                     }
                     boolean attacked = false;
-                    if (this.rotations.getValue() == 4 && this.smoothBack.getValue() && (this.target == null || !this.isBoxInSwingRange(this.target.getBox()))) {
-                        Rotation currentRot = this.serverRotation;
-                        Rotation playerRot = new Rotation(mc.thePlayer.rotationYaw, mc.thePlayer.rotationPitch);
-                        if (Math.abs(MathHelper.wrapAngleTo180_float(currentRot.yaw - playerRot.yaw)) > 1.0F || Math.abs(MathHelper.wrapAngleTo180_float(currentRot.pitch - playerRot.pitch)) > 1.0F) {
-                            this.isSmoothBacking = true;
-                            Rotation nextRot = getSmoothBackRotation(currentRot, playerRot);
-                            this.serverRotation = nextRot;
-                            event.setRotation(nextRot.yaw, nextRot.pitch, 1);
-                            if (this.moveFix.getValue() != 0) {
-                                event.setPervRotation(nextRot.yaw, 1);
-                            }
-                        } else {
-                            this.isSmoothBacking = false;
-                            this.serverRotation = playerRot;
-                        }
-                    }
-                    if (this.target != null && this.isBoxInSwingRange(this.target.getBox())) {
-                        if (this.rotations.getValue() == 4) {
-                            Rotation currentRot = this.serverRotation;
-                            if (Float.isNaN(currentRot.yaw) || Float.isNaN(currentRot.pitch)) {
-                                currentRot = new Rotation(mc.thePlayer.rotationYaw, mc.thePlayer.rotationPitch);
-                            }
 
-                            Rotation nextRot = updateLiquidBounceRotation(currentRot);
-                            this.serverRotation = nextRot;
-                            updateRenderAimPosition(nextRot);
-                            event.setRotation(nextRot.yaw, nextRot.pitch, 1);
-                            if (this.moveFix.getValue() != 0) {
-                                event.setPervRotation(nextRot.yaw, 1);
-                            }
-                            mc.thePlayer.rotationYawHead = nextRot.yaw;
-                            mc.thePlayer.renderYawOffset = nextRot.yaw;
-                            if (attack) {
-                                attacked = this.performAttack(nextRot.yaw, nextRot.pitch);
-                            }
-                        } else if (this.rotations.getValue() >= 1) {
-                            float randomYaw = RandomUtil.nextFloat(-2.5F, 2.5F);
-                            float randomPitch = RandomUtil.nextFloat(-1.5F, 1.5F);
-                            float[] rotations = RotationUtil.getRotationsToBox(
-                                    this.target.getBox(),
-                                    event.getYaw(),
-                                    event.getPitch(),
-                                    (float) this.angleStep.getValue() + RandomUtil.nextFloat(-5.0F, 5.0F),
-                                    (float) this.smoothing.getValue() / 100.0F
-                            );
-                            float finalYaw = rotations[0] + randomYaw;
-                            float finalPitch = rotations[1] + randomPitch;
-                            if (finalPitch > 90) finalPitch = 90;
-                            if (finalPitch < -90) finalPitch = -90;
-                            event.setRotation(finalYaw, finalPitch, 1);
-                            if (this.rotations.getValue() == 3) {
-                                Myau.rotationManager.setRotation(finalYaw, finalPitch, 1, true);
-                            } else {
-                                mc.thePlayer.rotationYawHead = finalYaw;
-                                mc.thePlayer.renderYawOffset = finalYaw;
-                            }
-                            if (this.moveFix.getValue() != 0 || this.rotations.getValue() == 3) {
-                                event.setPervRotation(finalYaw, 1);
-                            }
-                            if (attack) {
-                                attacked = this.performAttack(event.getNewYaw(), event.getNewPitch());
-                            }
-                        } else {
-                            if (attack) {
-                                attacked = this.performAttack(event.getNewYaw(), event.getNewPitch());
-                            }
-                        }
-                    }
-                    if (swap) {
-                        if (attacked) {
-                            this.interactAttack(event.getNewYaw(), event.getNewPitch());
-                        } else {
-                            this.sendUseItem();
-                        }
-                    }
-                    if (blocked) {
-                        Myau.blinkManager.setBlinkState(false, BlinkModules.AUTO_BLOCK);
-                        Myau.blinkManager.setBlinkState(true, BlinkModules.AUTO_BLOCK);
-                    }
+                 if (this.rotations.getValue() == 4 && this.smoothBack.getValue() && (this.target == null || !this.isBoxInSwingRange(this.target.getBox()))) {
+                     Rotation currentRot = this.serverRotation;
+                     Rotation playerRot = new Rotation(mc.thePlayer.rotationYaw, mc.thePlayer.rotationPitch);
+                     
+                     if (Math.abs(MathHelper.wrapAngleTo180_float(currentRot.yaw - playerRot.yaw)) > 1.0F || Math.abs(MathHelper.wrapAngleTo180_float(currentRot.pitch - playerRot.pitch)) > 1.0F) {
+                         this.isSmoothBacking = true;
+                         Rotation nextRot = getSmoothBackRotation(currentRot, playerRot);
+                         
+                         float[] patched = RotationUtil.gcd(new float[]{nextRot.yaw, nextRot.pitch}, new float[]{currentRot.yaw, currentRot.pitch});
+                         nextRot = new Rotation(patched[0], patched[1]);
+
+                         this.serverRotation = nextRot;
+                         event.setRotation(nextRot.yaw, nextRot.pitch, 1);
+                         
+                         if (this.moveFix.getValue() != 0) {
+                             event.setPervRotation(nextRot.yaw, 1);
+                         }
+                     } else {
+                         this.isSmoothBacking = false;
+                         this.serverRotation = playerRot;
+                     }
+                 }
+
+                 if (this.target != null && this.isBoxInSwingRange(this.target.getBox())) {
+                     
+                     if (this.rotations.getValue() == 4) {
+                         Rotation currentRot = this.serverRotation;
+                         if (Float.isNaN(currentRot.yaw) || Float.isNaN(currentRot.pitch)) {
+                             currentRot = new Rotation(mc.thePlayer.rotationYaw, mc.thePlayer.rotationPitch);
+                         }
+
+                         Rotation nextRot = updateLiquidBounceRotation(currentRot);
+                         
+                         float[] patched = RotationUtil.gcd(new float[]{nextRot.yaw, nextRot.pitch}, new float[]{currentRot.yaw, currentRot.pitch});
+                         nextRot = new Rotation(patched[0], patched[1]);
+
+                         this.serverRotation = nextRot;
+                         updateRenderAimPosition(nextRot);
+                         event.setRotation(nextRot.yaw, nextRot.pitch, 1);
+                         
+                         if (this.moveFix.getValue() != 0) {
+                             event.setPervRotation(nextRot.yaw, 1);
+                         }
+                         
+                         mc.thePlayer.rotationYawHead = nextRot.yaw;
+                         mc.thePlayer.renderYawOffset = nextRot.yaw;
+                         
+                         if (attack) {
+                             attacked = this.performAttack(nextRot.yaw, nextRot.pitch);
+                         }
+                         
+                     } 
+                     else if (this.rotations.getValue() >= 1) {
+                         float randomYaw = RandomUtil.nextFloat(-2.5F, 2.5F);
+                         float randomPitch = RandomUtil.nextFloat(-1.5F, 1.5F);
+                         
+                         float[] rotations = RotationUtil.getRotationsToBox(
+                                 this.target.getBox(),
+                                 event.getYaw(),
+                                 event.getPitch(),
+                                 (float) this.angleStep.getValue() + RandomUtil.nextFloat(-5.0F, 5.0F),
+                                 (float) this.smoothing.getValue() / 100.0F
+                         );
+                         
+                         float finalYaw = rotations[0] + randomYaw;
+                         float finalPitch = rotations[1] + randomPitch;
+                         
+                         float[] patched = RotationUtil.gcd(new float[]{finalYaw, finalPitch}, new float[]{event.getYaw(), event.getPitch()});
+                         finalYaw = patched[0];
+                         finalPitch = MathHelper.clamp_float(patched[1], -90.0F, 90.0F);
+
+                         event.setRotation(finalYaw, finalPitch, 1);
+                         
+                         if (this.rotations.getValue() == 3) {
+                             Myau.rotationManager.setRotation(finalYaw, finalPitch, 1, true);
+                         } else {
+                             mc.thePlayer.rotationYawHead = finalYaw;
+                             mc.thePlayer.renderYawOffset = finalYaw;
+                         }
+                         
+                         if (this.moveFix.getValue() != 0 || this.rotations.getValue() == 3) {
+                             event.setPervRotation(finalYaw, 1);
+                         }
+                         
+                         if (attack) {
+                             attacked = this.performAttack(event.getNewYaw(), event.getNewPitch());
+                         }
+                     } 
+                     else {
+                         if (attack) {
+                             attacked = this.performAttack(event.getNewYaw(), event.getNewPitch());
+                         }
+                     }
+                 }
+
+                 if (swap) {
+                     if (attacked) {
+                         this.interactAttack(event.getNewYaw(), event.getNewPitch());
+                     } else {
+                         this.sendUseItem();
+                     }
+                 }
+
+                 if (blocked) {
+                     Myau.blinkManager.setBlinkState(false, BlinkModules.AUTO_BLOCK);
+                     Myau.blinkManager.setBlinkState(true, BlinkModules.AUTO_BLOCK);
+                 }
                 }
             }
         }

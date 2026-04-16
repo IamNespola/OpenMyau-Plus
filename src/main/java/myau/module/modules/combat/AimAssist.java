@@ -22,6 +22,7 @@ import myau.util.TeamUtil;
 import myau.util.TimerUtil;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.util.AxisAlignedBB;
+import net.minecraft.util.MathHelper;
 import net.minecraft.util.MovingObjectPosition.MovingObjectType;
 
 public class AimAssist extends Module {
@@ -97,6 +98,7 @@ public class AimAssist extends Module {
                             if (!(RotationUtil.distanceToEntity(player) <= 0.0)) {
                                 AxisAlignedBB axisAlignedBB = player.getEntityBoundingBox();
                                 double collisionBorderSize = player.getCollisionBorderSize();
+                                
                                 float[] rotation = RotationUtil.getRotationsToBox(
                                         axisAlignedBB.expand(collisionBorderSize, collisionBorderSize, collisionBorderSize),
                                         mc.thePlayer.rotationYaw,
@@ -104,15 +106,24 @@ public class AimAssist extends Module {
                                         180.0F,
                                         (float) this.smoothing.getValue() / 100.0F
                                 );
-                                float yaw = Math.min(Math.abs(this.hSpeed.getValue()), 10.0F);
-                                float pitch = Math.min(Math.abs(this.vSpeed.getValue()), 10.0F);
-                                Myau.rotationManager
-                                        .setRotation(
-                                                mc.thePlayer.rotationYaw + (rotation[0] - mc.thePlayer.rotationYaw) * 0.1F * yaw,
-                                                mc.thePlayer.rotationPitch + (rotation[1] - mc.thePlayer.rotationPitch) * 0.1F * pitch,
-                                                0,
-                                                false
-                                        );
+
+                                float yawSpeed = Math.min(Math.abs(this.hSpeed.getValue()), 10.0F);
+                                float pitchSpeed = Math.min(Math.abs(this.vSpeed.getValue()), 10.0F);
+
+                                float targetYaw = mc.thePlayer.rotationYaw + (rotation[0] - mc.thePlayer.rotationYaw) * 0.1F * yawSpeed;
+                                float targetPitch = mc.thePlayer.rotationPitch + (rotation[1] - mc.thePlayer.rotationPitch) * 0.1F * pitchSpeed;
+
+                                float[] patched = RotationUtil.gcd(
+                                        new float[]{targetYaw, targetPitch}, 
+                                        new float[]{mc.thePlayer.rotationYaw, mc.thePlayer.rotationPitch}
+                                );
+
+                                Myau.rotationManager.setRotation(
+                                        patched[0],
+                                        MathHelper.clamp_float(patched[1], -90.0F, 90.0F),
+                                        0,
+                                        false
+                                );
                             }
                         }
                     }

@@ -14,6 +14,35 @@ public class RotationUtil {
     public static float wrapAngleDiff(float angle, float target) {
         return target + MathHelper.wrapAngleTo180_float(angle - target);
     }
+    
+    public static double gcd() {
+        final float mouseSensitivity = (float) (mc.gameSettings.mouseSensitivity * (1 + Math.random() / 10000000) * 0.6F + 0.2F);
+        return mouseSensitivity * mouseSensitivity * mouseSensitivity * 1.2F;
+    }
+    
+    public static float[] gcd(float targetYaw, float targetPitch, float prevYaw, float prevPitch) {
+        double mult = gcd();
+
+        float deltaYaw = targetYaw - prevYaw;
+        float deltaPitch = targetPitch - prevPitch;
+
+        float patchedYaw = prevYaw + (float) (Math.round(deltaYaw / mult) * mult);
+        float patchedPitch = prevPitch + (float) (Math.round(deltaPitch / mult) * mult);
+
+        return new float[]{patchedYaw, MathHelper.clamp_float(patchedPitch, -90.0F, 90.0F)};
+    }
+
+    public static float[] gcd(float[] rotation, float[] prev) {
+        double mult = gcd();
+
+        float deltaYaw = rotation[0] - prev[0];
+        float deltaPitch = rotation[1] - prev[1];
+
+        float patchedYaw = prev[0] + (float) (Math.round(deltaYaw / mult) * mult);
+        float patchedPitch = prev[1] + (float) (Math.round(deltaPitch / mult) * mult);
+
+        return new float[]{patchedYaw, MathHelper.clamp_float(patchedPitch, -90.0F, 90.0F)};
+    }
 
     public static float clampAngle(float angle, float maxAngle) {
         maxAngle = Math.max(0.0f, Math.min(180.0f, maxAngle));
