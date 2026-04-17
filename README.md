@@ -32,7 +32,7 @@ If you encounter any bugs or have ideas for new features, feel free to open an i
 
 ---
 
-# ⚙️ Building
+# Building
 
 To build the project, run:
 
