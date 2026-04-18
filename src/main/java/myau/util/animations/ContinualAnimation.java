@@ -1,6 +1,5 @@
 package myau.util.animations;
 
-import jdk.nashorn.internal.objects.annotations.Getter;
 import myau.util.animations.impl.SmoothStepAnimation;
 
 public class ContinualAnimation {
