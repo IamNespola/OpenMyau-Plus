@@ -5,6 +5,7 @@ import myau.event.types.EventType;
 import myau.event.types.Priority;
 import myau.events.Render3DEvent;
 import myau.events.TickEvent;
+import myau.util.RotationUtil;
 import net.minecraft.client.Minecraft;
 import net.minecraft.util.MathHelper;
 
@@ -52,8 +53,14 @@ public class RotationManager {
     public void setRotation(float yaw, float pitch, int priority, boolean force) {
         if (this.priority <= priority) {
             this.priority = priority;
-            this.yawDelta = MathHelper.wrapAngleTo180_float(yaw - mc.thePlayer.rotationYaw);
-            this.pitchDelta = MathHelper.clamp_float(pitch - mc.thePlayer.rotationPitch, -90.0F, 90.0F);
+
+            float[] fixed = RotationUtil.gcd(new float[]{yaw, pitch}, new float[]{mc.thePlayer.rotationYaw, mc.thePlayer.rotationPitch});
+            float finalYaw = fixed[0];
+            float finalPitch = fixed[1];
+
+            this.yawDelta = MathHelper.wrapAngleTo180_float(finalYaw - mc.thePlayer.rotationYaw);
+            this.pitchDelta = MathHelper.clamp_float(finalPitch - mc.thePlayer.rotationPitch, -90.0F, 90.0F);
+
             this.lastUpdate = 0.0F;
             this.rotated = force;
             this.applyRotation(0.0F);
