@@ -28,4 +28,12 @@ public class BlurUtils {
         stencilFrameBufferBloom.unbindFramebuffer();
         KawaseBloom.renderBlur(stencilFrameBufferBloom.framebufferTexture, passes, radius);
     }
+
+    public static void prepareRiseBloom() {
+        RiseBloomShader.prepareBloom();
+    }
+
+    public static void riseBloomEnd(int radius, float compression) {
+        RiseBloomShader.bloomEnd(radius, compression);
+    }
 }
