@@ -1,9 +1,11 @@
 package myau.module.modules;
 
+import myau.Myau;
+import myau.enums.BlinkModules;
 import myau.event.EventTarget;
 import myau.event.types.EventType;
 import myau.events.AttackEvent;
-import myau.events.TickEvent;
+import myau.events.UpdateEvent;
 import myau.module.Module;
 import myau.property.properties.*;
 import net.minecraft.client.Minecraft;
@@ -15,10 +17,16 @@ public class Hitflick extends Module {
     public final ModeProperty direction = new ModeProperty("Direction", 0, new String[]{"Left", "Right", "Back", "Custom"});
     public final FloatProperty customAngle = new FloatProperty("Custom-Angle", 90F, 1F, 180F, () -> this.direction.getValue() == 3);
     public final IntProperty cooldown = new IntProperty("Cooldown", 1, 1, 40);
+    public final BooleanProperty blink = new BooleanProperty("Blink", false);
 
     private long sinceLastFlick;
     private float originalYaw;
-    private boolean flicking;
+    private float flickYaw;
+    private FlickState state = FlickState.IDLE;
+
+    private enum FlickState {
+        IDLE, FLICKING_AWAY, RESTORING
+    }
 
     public Hitflick() {
         super("Hitflick", false, true, "Flick away on hit then restore");
@@ -27,37 +35,51 @@ public class Hitflick extends Module {
     @Override
     public void onEnabled() {
         sinceLastFlick = 0;
-        flicking = false;
+        state = FlickState.IDLE;
     }
 
     @Override
     public void onDisabled() {
-        flicking = false;
+        state = FlickState.IDLE;
     }
 
     @EventTarget
     public void onAttack(AttackEvent event) {
         if (event.getTarget() == null || event.getTarget() == mc.thePlayer) return;
-        if (flicking || sinceLastFlick < cooldown.getValue()) return;
+        if (state != FlickState.IDLE || sinceLastFlick < cooldown.getValue()) return;
         if (!(event.getTarget() instanceof EntityLivingBase)) return;
 
         originalYaw = mc.thePlayer.rotationYaw;
-        mc.thePlayer.rotationYaw += getFlickAngle();
-        flicking = true;
+        flickYaw = originalYaw + getFlickAngle();
+        state = FlickState.FLICKING_AWAY;
+
+        if (blink.getValue()) {
+            Myau.blinkManager.setBlinkState(false, Myau.blinkManager.getBlinkingModule());
+            Myau.blinkManager.setBlinkState(true, BlinkModules.HITFLICK);
+        }
     }
 
     @EventTarget
-    public void onTick(TickEvent event) {
+    public void onUpdate(UpdateEvent event) {
         if (event.getType() != EventType.PRE) return;
         if (mc.thePlayer == null) return;
 
-        if (flicking) {
-            mc.thePlayer.rotationYaw = originalYaw;
-            flicking = false;
-            sinceLastFlick = 0;
+        if (state == FlickState.IDLE) {
+            sinceLastFlick++;
+            return;
         }
 
-        sinceLastFlick++;
+        if (state == FlickState.FLICKING_AWAY) {
+            event.setRotation(flickYaw, mc.thePlayer.rotationPitch, 0);
+            state = FlickState.RESTORING;
+        } else if (state == FlickState.RESTORING) {
+            event.setRotation(originalYaw, mc.thePlayer.rotationPitch, 0);
+            state = FlickState.IDLE;
+            sinceLastFlick = 0;
+            if (blink.getValue()) {
+                Myau.blinkManager.setBlinkState(false, BlinkModules.HITFLICK);
+            }
+        }
     }
 
     private float getFlickAngle() {
