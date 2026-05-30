@@ -73,7 +73,8 @@ public class Scaffold extends Module {
     private double savedMotionY;
     private double savedMotionZ;
     private boolean safeStuckActive = false;
-    public final ModeProperty rotationMode = new ModeProperty("rotations", 2, new String[]{"NONE", "DEFAULT", "BACKWARDS", "SIDEWAYS", "GODBIRGDE", "SMOOTH", "Hypixel"});
+    private boolean snapRotating = false;
+    public final ModeProperty rotationMode = new ModeProperty("rotations", 2, new String[]{"NONE", "DEFAULT", "BACKWARDS", "SIDEWAYS", "GODBIRGDE", "SMOOTH", "Hypixel", "SNAP"});
     public final FloatProperty tellystartrotationminspeed = new FloatProperty("telly-start-rotation-min-speed", 90.0F, 1.0F, 180.0F, () -> this.keepY.getValue() == 3);
     public final FloatProperty tellystartrotationmaxspeed = new FloatProperty("telly-start-rotation-max-speed", 95.0F, 1.0F, 180.0F, () -> this.keepY.getValue() == 3);
     public final FloatProperty tellynormalrotationminspeed = new FloatProperty("telly-normal-rotation-min-speed", 30.0F, 1.0F, 180.0F, () -> this.keepY.getValue() == 3);
@@ -204,6 +205,17 @@ public class Scaffold extends Module {
                 }
             }
         }
+    }
+
+    private MovingObjectPosition getPlacementMop(BlockData blockData, float yaw, float pitch) {
+        MovingObjectPosition mop = RotationUtil.rayTrace(yaw, pitch, mc.playerController.getBlockReachDistance(), 1.0F);
+        if (mop == null
+                || mop.typeOfHit != MovingObjectType.BLOCK
+                || !mop.getBlockPos().equals(blockData.blockPos())
+                || mop.sideHit != blockData.facing()) {
+            return null;
+        }
+        return mop;
     }
 
     private EnumFacing yawToFacing(float yaw) {
@@ -397,6 +409,8 @@ public class Scaffold extends Module {
                 float diagonalYaw = this.isDiagonal(currentYaw)
                         ? yawDiffTo180
                         : RotationUtil.wrapAngleDiff(currentYaw - 135.0F * ((currentYaw + 180.0F) % 90.0F < 45.0F ? 1.0F : -1.0F), event.getYaw());
+                boolean snapMode = this.rotationMode.getValue() == 7;
+                this.snapRotating = false;
                 if (!this.canRotate) {
                     switch (this.rotationMode.getValue()) {
                         case 1:
@@ -463,6 +477,10 @@ public class Scaffold extends Module {
                                 this.yaw = RotationUtil.quantizeAngle(diagonalYaw);
                             }
                             break;
+                        case 7:
+                            this.yaw = RotationUtil.quantizeAngle(yawDiffTo180);
+                            this.pitch = RotationUtil.quantizeAngle(85.0F);
+                            break;
                     }
                 }
                 BlockData blockData = this.getBlockData();
@@ -524,6 +542,23 @@ public class Scaffold extends Module {
                         this.canRotate = true;
                     }
                 }
+                boolean towerRotating = this.towering || this.isTowering();
+                boolean snapAlreadyLooking = false;
+                if (snapMode && !towerRotating && blockData != null) {
+                    MovingObjectPosition currentMop = this.getPlacementMop(blockData, event.getYaw(), event.getPitch());
+                    if (currentMop != null) {
+                        this.yaw = RotationUtil.quantizeAngle(event.getYaw());
+                        this.pitch = RotationUtil.quantizeAngle(event.getPitch());
+                        this.canRotate = true;
+                        hitVec = currentMop.hitVec;
+                        snapAlreadyLooking = true;
+                    } else if (hitVec != null && this.canRotate) {
+                        this.snapRotating = true;
+                        if (this.rotationTick > 1) {
+                            this.rotationTick = 1;
+                        }
+                    }
+                }
                 if (this.canRotate && MoveUtil.isForwardPressed() && Math.abs(MathHelper.wrapAngleTo180_float(yawDiffTo180 - this.yaw)) < 90.0F) {
                     switch (this.rotationMode.getValue()) {
                         case 2:
@@ -533,7 +568,7 @@ public class Scaffold extends Module {
                             this.yaw = RotationUtil.quantizeAngle(diagonalYaw);
                     }
                 }
-                if (this.rotationMode.getValue() != 0) {
+                if (this.rotationMode.getValue() != 0 && (!snapMode || this.snapRotating || towerRotating)) {
                     float targetYaw = this.yaw;
                     float targetPitch = this.pitch;
                     if (this.towering && (mc.thePlayer.motionY > 0.0 || mc.thePlayer.posY > (double) (this.startY + 1))) {
@@ -545,7 +580,7 @@ public class Scaffold extends Module {
                             this.rotationTick = Math.max(this.rotationTick, 1);
                         }
                     }
-                    if (this.isTowering()) {
+                    if (towerRotating && this.isTowering()) {
                         float yawDelta = MathHelper.wrapAngleTo180_float(mc.thePlayer.rotationYaw - event.getYaw());
                         targetYaw = RotationUtil.quantizeAngle(event.getYaw() + yawDelta * RandomUtil.nextFloat(0.98F, 0.99F));
                         targetPitch = RotationUtil.quantizeAngle(RandomUtil.nextFloat(30.0F, 80.0F));
@@ -557,7 +592,7 @@ public class Scaffold extends Module {
                         event.setPervRotation(targetYaw, 3);
                     }
                 }
-                if (blockData != null && hitVec != null && this.rotationTick <= 0) {
+                if (blockData != null && hitVec != null && (this.rotationTick <= 0 || snapAlreadyLooking)) {
                     this.place(blockData.blockPos(), blockData.facing(), hitVec);
                     if (this.multiplace.getValue()) {
                         for (int i = 0; i < 3; i++) {
@@ -934,6 +969,7 @@ public class Scaffold extends Module {
         this.eagleSneakTicks = 0;
         this.eagleBlocksPlaced = 0;
         this.eagleLastSneakTime = 0L;
+        this.snapRotating = false;
     }
 
     @Override

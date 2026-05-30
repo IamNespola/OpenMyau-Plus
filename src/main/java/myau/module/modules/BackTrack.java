@@ -4,6 +4,7 @@ import myau.Myau;
 import myau.event.EventTarget;
 import myau.event.types.EventType;
 import myau.events.AttackEvent;
+import myau.events.LoadWorldEvent;
 import myau.events.PacketEvent;
 import myau.events.Render3DEvent;
 import myau.events.TickEvent;
@@ -63,6 +64,15 @@ public class BackTrack extends Module {
     @Override
     public void onDisabled() {
         releaseAll();
+    }
+
+    @EventTarget
+    public void onLoadWorld(LoadWorldEvent event) {
+        packetQueue.clear();
+        skipPackets.clear();
+        vec3 = null;
+        target = null;
+        currentLatency = 0;
     }
 
     @EventTarget

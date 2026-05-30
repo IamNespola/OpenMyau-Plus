@@ -3,6 +3,7 @@ package myau.management;
 import myau.enums.DelayModules;
 import myau.event.EventTarget;
 import myau.event.types.EventType;
+import myau.events.LoadWorldEvent;
 import myau.events.PacketEvent;
 import myau.events.TickEvent;
 import net.minecraft.client.Minecraft;
@@ -44,7 +45,7 @@ public class DelayManager {
             this.delayedPacket.offer(packet);
             return true;
         } else {
-            this.setDelayState(false, this.delayModule);
+            this.clearDelayState();
             return false;
         }
     }
@@ -70,6 +71,12 @@ public class DelayManager {
         return this.delayModule != DelayModules.NONE;
     }
 
+    public void clearDelayState() {
+        this.delayModule = DelayModules.NONE;
+        this.delay = 0L;
+        this.delayedPacket.clear();
+    }
+
     public DelayModules getDelayModule() {
         return this.delayModule;
     }
@@ -86,17 +93,22 @@ public class DelayManager {
     public void onPacket(PacketEvent event) {
         if (event.getPacket() instanceof C00Handshake
                 || event.getPacket() instanceof C00PacketLoginStart
-                || event.getPacket() instanceof C00PacketServerQuery
-                || event.getPacket() instanceof C01PacketPing
-                || event.getPacket() instanceof C01PacketEncryptionResponse) {
-            this.setDelayState(false, this.delayModule);
+            || event.getPacket() instanceof C00PacketServerQuery
+            || event.getPacket() instanceof C01PacketPing
+            || event.getPacket() instanceof C01PacketEncryptionResponse) {
+            this.clearDelayState();
         }
+    }
+
+    @EventTarget
+    public void onLoadWorld(LoadWorldEvent event) {
+        this.clearDelayState();
     }
 
     @EventTarget
     public void onTick(TickEvent event) {
         if (event.getType() == EventType.POST) {
-            if (mc.thePlayer.isDead) {
+            if (mc.thePlayer == null || mc.thePlayer.isDead) {
                 this.setDelayState(false, this.delayModule);
             }
             if (this.delayModule != DelayModules.NONE) {
