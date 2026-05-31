@@ -25,6 +25,14 @@ import net.minecraft.client.renderer.GlStateManager;
 public class FPScounter
         extends Module {
     private static final Minecraft mc = Minecraft.getMinecraft();
+    public static int x = -1;
+    public static int y = -1;
+
+    public static void setPosition(int x, int y) {
+        FPScounter.x = x;
+        FPScounter.y = y;
+    }
+
     public final BooleanProperty enabled = new BooleanProperty("Enabled", true);
     public final ModeProperty posX = new ModeProperty("Position-X", 1, new String[]{"Left", "Center", "Right"});
     public final ModeProperty posY = new ModeProperty("Position-Y", 1, new String[]{"Top", "Center", "Bottom"});
@@ -77,6 +85,10 @@ public class FPScounter
         }
         baseX += (int) this.offsetX.getValue();
         baseY += (int) this.offsetY.getValue();
+        if (FPScounter.x >= 0 && FPScounter.y >= 0) {
+            baseX = FPScounter.x;
+            baseY = FPScounter.y;
+        }
         int fps = Minecraft.getDebugFPS();
         String text = "FPS " + fps;
         int textWidth = mc.fontRendererObj.getStringWidth(text);

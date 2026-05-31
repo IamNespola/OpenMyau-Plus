@@ -36,6 +36,8 @@ public class HUD extends Module {
     private static final Minecraft mc = Minecraft.getMinecraft();
     public static int targetHUDX = 100;
     public static int targetHUDY = 100;
+    public static int arrayListX = 2;
+    public static int arrayListY = 2;
 
     public static void setTargetHUDPosition(int x, int y) {
         targetHUDX = x;
@@ -47,13 +49,18 @@ public class HUD extends Module {
         targetHUDY = 100;
     }
 
+    public static void setArrayListPosition(int x, int y) {
+        arrayListX = x;
+        arrayListY = y;
+    }
+
     private static final Set<Class<?>> RENDER_MODULES = new HashSet<>(Arrays.<Class<?>>asList(
             ESP.class, Chams.class, FullBright.class, Tracers.class, NameTags.class, Xray.class,
             TargetESP.class, TargetHUD.class, Indicators.class, BedESP.class, ItemESP.class,
             ViewClip.class, NoHurtCam.class, HUD.class, GuiModule.class, RiseClickGUIModule.class,
             ChestESP.class, Trajectories.class, Radar.class, RenderFixes.class, FPScounter.class,
             WaterMark.class, WaterMark2.class, HitParticleEffects.class, DynamicIsland.class,
-            ESP2D.class, TeamHealthDisplay.class, SeasonDisplay.class, Animations.class
+            ESP2D.class, TeamHealthDisplay.class, SeasonDisplay.class, Animations.class, HudEditor.class
     ));
     private static final Set<Class<?>> PLAYER_MODULES = new HashSet<>(Arrays.<Class<?>>asList(
             AutoHeal.class, FakeLag.class, AutoTool.class, ChestStealer.class, InvManager.class,
@@ -64,7 +71,7 @@ public class HUD extends Module {
     private static final Set<Class<?>> MISC_MODULES = new HashSet<>(Arrays.<Class<?>>asList(
             Spammer.class, BedNuker.class, BedTracker.class, LightningTracker.class, NoRotate.class,
             NickHider.class, AntiObbyTrap.class, AntiObfuscate.class, AutoAnduril.class,
-            Disabler.class, ClientSpoofer.class, AutoHypixel.class
+            Disabler.class, ClientSpoofer.class, MurderDetector.class, AutoHypixel.class
     ));
     private List<Module> activeModules = new ArrayList<>();
     public final ModeProperty colorMode = new ModeProperty(
@@ -86,6 +93,8 @@ public class HUD extends Module {
     public final BooleanProperty showBar = new BooleanProperty("bar", true);
     public final ModeProperty sidebarMode = new ModeProperty("sidebar-mode", 0, new String[]{"RIGHT", "LEFT", "TOP", "OUTLINE", "NONE"}, this.showBar::getValue);
     public final BooleanProperty shadow = new BooleanProperty("shadow", true);
+    public final BooleanProperty blur = new BooleanProperty("blur", true);
+    public final BooleanProperty bloom = new BooleanProperty("bloom", true);
     public final FloatProperty colorDistance = new FloatProperty("color-dist", 50F, 10F, 100F);
     public final BooleanProperty suffixes = new BooleanProperty("suffixes", true);
     public final ModeProperty separatorMode = new ModeProperty("separator-mode", 0, new String[]{"SPACE", "-", "!", "[]", "{}", "()", "\"\""}, this.suffixes::getValue);
@@ -136,6 +145,18 @@ public class HUD extends Module {
         return this.calculateStringWidth(
                 this.getModuleName(module), this.getModuleSuffix(module)
         );
+    }
+
+    public int getVisibleArrayListWidth() {
+        int width = 90;
+        for (Module module : this.activeModules) {
+            width = Math.max(width, this.getModuleWidth(module) + Math.round(this.padding.getValue() * 2.0F) + 4);
+        }
+        return width;
+    }
+
+    public int getVisibleArrayListSize() {
+        return Math.max(1, this.activeModules.size());
     }
 
     private int calculateStringWidth(String string, String[] arr) {
@@ -405,9 +426,9 @@ public class HUD extends Module {
                 renderCreidaInterface();
             } else {
             float height = (float) fontRenderer.FONT_HEIGHT - 1.0F;
-            float x = (float) this.offsetX.getValue()
+            float x = (float) HUD.arrayListX
                     + (1.0F + (this.hasSidebar() ? 1.0F : 0.0F)) * this.scale.getValue();
-            float y = (float) this.offsetY.getValue() + 1.0F * this.scale.getValue();
+            float y = (float) HUD.arrayListY + 1.0F * this.scale.getValue();
             if (this.posX.getValue() == 1) {
                 x = (float) new ScaledResolution(mc).getScaledWidth() - x;
             }
@@ -706,9 +727,9 @@ public class HUD extends Module {
         GlStateManager.enableBlend();
         GlStateManager.blendFunc(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA);
         if (isCreidaMinecraftFont()) {
-            mcFont.drawStringWithShadow(text, x, y, color);
+            mcFont.drawString(text, x, y, color, RenderUtil.hudShadow());
         } else {
-            fontRenderer.drawStringWithShadow(text, x, y, color);
+            fontRenderer.drawString(text, x, y, color, RenderUtil.hudShadow());
         }
         GlStateManager.disableBlend();
     }

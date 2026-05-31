@@ -5,6 +5,7 @@ import com.google.gson.JsonParser;
 import myau.command.CommandManager;
 import myau.command.commands.*;
 import myau.config.Config;
+import myau.config.HudConfig;
 import myau.event.EventManager;
 import myau.font.FontManagers;
 import myau.management.*;
@@ -70,6 +71,7 @@ public class Myau {
         moduleManager.modules.put(AimAssist.class, new AimAssist());
         moduleManager.modules.put(AntiAFK.class, new AntiAFK());
         moduleManager.modules.put(AntiDebuff.class, new AntiDebuff());
+        moduleManager.modules.put(AntiCheatDetector.class, new AntiCheatDetector());
         moduleManager.modules.put(AntiFireball.class, new AntiFireball());
         moduleManager.modules.put(AntiObbyTrap.class, new AntiObbyTrap());
         moduleManager.modules.put(AntiObfuscate.class, new AntiObfuscate());
@@ -85,6 +87,7 @@ public class Myau {
         moduleManager.modules.put(BedESP.class, new BedESP());
         moduleManager.modules.put(BedTracker.class, new BedTracker());
         moduleManager.modules.put(Blink.class, new Blink());
+        moduleManager.modules.put(BHop.class, new BHop());
         moduleManager.modules.put(BackTrack.class, new BackTrack());
         moduleManager.modules.put(Hitflick.class, new Hitflick());
         moduleManager.modules.put(FPScounter.class, new FPScounter());
@@ -123,7 +126,9 @@ public class Myau {
         moduleManager.modules.put(Displace.class, new Displace());
         moduleManager.modules.put(KeepSprint.class, new KeepSprint());
         moduleManager.modules.put(FlagDetector.class, new FlagDetector());
+        moduleManager.modules.put(MurderDetector.class, new MurderDetector());
         moduleManager.modules.put(HitBox.class, new HitBox());
+        moduleManager.modules.put(HudEditor.class, new HudEditor());
         moduleManager.modules.put(KillAura.class, new KillAura());
         moduleManager.modules.put(LagRange.class, new LagRange());
         moduleManager.modules.put(LightningTracker.class, new LightningTracker());
@@ -202,6 +207,7 @@ public class Myau {
             EventManager.register(module);
         }
         Config config = new Config("default", true);
+        HudConfig.load();
         if (config.file.exists()) {
             config.load();
         }
@@ -214,7 +220,10 @@ public class Myau {
         FontManager.initializeFonts();
         ClickGuiScreen.getInstance();
 
-        Runtime.getRuntime().addShutdownHook(new Thread(config::save));
+        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+            config.save();
+            HudConfig.save();
+        }));
 
         me.ksyz.accountmanager.AccountManager.init();
 

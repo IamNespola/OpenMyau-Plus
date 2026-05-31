@@ -54,7 +54,6 @@ public class TargetHUD extends Module {
     public final BooleanProperty indicator = new BooleanProperty("indicator", true, () -> this.style.getValue() == 0);
     public final BooleanProperty outline = new BooleanProperty("outline", false, () -> this.style.getValue() == 0 || this.style.getValue() == 1 || this.style.getValue() >= 3);
     public final BooleanProperty animations = new BooleanProperty("animations", true, () -> this.style.getValue() == 0);
-    public final BooleanProperty shadow = new BooleanProperty("shadow", true, () -> this.style.getValue() == 0);
     public final BooleanProperty kaOnly = new BooleanProperty("ka-only", true);
     public final BooleanProperty chatPreview = new BooleanProperty("chat-preview", false);
     private final TimerUtil lastAttackTimer = new TimerUtil();
@@ -276,11 +275,11 @@ public class TargetHUD extends Module {
         GlStateManager.disableDepth();
         GlStateManager.enableBlend();
         GlStateManager.blendFunc(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA);
-        mc.fontRendererObj.drawString(targetNameText, headIconOffset + 2.0F, 2.0F, -1, this.shadow.getValue());
-        mc.fontRendererObj.drawString(healthText, headIconOffset + 2.0F, 12.0F, -1, this.shadow.getValue());
+        mc.fontRendererObj.drawString(targetNameText, headIconOffset + 2.0F, 2.0F, -1, RenderUtil.hudShadow());
+        mc.fontRendererObj.drawString(healthText, headIconOffset + 2.0F, 12.0F, -1, RenderUtil.hudShadow());
         if (this.indicator.getValue()) {
-            mc.fontRendererObj.drawString(statusText, barTotalWidth - 2.0F - (float) statusTextWidth, 2.0F, healthDeltaColor.getRGB(), this.shadow.getValue());
-            mc.fontRendererObj.drawString(healthDiffText, barTotalWidth - 2.0F - (float) healthDiffWidth, 12.0F, ColorUtil.darker(healthDeltaColor, 0.8F).getRGB(), this.shadow.getValue());
+            mc.fontRendererObj.drawString(statusText, barTotalWidth - 2.0F - (float) statusTextWidth, 2.0F, healthDeltaColor.getRGB(), RenderUtil.hudShadow());
+            mc.fontRendererObj.drawString(healthDiffText, barTotalWidth - 2.0F - (float) healthDiffWidth, 12.0F, ColorUtil.darker(healthDeltaColor, 0.8F).getRGB(), RenderUtil.hudShadow());
         }
         if (this.head.getValue() && this.headTexture != null) {
             GlStateManager.color(1.0F, 1.0F, 1.0F);
@@ -351,14 +350,17 @@ public class TargetHUD extends Module {
             case 0:
                 float bloomRadius = (fadeTimer == null) ? 2f : (2f * alpha / 255f);
                 float blurRadius = (fadeTimer == null) ? 3 : (3f * alpha / 255f);
-                if (RenderFixes.shouldUseShaders()) {
+                if (RenderUtil.hudBloom()) {
                     BlurUtils.prepareBloom();
                     RoundedUtils.drawRound((float) n6, (float) n7, (float) (n8 - n6), (float) (n9 + 13 - n7), 8.0f, true, new Color(0, 0, 0, maxAlphaBackground));
                     BlurUtils.bloomEnd(3, bloomRadius);
+                }
+                if (RenderUtil.hudBlur()) {
                     BlurUtils.prepareBlur();
                     RoundedUtils.drawRound((float) n6, (float) n7, (float) (n8 - n6), (float) (n9 + 13 - n7), 8.0f, true, new Color(RenderUtil.mergeAlpha(Color.black.getRGB(), maxAlphaOutline)));
                     BlurUtils.blurEnd(2, blurRadius);
-                } else {
+                }
+                if (!RenderUtil.hudBlur() && !RenderUtil.hudBloom()) {
                     RenderUtil.drawRoundedRect((float) n6, (float) n7, (float) (n8 - n6), (float) (n9 + 13 - n7), 8.0f,
                             RenderUtil.mergeAlpha(Color.black.getRGB(), maxAlphaOutline), true, true, true, true);
                 }
@@ -414,7 +416,7 @@ public class TargetHUD extends Module {
         GL11.glPushMatrix();
         GL11.glEnable(GL11.GL_BLEND);
         mc.fontRendererObj.drawString(playerInfo, (float) x, (float) y,
-                (new Color(220, 220, 220, 255).getRGB() & 0xFFFFFF) | Math.min(alpha + 15, 255) << 24, true);
+                (new Color(220, 220, 220, 255).getRGB() & 0xFFFFFF) | Math.min(alpha + 15, 255) << 24, RenderUtil.hudShadow());
         GL11.glDisable(GL11.GL_BLEND);
         GL11.glPopMatrix();
     }
@@ -483,7 +485,7 @@ public class TargetHUD extends Module {
 
         String targetName = TeamUtil.stripName(entity);
         int nameColor = (int) (alpha * 0xFF) << 24 | 0xFFFFFF;
-        mc.fontRendererObj.drawString(targetName, x + 40, y + 8, nameColor, true);
+        mc.fontRendererObj.drawString(targetName, x + 40, y + 8, nameColor, RenderUtil.hudShadow());
 
         float maxHealth = entity.getMaxHealth();
         float healthPercent = Math.min(1f, this.animatedHealth / maxHealth);
@@ -510,7 +512,7 @@ public class TargetHUD extends Module {
 
         String healthText = String.format("%.1f/%.1f", this.animatedHealth, maxHealth);
         int healthTextColor = (int) (alpha * 0xFF) << 24 | 0xCCCCCC;
-        mc.fontRendererObj.drawString(healthText, x + 40, y + 15, healthTextColor, true);
+        mc.fontRendererObj.drawString(healthText, x + 40, y + 15, healthTextColor, RenderUtil.hudShadow());
 
         GL11.glPopMatrix();
     }
@@ -567,7 +569,7 @@ public class TargetHUD extends Module {
 
         String targetName = TeamUtil.stripName(entity);
         int nameColor = (int) (alpha * 0xFF) << 24 | 0xFFFFFF;
-        mc.fontRendererObj.drawString(targetName, x + 40, y + 8, nameColor, true);
+        mc.fontRendererObj.drawString(targetName, x + 40, y + 8, nameColor, RenderUtil.hudShadow());
 
         float maxHealth = entity.getMaxHealth();
         float healthPercent = Math.min(1f, this.animatedHealth / maxHealth);
@@ -594,7 +596,7 @@ public class TargetHUD extends Module {
 
         String healthText = String.format("%.1f/%.1f", this.animatedHealth, maxHealth);
         int healthTextColor = (int) (alpha * 0xFF) << 24 | 0xCCCCCC;
-        mc.fontRendererObj.drawString(healthText, x + 40, y + 15, healthTextColor, true);
+        mc.fontRendererObj.drawString(healthText, x + 40, y + 15, healthTextColor, RenderUtil.hudShadow());
 
         GL11.glPopMatrix();
     }
@@ -640,7 +642,7 @@ public class TargetHUD extends Module {
 
         String targetName = TeamUtil.stripName(entity);
         int nameColor = (int) (alpha * 0xFF) << 24 | 0xFFFFFF;
-        mc.fontRendererObj.drawString(targetName, x + 5, y + 5, nameColor, true);
+        mc.fontRendererObj.drawString(targetName, x + 5, y + 5, nameColor, RenderUtil.hudShadow());
 
         float maxHealth = entity.getMaxHealth();
         float healthPercent = Math.min(1f, this.animatedHealth / maxHealth);
@@ -660,7 +662,7 @@ public class TargetHUD extends Module {
         String healthText = String.format("%d/%d", actualHealthInt, (int) maxHealth);
         int healthTextColor = (int) (alpha * 0xFF) << 24 | 0xCCCCCC;
         double healthTextWidth = mc.fontRendererObj.getStringWidth(healthText);
-        mc.fontRendererObj.drawString(healthText, (int) (x + hudWidth - 5 - healthTextWidth), y + 5, healthTextColor, true);
+        mc.fontRendererObj.drawString(healthText, (int) (x + hudWidth - 5 - healthTextWidth), y + 5, healthTextColor, RenderUtil.hudShadow());
 
         GL11.glPopMatrix();
     }
@@ -746,11 +748,11 @@ public class TargetHUD extends Module {
 
         String targetName = TeamUtil.stripName(entity);
         int nameColor = (int) (alpha * 0xFF) << 24 | 0xFFFFFF;
-        mc.fontRendererObj.drawString(targetName, x + 40, y + 8, nameColor, true);
+        mc.fontRendererObj.drawString(targetName, x + 40, y + 8, nameColor, RenderUtil.hudShadow());
 
         String healthText = String.format("%.1f/%.1f", this.animatedHealth, maxHealth);
         int healthTextColor = (int) (alpha * 0xFF) << 24 | 0xCCCCCC;
-        mc.fontRendererObj.drawString(healthText, x + 40, y + 22, healthTextColor, true);
+        mc.fontRendererObj.drawString(healthText, x + 40, y + 22, healthTextColor, RenderUtil.hudShadow());
 
         GL11.glPopMatrix();
     }

@@ -65,6 +65,7 @@ public class ClickGui extends GuiScreen {
         movementModules.add(Myau.moduleManager.getModule(Sprint.class));
         movementModules.add(Myau.moduleManager.getModule(SafeWalk.class));
         movementModules.add(Myau.moduleManager.getModule(Jesus.class));
+        movementModules.add(Myau.moduleManager.getModule(BHop.class));
         movementModules.add(Myau.moduleManager.getModule(Blink.class));
         movementModules.add(Myau.moduleManager.getModule(NoFall.class));
         movementModules.add(Myau.moduleManager.getModule(NoSlow.class));
@@ -101,6 +102,7 @@ public class ClickGui extends GuiScreen {
         renderModules.add(Myau.moduleManager.getModule(TeamHealthDisplay.class));
         renderModules.add(Myau.moduleManager.getModule(SeasonDisplay.class));
         renderModules.add(Myau.moduleManager.getModule(Animations.class));
+        renderModules.add(Myau.moduleManager.getModule(HudEditor.class));
 
         List<Module> playerModules = new ArrayList<>();
         playerModules.add(Myau.moduleManager.getModule(AutoHeal.class));
@@ -134,6 +136,7 @@ public class ClickGui extends GuiScreen {
         miscModules.add(Myau.moduleManager.getModule(InventoryClicker.class));
         miscModules.add(Myau.moduleManager.getModule(Disabler.class));
         miscModules.add(Myau.moduleManager.getModule(ClientSpoofer.class));
+        miscModules.add(Myau.moduleManager.getModule(MurderDetector.class));
         miscModules.add(Myau.moduleManager.getModule(AutoHypixel.class));
 
         Comparator<Module> comparator = Comparator.comparing(m -> m.getName().toLowerCase());

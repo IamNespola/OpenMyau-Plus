@@ -70,6 +70,7 @@ public class ClickGuiScreen extends GuiScreen {
                 Myau.moduleManager.getModule(Sprint.class),
                 Myau.moduleManager.getModule(SafeWalk.class),
                 Myau.moduleManager.getModule(Jesus.class),
+                Myau.moduleManager.getModule(BHop.class),
                 Myau.moduleManager.getModule(Blink.class),
                 Myau.moduleManager.getModule(NoFall.class),
                 Myau.moduleManager.getModule(NoSlow.class),
@@ -107,6 +108,7 @@ public class ClickGuiScreen extends GuiScreen {
                 Myau.moduleManager.getModule(TeamHealthDisplay.class),
                 Myau.moduleManager.getModule(SeasonDisplay.class),
                 Myau.moduleManager.getModule(Animations.class),
+                Myau.moduleManager.getModule(HudEditor.class),
                 Myau.moduleManager.getModule(ClickGUIModule.class)
         );
 
@@ -143,6 +145,7 @@ public class ClickGuiScreen extends GuiScreen {
                 Myau.moduleManager.getModule(InventoryClicker.class),
                 Myau.moduleManager.getModule(Disabler.class),
                 Myau.moduleManager.getModule(ClientSpoofer.class),
+                Myau.moduleManager.getModule(MurderDetector.class),
                 Myau.moduleManager.getModule(AutoHypixel.class)
         );
 

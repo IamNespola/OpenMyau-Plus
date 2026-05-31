@@ -79,14 +79,9 @@ public class RenderFixes extends Module {
         return module != null && module.isEnabled();
     }
 
-    public static boolean shouldUseShaders() {
-        RenderFixes module = get();
-        return module == null || !module.isEnabled() || module.shader.getValue();
-    }
-
     public static boolean isChatActive() {
         RenderFixes module = get();
-        return module != null && module.isEnabled() && module.chat.getValue();
+        return module != null && module.isEnabled() && module.chat.getValue() && RenderUtil.customHudEffects();
     }
 
     public static boolean isChatScreenOpen() {
@@ -99,7 +94,7 @@ public class RenderFixes extends Module {
 
     public static boolean isScoreboardActive() {
         RenderFixes module = get();
-        return module != null && module.isEnabled() && module.scoreboard.getValue();
+        return module != null && module.isEnabled() && module.scoreboard.getValue() && RenderUtil.customHudEffects();
     }
 
     public static int getChatOffsetX() {
@@ -188,7 +183,7 @@ public class RenderFixes extends Module {
                 int y = -i * 9;
                 String text = chatLine.getChatComponent().getFormattedText();
                 GlStateManager.enableBlend();
-                mc.fontRendererObj.drawStringWithShadow(text, 0.0F, (float) (y - 8), 16777215 + (255 << 24));
+                mc.fontRendererObj.drawString(text, 0.0F, (float) (y - 8), 16777215 + (255 << 24), RenderUtil.hudShadow());
                 GlStateManager.disableAlpha();
                 GlStateManager.disableBlend();
             }
@@ -278,7 +273,7 @@ public class RenderFixes extends Module {
         int scoreColor = new Color(255, 106, 106, 238).getRGB();
         String title = objective.getDisplayName();
         float titleX = x + width / 2.0F - mc.fontRendererObj.getStringWidth(title) / 2.0F;
-        mc.fontRendererObj.drawStringWithShadow(title, titleX, y + 4.0F, textColor);
+        mc.fontRendererObj.drawString(title, titleX, y + 4.0F, textColor, RenderUtil.hudShadow());
 
         List<Score> displayScores = new ArrayList<Score>(scores);
         float lineY = y + fontHeight + 7.0F;
@@ -287,8 +282,8 @@ public class RenderFixes extends Module {
             ScorePlayerTeam team = board.getPlayersTeam(score.getPlayerName());
             String name = ScorePlayerTeam.formatPlayerName(team, score.getPlayerName());
             String value = String.valueOf(score.getScorePoints());
-            mc.fontRendererObj.drawStringWithShadow(name, x + 5.0F, lineY, textColor);
-            mc.fontRendererObj.drawStringWithShadow(value, x + width - 5.0F - mc.fontRendererObj.getStringWidth(value), lineY, scoreColor);
+            mc.fontRendererObj.drawString(name, x + 5.0F, lineY, textColor, RenderUtil.hudShadow());
+            mc.fontRendererObj.drawString(value, x + width - 5.0F - mc.fontRendererObj.getStringWidth(value), lineY, scoreColor, RenderUtil.hudShadow());
             lineY += fontHeight;
         }
 
@@ -366,19 +361,20 @@ public class RenderFixes extends Module {
         }
 
         RenderUtil.resetColor();
-        if (shouldUseShaders()) {
+        if (RenderUtil.hudBloom()) {
             BlurUtils.prepareBloom();
             RoundedUtils.drawRound(x, y, width, height, radius, true, new Color(0, 0, 0, Math.min(210, alpha + 82)));
             BlurUtils.bloomEnd(3, 2.0F);
-
+        }
+        if (RenderUtil.hudBlur()) {
             BlurUtils.prepareBlur();
             RoundedUtils.drawRound(x, y, width, height, radius, true, new Color(0, 0, 0, Math.min(180, alpha + 48)));
             BlurUtils.blurEnd(2, 3.0F);
         }
 
         int background = new Color(7, 9, 13, alpha).getRGB();
-        int highlight = new Color(255, 255, 255, shouldUseShaders() ? 16 : 9).getRGB();
-        int outline = new Color(255, 255, 255, shouldUseShaders() ? 30 : 18).getRGB();
+        int highlight = new Color(255, 255, 255, (RenderUtil.hudBlur() || RenderUtil.hudBloom()) ? 16 : 9).getRGB();
+        int outline = new Color(255, 255, 255, (RenderUtil.hudBlur() || RenderUtil.hudBloom()) ? 30 : 18).getRGB();
         RenderUtil.drawRoundedRect(x, y, width, height, radius, background, true, true, true, true);
         RenderUtil.drawRoundedRect(x + 1.0F, y + 1.0F, width - 2.0F, height - 2.0F, Math.max(0.0F, radius - 1.0F),
                 highlight, true, true, true, true);

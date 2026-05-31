@@ -16,6 +16,14 @@ import net.minecraft.client.gui.ScaledResolution;
 import java.awt.Color;
 
 public class SeasonDisplay extends Module {
+    public static int x = 5;
+    public static int y = 5;
+
+    public static void setPosition(int x, int y) {
+        SeasonDisplay.x = x;
+        SeasonDisplay.y = y;
+    }
+
     public final LongProperty seasonStartTime = new LongProperty("Season Start Time", System.currentTimeMillis(), Long.MIN_VALUE, Long.MAX_VALUE);
     public final IntProperty killsCount = new IntProperty("Kills", 0, 0, Integer.MAX_VALUE);
     public final IntProperty posX = new IntProperty("x", 5, 0, 500);
@@ -69,8 +77,8 @@ public class SeasonDisplay extends Module {
         String duration = String.format("%d d %02d h %02d m %02d s", days, hours, minutes, seconds);
         String kills = String.format("%d", killsCount.getValue());
 
-        int x = posX.getValue();
-        int y = posY.getValue();
+        int x = SeasonDisplay.x;
+        int y = SeasonDisplay.y;
 
         // Fixed-size rounded box similar to Tenacity Statistics
         int padding = 6;

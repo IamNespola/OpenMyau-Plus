@@ -262,9 +262,11 @@ public class ESP2D extends Module {
 
     private Color getColor(Entity entity) {
         if (entity instanceof EntityPlayer) {
-            if (TeamUtil.isFriend((EntityPlayer) entity)) return Color.BLUE;
+            EntityPlayer player = (EntityPlayer) entity;
+            if (MurderDetector.isMurderer(player)) return Color.RED;
+            if (TeamUtil.isFriend(player)) return Color.BLUE;
             if (colorModeValue.getValue() == 5) {
-                return TeamUtil.getTeamColor((EntityPlayer) entity, 1.0f);
+                return TeamUtil.getTeamColor(player, 1.0f);
             }
         }
         switch (colorModeValue.getValue()) {

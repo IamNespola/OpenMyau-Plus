@@ -21,12 +21,17 @@ import static net.minecraft.init.Items.string;
 
 public class WaterMark extends Module {
     private static final Minecraft mc = Minecraft.getMinecraft();
+    public static int x = 4;
+    public static int y = 4;
+
+    public static void setPosition(int x, int y) {
+        WaterMark.x = x;
+        WaterMark.y = y;
+    }
 
     public final ModeProperty mode = new ModeProperty("Mode", 0, new String[]{"Exhibition", "Modern", "WeedHack"});
 
     public final TextProperty modernText = new TextProperty("Text", "OpenMyau+", () -> mode.getValue() == 1);
-    public final BooleanProperty shadow = new BooleanProperty("Shadow", true, () -> mode.getValue() == 1);
-    public final BooleanProperty enableGlow = new BooleanProperty("Glow", true);
 
     public WaterMark() {
         super("WaterMark", false, false);
@@ -70,9 +75,13 @@ public class WaterMark extends Module {
     private void drawStringWithShadow(String text, float x, float y, int color) {
         FontRenderer fr = getCustomFont();
         if (fr != null) {
-            fr.drawStringWithShadow(text, x, y, color);
+            if (RenderUtil.hudShadow()) {
+                fr.drawStringWithShadow(text, x, y, color);
+            } else {
+                fr.drawString(text, x, y, color);
+            }
         } else {
-            mc.fontRendererObj.drawStringWithShadow(text, x, y, color);
+            mc.fontRendererObj.drawString(text, x, y, color, RenderUtil.hudShadow());
         }
     }
 
@@ -88,7 +97,7 @@ public class WaterMark extends Module {
                 renderModern();
                 break;
             case 2:
-                renderWeedhackWatermark(4, 4);
+                renderWeedhackWatermark(x, y);
                 break;
         }
     }
@@ -100,8 +109,8 @@ public class WaterMark extends Module {
         HUD hud = (HUD) Myau.moduleManager.getModule("HUD");
 
         String text = modernText.getValue();
-        float x = 4.0f;
-        float y = 4.0f;
+        float x = WaterMark.x;
+        float y = WaterMark.y;
         long time = System.currentTimeMillis();
 
         GlStateManager.pushMatrix();
@@ -119,14 +128,14 @@ public class WaterMark extends Module {
             }
 
             if (customFont) {
-                if (shadow.getValue()) {
+                if (RenderUtil.hudShadow()) {
                     fr.drawStringWithShadow(charStr, currentX, y, color);
                 } else {
                     fr.drawString(charStr, currentX, y, color);
                 }
                 currentX += (float) fr.getStringWidth(charStr);
             } else {
-                mc.fontRendererObj.drawString(charStr, currentX, y, color, shadow.getValue());
+                mc.fontRendererObj.drawString(charStr, currentX, y, color, RenderUtil.hudShadow());
                 currentX += mc.fontRendererObj.getStringWidth(charStr);
             }
         }
@@ -151,8 +160,8 @@ public class WaterMark extends Module {
 
         HUD hud = (HUD) Myau.moduleManager.modules.get(HUD.class);
 
-        float x = 2.0f;
-        float y = 2.0f;
+        float x = WaterMark.x;
+        float y = WaterMark.y;
 
         if (getCustomFont() != null) {
             y += 1.0f;
@@ -209,7 +218,7 @@ public class WaterMark extends Module {
         RenderUtils.drawRect(x + 3, y + 3, boxWidth + 2, boxHeight + 2, new Color(22, 22, 22));
 
         float textY = mc.fontRendererObj.FONT_HEIGHT > 12 ? y + (boxHeight - 12) / 2f + 1 : y + (boxHeight - mc.fontRendererObj.FONT_HEIGHT) / 2f + 3;
-        mc.fontRendererObj.drawStringWithShadow(text, x + 5, textY, 0xFFFFFFFF);
+        mc.fontRendererObj.drawString(text, x + 5, textY, 0xFFFFFFFF, RenderUtil.hudShadow());
 
         float gradient = boxWidth + 2;
         for (int i = 0; i < gradient; i++) {

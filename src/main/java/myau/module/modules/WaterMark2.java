@@ -5,15 +5,20 @@ import net.minecraft.client.Minecraft;
 import myau.event.EventTarget;
 import myau.events.Render2DEvent;
 import myau.module.Module;
-import myau.property.properties.BooleanProperty;
 import myau.property.properties.IntProperty;
 import myau.util.RenderUtil;
 import myau.font.impl.UFontRenderer; // 必须导入自定义字体类
 
 public class WaterMark2 extends Module {
+    public static int x = 2;
+    public static int y = 2;
     public final IntProperty rectLeft = new IntProperty("RectLeft", 2, 0, 20);
     public final IntProperty rectTop = new IntProperty("RectTop", 2, 0, 20);
-    public final BooleanProperty shadow = new BooleanProperty("Shadow", true);
+
+    public static void setPosition(int x, int y) {
+        WaterMark2.x = x;
+        WaterMark2.y = y;
+    }
 
     public WaterMark2() {
         super("WaterMark2", false);
@@ -35,8 +40,8 @@ public class WaterMark2 extends Module {
         float padX = 6.0F;
         float padY = 4.0F;
 
-        float startX = (float) rectLeft.getValue();
-        float startY = (float) rectTop.getValue();
+        float startX = (float) x;
+        float startY = (float) y;
 
         float rectRight = startX + textWidth + (padX);
         float rectBottom = startY + textHeight + (padY);
@@ -58,7 +63,7 @@ public class WaterMark2 extends Module {
                 startX + padX / 2,
                 startY,
                 hudColor,
-                shadow.getValue()
+                RenderUtil.hudShadow()
         );
     }
 }

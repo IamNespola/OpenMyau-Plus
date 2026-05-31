@@ -20,6 +20,13 @@ import java.util.stream.Collectors;
 
 public class Radar extends Module {
     private static final Minecraft mc = Minecraft.getMinecraft();
+    public static int x = 60;
+    public static int y = 60;
+
+    public static void setPosition(int x, int y) {
+        Radar.x = x;
+        Radar.y = y;
+    }
     public final ModeProperty colorMode = new ModeProperty("color", 0, new String[]{"DEFAULT", "TEAMS", "HUD"});
     public final IntProperty position = new IntProperty("position", 0, 0, 4);
     public final IntProperty offsetX = new IntProperty("offset-x", 60, 0, 1000, () -> position.getValue() != 4);
@@ -88,8 +95,8 @@ public class Radar extends Module {
 
         double centerX, centerY;
         if (position.getValue() == 4) {
-            centerX = sr.getScaledWidth() / 2.0F;
-            centerY = sr.getScaledHeight() / 2.0F;
+            centerX = x;
+            centerY = y;
         } else {
             centerX = (position.getValue() & 0x1) == 0x1 ? Math.max(sr.getScaledWidth() - offsetX.getValue(), 0) : Math.min(offsetX.getValue(), sr.getScaledWidth());
             centerY = (position.getValue() & 0x2) == 0x2 ? Math.max(sr.getScaledHeight() - offsetY.getValue(), 0) : Math.min(offsetY.getValue(), sr.getScaledHeight());

@@ -1,9 +1,12 @@
 package myau.util;
 
+import myau.Myau;
 import myau.enums.ChatColors;
 import myau.mixin.IAccessorEntityRenderer;
 import myau.mixin.IAccessorMinecraft;
 import myau.mixin.IAccessorRenderManager;
+import myau.module.Module;
+import myau.module.modules.HUD;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Gui;
 import net.minecraft.client.gui.ScaledResolution;
@@ -54,6 +57,33 @@ public class RenderUtil {
         RenderUtil.projectionBuffer = GLAllocation.createDirectFloatBuffer(16);
         RenderUtil.vectorBuffer = GLAllocation.createDirectFloatBuffer(4);
         RenderUtil.enchantmentMap = new EnchantmentMap();
+    }
+
+    public static HUD getHud() {
+        if (Myau.moduleManager == null) {
+            return null;
+        }
+        Module module = Myau.moduleManager.getModule(HUD.class);
+        return module instanceof HUD ? (HUD) module : null;
+    }
+
+    public static boolean hudShadow() {
+        HUD hud = getHud();
+        return hud == null || hud.shadow.getValue();
+    }
+
+    public static boolean hudBlur() {
+        HUD hud = getHud();
+        return hud == null || hud.blur.getValue();
+    }
+
+    public static boolean hudBloom() {
+        HUD hud = getHud();
+        return hud == null || hud.bloom.getValue();
+    }
+
+    public static boolean customHudEffects() {
+        return hudBlur() && hudShadow();
     }
 
     private static ChatColors getColorForLevel(int currentLevel, int maxLevel) {

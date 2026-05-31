@@ -3,12 +3,8 @@ package myau.module.modules;
 import java.awt.Color;
 import myau.event.EventTarget;
 import myau.events.Render2DEvent;
-import myau.font.CFontRenderer;
 import myau.module.Module;
-import myau.module.modules.Scaffold;
-import myau.property.properties.BooleanProperty;
 import myau.property.properties.ColorProperty;
-import myau.property.properties.ModeProperty;
 import myau.util.GlowUtils;
 import myau.util.RenderUtil;
 import myau.util.RoundedUtils;
@@ -17,13 +13,16 @@ import net.minecraft.client.gui.ScaledResolution;
 import net.minecraft.client.network.NetworkPlayerInfo;
 
 public class DynamicIsland extends Module { // nah bro i took 2 hour just to did this shit
-    private boolean showScaffold = false;
-    private long scaffoldTime = 0;
     private static final Minecraft mc = Minecraft.getMinecraft();
+    public static int x = -1;
+    public static int y = 8;
+
+    public static void setPosition(int x, int y) {
+        DynamicIsland.x = x;
+        DynamicIsland.y = y;
+    }
 
     public final ColorProperty textColor = new ColorProperty("AccentColor", new Color(255, 30, 0).getRGB());
-    public final BooleanProperty textShadow = new BooleanProperty("TextShadow", true);
-    public final BooleanProperty enableGlow = new BooleanProperty("Glow", true);
 
     private final int bgAlpha = 130;
     private final float radius = 8f;
@@ -34,8 +33,6 @@ public class DynamicIsland extends Module { // nah bro i took 2 hour just to did
 
     @EventTarget
     public void onRender2D(Render2DEvent event) {
-        Scaffold scaffold = (Scaffold) myau.Myau.moduleManager.getModule(Scaffold.class);
-        boolean scaffoldEnabled = scaffold != null && scaffold.isEnabled();
         if (!this.isEnabled() || mc.thePlayer == null) {
             return;
         }
@@ -52,8 +49,8 @@ public class DynamicIsland extends Module { // nah bro i took 2 hour just to did
         float width = mc.fontRendererObj.getStringWidth(text) + 24f;
         float height = 26f;
 
-        float x = sr.getScaledWidth() / 2f - width / 2f;
-        float y = 8f;
+        float x = DynamicIsland.x < 0 ? sr.getScaledWidth() / 2f - width / 2f : DynamicIsland.x;
+        float y = DynamicIsland.y;
 
         drawBackground(x, y, width, height);
 
@@ -62,35 +59,39 @@ public class DynamicIsland extends Module { // nah bro i took 2 hour just to did
 
         int accentRGB = new Color(this.textColor.getValue()).getRGB();
 
-        mc.fontRendererObj.drawStringWithShadow(
+        mc.fontRendererObj.drawString(
                 "Myau+",
                 (int) startX,
                 (int) textY,
-                accentRGB);
+                accentRGB,
+                RenderUtil.hudShadow());
 
         String part1 = "  ·  " + username + "  ·  ";
         float part1Width = mc.fontRendererObj.getStringWidth("Myau+");
-        mc.fontRendererObj.drawStringWithShadow(
+        mc.fontRendererObj.drawString(
                 part1,
                 (int) (startX + part1Width),
                 (int) textY,
-                0xFFFFFF);
+                0xFFFFFF,
+                RenderUtil.hudShadow());
 
         String part2 = ping + "ms";
         float part2Width = mc.fontRendererObj.getStringWidth("Myau+" + part1);
-        mc.fontRendererObj.drawStringWithShadow(
+        mc.fontRendererObj.drawString(
                 part2,
                 (int) (startX + part2Width),
                 (int) textY,
-                accentRGB);
+                accentRGB,
+                RenderUtil.hudShadow());
 
         String rest = " to " + server + "  ·  " + fps + "fps";
         float restWidth = mc.fontRendererObj.getStringWidth("Myau+" + part1 + part2);
-        mc.fontRendererObj.drawStringWithShadow(
+        mc.fontRendererObj.drawString(
                 rest,
                 (int) (startX + restWidth),
                 (int) textY,
-                0xFFFFFF);
+                0xFFFFFF,
+                RenderUtil.hudShadow());
     }
 
     private void drawBackground(float x, float y, float w, float h) {
@@ -98,34 +99,14 @@ public class DynamicIsland extends Module { // nah bro i took 2 hour just to did
 
         Color accent = new Color(this.textColor.getValue());
 
-        // ── Drop shadow (dark, offset downward) ──
-        GlowUtils.drawGlow(
-                x + 2f, y + 4f,
-                w, h,
-                40,
-                new Color(0, 0, 0, 120));
+        if (RenderUtil.hudBlur()) {
+            GlowUtils.drawGlow(x + 2f, y + 4f, w, h, 40, new Color(0, 0, 0, 120));
+        }
 
-        if (this.enableGlow.getValue()) {
-            // ── Outer bloom – large, faint ──
-            GlowUtils.drawGlow(
-                    x, y,
-                    w, h,
-                    90,
-                    new Color(accent.getRed(), accent.getGreen(), accent.getBlue(), 35));
-
-            // ── Mid bloom – medium, moderate ──
-            GlowUtils.drawGlow(
-                    x, y,
-                    w, h,
-                    55,
-                    new Color(accent.getRed(), accent.getGreen(), accent.getBlue(), 70));
-
-            // ── Inner bloom – tight, vibrant ──
-            GlowUtils.drawGlow(
-                    x, y,
-                    w, h,
-                    25,
-                    new Color(accent.getRed(), accent.getGreen(), accent.getBlue(), 110));
+        if (RenderUtil.hudBloom()) {
+            GlowUtils.drawGlow(x, y, w, h, 90, new Color(accent.getRed(), accent.getGreen(), accent.getBlue(), 35));
+            GlowUtils.drawGlow(x, y, w, h, 55, new Color(accent.getRed(), accent.getGreen(), accent.getBlue(), 70));
+            GlowUtils.drawGlow(x, y, w, h, 25, new Color(accent.getRed(), accent.getGreen(), accent.getBlue(), 110));
         }
 
         RoundedUtils.drawRoundedRect(
