@@ -105,7 +105,7 @@ public class Myau {
         moduleManager.modules.put(FakeLag.class, new FakeLag());
         moduleManager.modules.put(FullBright.class, new FullBright());
         moduleManager.modules.put(GhostHand.class, new GhostHand());
-        moduleManager.modules.put(GuiModule.class, new GuiModule());
+        moduleManager.modules.put(ClickGUIModule.class, new ClickGUIModule());
         moduleManager.modules.put(HitSelect.class, new HitSelect());
         moduleManager.modules.put(AutoHypixel.class, new AutoHypixel());
         moduleManager.modules.put(HUD.class, new HUD());

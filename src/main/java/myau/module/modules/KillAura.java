@@ -102,7 +102,7 @@ public class KillAura extends Module {
     public final BooleanProperty silverfish;
     public final BooleanProperty teams;
     public final ModeProperty showTarget;
-    public final ModeProperty debugLog;
+    public final MultiModeProperty debugLog;
     public final BooleanProperty randomize;
     public final FloatProperty randomizeRange;
     public final FloatProperty yRandomizeStrength;
@@ -188,7 +188,7 @@ public class KillAura extends Module {
         this.silverfish = new BooleanProperty("Silverfish", false);
         this.teams = new BooleanProperty("Teams", true);
         this.showTarget = new ModeProperty("ShowTarget", 0, new String[]{"NONE", "Default"});
-        this.debugLog = new ModeProperty("Debug", 0, new String[]{"NONE", "Health"});
+        this.debugLog = new MultiModeProperty("Debug", new String[]{"Health", "AttackRange"});
 
         this.liquidBounceHorizontalSpeed = new FloatProperty("LB-HSpeed", 180.0F, 1.0F, 180.0F, () -> rotations.getValue() == 4);
         this.liquidBounceVerticalSpeed = new FloatProperty("LB-VSpeed", 180.0F, 1.0F, 180.0F, () -> rotations.getValue() == 4);
@@ -251,6 +251,16 @@ public class KillAura extends Module {
                 }
                 ((IAccessorPlayerControllerMP) mc.playerController).callSyncCurrentPlayItem();
                 PacketUtil.sendPacket(new C02PacketUseEntity(this.target.getEntity(), Action.ATTACK));
+                if (this.debugLog.isSelected("AttackRange")) {
+                    ChatUtil.sendFormatted(
+                            String.format(
+                                    "%sAttackRange: &a&l%.2f&r (&otick: %d&r)&r",
+                                    Myau.clientName,
+                                    getRealAttackRange(this.target),
+                                    mc.thePlayer.ticksExisted
+                            )
+                    );
+                }
                 if (mc.playerController.getCurrentGameType() != GameType.SPECTATOR) {
                     PlayerUtil.attackEntity(this.target.getEntity());
                 }
@@ -414,6 +424,26 @@ public class KillAura extends Module {
 
     private boolean isBoxInAttackRange(AxisAlignedBB axisAlignedBB) {
         return RotationUtil.distanceToBox(axisAlignedBB) <= (double) this.attackRange.getValue();
+    }
+
+    private double getRealAttackRange(AttackData attackData) {
+        if (attackData == null || mc.thePlayer == null) return 0.0D;
+        Vec3 playerPos = getServerPlayerPosition();
+        AxisAlignedBB targetBox = getRealTargetBox(attackData);
+        return RotationUtil.clampVecToBox(targetBox, playerPos.addVector(0.0D, mc.thePlayer.getEyeHeight(), 0.0D));
+    }
+
+    private Vec3 getServerPlayerPosition() {
+        FakeLag fakeLag = (FakeLag) Myau.moduleManager.getModule(FakeLag.class);
+        Vec3 fakeLagServerPos = fakeLag != null ? fakeLag.getServerPositionForDebug() : null;
+        return fakeLagServerPos != null ? fakeLagServerPos : mc.thePlayer.getPositionVector();
+    }
+
+    private AxisAlignedBB getRealTargetBox(AttackData attackData) {
+        EntityLivingBase entity = attackData.getEntity();
+        BackTrack backTrack = (BackTrack) Myau.moduleManager.getModule(BackTrack.class);
+        Vec3 trackedPosition = backTrack != null ? backTrack.getTrackedPositionForDebug(entity) : null;
+        return trackedPosition == null ? attackData.getBox() : RotationUtil.getEntityBoxAtPosition(entity, trackedPosition);
     }
 
     private boolean isPlayerTarget(EntityLivingBase entityLivingBase) {
@@ -1139,7 +1169,7 @@ public class KillAura extends Module {
                     mc.thePlayer.stopUsingItem();
                 }
             }
-            if (this.debugLog.getValue() == 1 && this.isAttackAllowed()) {
+            if (this.debugLog.isSelected("Health") && this.isAttackAllowed()) {
                 if (event.getPacket() instanceof S06PacketUpdateHealth) {
                     float packet = ((S06PacketUpdateHealth) event.getPacket()).getHealth() - mc.thePlayer.getHealth();
                     if (packet != 0.0F && this.lastTickProcessed != mc.thePlayer.ticksExisted) {

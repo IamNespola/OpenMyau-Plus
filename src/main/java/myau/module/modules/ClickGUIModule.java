@@ -7,6 +7,7 @@ import myau.property.properties.IntProperty;
 import myau.property.properties.ModeProperty;
 
 import java.awt.*;
+import myau.ui.impl.clickgui.clean.CleanClickGuiScreen;
 import myau.ui.impl.clickgui.normal.ClickGuiScreen;
 import net.minecraft.client.Minecraft;
 import org.lwjgl.input.Keyboard;
@@ -28,9 +29,10 @@ public class ClickGUIModule extends Module {
             "Sky Blue", "Green", "Orange", "Purple", "Yellow", "Red", "Teal", "White"
     };
 
-    public ModeProperty accentColor = new ModeProperty("Color", 0, COLOR_NAMES);
-    public BooleanProperty saveGuiState = new BooleanProperty("Save GUI State", true);
-    public BooleanProperty shadow = new BooleanProperty("Shadow", true);
+    public ModeProperty mode = new ModeProperty("Mode", 0, new String[]{"Clean", "Normal"});
+    public ModeProperty accentColor = new ModeProperty("Color", 0, COLOR_NAMES, () -> mode.getValue() == 1);
+    public BooleanProperty saveGuiState = new BooleanProperty("Save GUI State", true, () -> mode.getValue() == 1);
+    public BooleanProperty shadow = new BooleanProperty("Shadow", true, () -> mode.getValue() == 1);
 
     public IntProperty windowWidth = new IntProperty("Window Width", 600, 300, 1200);
     public IntProperty windowHeight = new IntProperty("Window Height", 400, 200, 800);
@@ -45,6 +47,7 @@ public class ClickGUIModule extends Module {
     public ClickGUIModule() {
         super("ClickGUI", false);
         setKey(Keyboard.KEY_RSHIFT);
+        mode.setValue(0);
     }
 
     @Override
@@ -54,9 +57,24 @@ public class ClickGUIModule extends Module {
             this.setEnabled(false);
             return;
         }
-        ClickGuiScreen gui = ClickGuiScreen.getInstance();
-        if (gui != null) {
-            Minecraft.getMinecraft().displayGuiScreen(gui);
+        openSelectedGui();
+    }
+
+    @Override
+    public void verifyValue(String string) {
+        if ("Mode".equalsIgnoreCase(string) && this.isEnabled() && Minecraft.getMinecraft().theWorld != null) {
+            openSelectedGui();
+        }
+    }
+
+    public void openSelectedGui() {
+        if (mode.getValue() == 0) {
+            Minecraft.getMinecraft().displayGuiScreen(CleanClickGuiScreen.getInstance());
+        } else {
+            ClickGuiScreen gui = ClickGuiScreen.getInstance();
+            if (gui != null) {
+                Minecraft.getMinecraft().displayGuiScreen(gui);
+            }
         }
     }
 

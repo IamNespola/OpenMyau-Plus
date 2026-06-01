@@ -51,6 +51,8 @@ public class ModuleEntry extends Component {
                         comp = new Slider(property, x, currentY, width, compHeight);
                     } else if (property instanceof ModeProperty) {
                         comp = new Dropdown((ModeProperty) property, x, currentY, width, compHeight);
+                    } else if (property instanceof MultiModeProperty) {
+                        comp = new MultiDropdown((MultiModeProperty) property, x, currentY, width, compHeight);
                     } else if (property instanceof ColorProperty) {
                         comp = new ColorPicker((ColorProperty) property, x, currentY, width, 60);
                     } else if (property instanceof TextProperty) {
@@ -69,6 +71,7 @@ public class ModuleEntry extends Component {
         if (comp instanceof Switch) return ((Switch) comp).getProperty().isVisible();
         if (comp instanceof Slider) return ((Slider) comp).getProperty().isVisible();
         if (comp instanceof Dropdown) return ((Dropdown) comp).getProperty().isVisible();
+        if (comp instanceof MultiDropdown) return ((MultiDropdown) comp).getProperty().isVisible();
         if (comp instanceof ColorPicker) return ((ColorPicker) comp).getProperty().isVisible();
         if (comp instanceof TextField) return ((TextField) comp).getProperty().isVisible();
         return true;

@@ -265,6 +265,11 @@ public class FakeLag extends Module {
         return mc.thePlayer != null && (mc.thePlayer.moveForward != 0.0F || mc.thePlayer.moveStrafing != 0.0F);
     }
 
+    public Vec3 getServerPositionForDebug() {
+        if (!this.isEnabled() || this.positions.isEmpty()) return null;
+        return this.positions.getFirst().pos;
+    }
+
     @Override
     public String[] getSuffix() {
         return new String[]{String.valueOf(this.packetQueue.size())};

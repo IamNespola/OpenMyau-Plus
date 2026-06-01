@@ -4,6 +4,7 @@ import lombok.Getter;
 import myau.module.Module;
 import myau.module.modules.ClickGUIModule;
 import myau.ui.impl.clickgui.normal.component.Component;
+import myau.ui.impl.clickgui.normal.component.ConfigEntry;
 import myau.ui.impl.clickgui.normal.component.ModuleEntry;
 import myau.util.RenderUtil;
 import myau.util.font.FontManager;
@@ -16,6 +17,7 @@ import java.util.List;
 public class Frame extends Component {
     private final String categoryName;
     private final ArrayList<ModuleEntry> moduleEntries;
+    private final ArrayList<ConfigEntry> configEntries;
     private int dragX, dragY;
     private boolean dragging;
     private boolean expanded;
@@ -28,9 +30,23 @@ public class Frame extends Component {
         this.dragging = false;
         this.expanded = true;
         this.moduleEntries = new ArrayList<>();
+        this.configEntries = new ArrayList<>();
         this.currentHeight = height;
         for (Module module : modules) {
             this.moduleEntries.add(new ModuleEntry(module, x, 0, width, 22));
+        }
+    }
+
+    public Frame(String categoryName, List<String> configs, int x, int y, int width, int height, boolean configFrame) {
+        super(x, y, width, height);
+        this.categoryName = categoryName;
+        this.dragging = false;
+        this.expanded = true;
+        this.moduleEntries = new ArrayList<>();
+        this.configEntries = new ArrayList<>();
+        this.currentHeight = height;
+        for (String config : configs) {
+            this.configEntries.add(new ConfigEntry(config, x, 0, width, 22));
         }
     }
 
@@ -48,6 +64,9 @@ public class Frame extends Component {
         float headerHeight = this.height;
         float listHeight = 0;
         for (ModuleEntry entry : moduleEntries) {
+            listHeight += entry.getCurrentHeight();
+        }
+        for (ConfigEntry entry : configEntries) {
             listHeight += entry.getCurrentHeight();
         }
 
@@ -79,12 +98,12 @@ public class Frame extends Component {
         int textColor = new Color(255, 255, 255, alpha).getRGB();
         if (FontManager.productSans20 != null) {
             float textY = (float) (scrolledY + (headerHeight - FontManager.productSans20.getHeight()) / 2f + 1);
-            FontManager.productSans20.drawString(categoryName, x + 8, textY, textColor);
+            FontManager.productSans20.drawString(iconForCategory(categoryName) + " " + categoryName, x + 8, textY, textColor);
             String displayArrow = expanded ? "-" : "+";
             float arrowW = (float) FontManager.productSans20.getStringWidth(displayArrow);
             FontManager.productSans20.drawString(displayArrow, x + width - arrowW - 8, textY, textColor);
         } else {
-            mc.fontRendererObj.drawStringWithShadow(categoryName, x + 6, scrolledY + 6, textColor);
+            mc.fontRendererObj.drawStringWithShadow(iconForCategory(categoryName) + " " + categoryName, x + 6, scrolledY + 6, textColor);
         }
 
         if (expanded) {
@@ -95,7 +114,15 @@ public class Frame extends Component {
                 entry.setX(x);
                 entry.setY(currentModuleY);
                 entry.setWidth(width);
-                entry.render(mouseX, mouseY, partialTicks, animationProgress, i == moduleEntries.size() - 1, scrollOffset, deltaTime);
+                entry.render(mouseX, mouseY, partialTicks, animationProgress, i == moduleEntries.size() - 1 && configEntries.isEmpty(), scrollOffset, deltaTime);
+                currentModuleY += (int) entry.getCurrentHeight();
+            }
+            for (int i = 0; i < configEntries.size(); i++) {
+                ConfigEntry entry = configEntries.get(i);
+                entry.setX(x);
+                entry.setY(currentModuleY);
+                entry.setWidth(width);
+                entry.render(mouseX, mouseY, partialTicks, animationProgress, i == configEntries.size() - 1, scrollOffset, deltaTime);
                 currentModuleY += (int) entry.getCurrentHeight();
             }
             RenderUtil.releaseScissor();
@@ -132,6 +159,11 @@ public class Frame extends Component {
                     return true;
                 }
             }
+            for (ConfigEntry entry : configEntries) {
+                if (entry.mouseClicked(mouseX, mouseY, mouseButton, scrollOffset)) {
+                    return true;
+                }
+            }
         }
         return false;
     }
@@ -153,6 +185,9 @@ public class Frame extends Component {
             for (ModuleEntry entry : moduleEntries) {
                 entry.mouseReleased(mouseX, mouseY, mouseButton, scrollOffset);
             }
+            for (ConfigEntry entry : configEntries) {
+                entry.mouseReleased(mouseX, mouseY, mouseButton, scrollOffset);
+            }
         }
     }
 
@@ -169,6 +204,19 @@ public class Frame extends Component {
             for (ModuleEntry entry : moduleEntries) {
                 entry.keyTyped(typedChar, keyCode);
             }
+            for (ConfigEntry entry : configEntries) {
+                entry.keyTyped(typedChar, keyCode);
+            }
         }
+    }
+
+    private String iconForCategory(String category) {
+        if ("Combat".equalsIgnoreCase(category)) return "/";
+        if ("Movement".equalsIgnoreCase(category)) return "›";
+        if ("Render".equalsIgnoreCase(category)) return "◈";
+        if ("Player".equalsIgnoreCase(category)) return "◆";
+        if ("Misc".equalsIgnoreCase(category)) return "•";
+        if ("Configs".equalsIgnoreCase(category)) return "≡";
+        return "/";
     }
 }

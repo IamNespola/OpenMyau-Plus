@@ -86,6 +86,21 @@ public class RotationUtil {
         return RotationUtil.clampVecToBox(boundingBox, RotationUtil.mc.thePlayer.getPositionEyes(1.0f));
     }
 
+    public static AxisAlignedBB getEntityBoxAtPosition(Entity entity, Vec3 position) {
+        AxisAlignedBB box = entity.getEntityBoundingBox();
+        double width = box.maxX - box.minX;
+        double height = box.maxY - box.minY;
+        double border = entity.getCollisionBorderSize();
+        return new AxisAlignedBB(
+                position.xCoord - width / 2.0D,
+                position.yCoord,
+                position.zCoord - width / 2.0D,
+                position.xCoord + width / 2.0D,
+                position.yCoord + height,
+                position.zCoord + width / 2.0D
+        ).expand(border, border, border);
+    }
+
     public static double clampVecToBox(AxisAlignedBB boundingBox, Vec3 point) {
         if (boundingBox.isVecInside(point)) {
             return 0.0;

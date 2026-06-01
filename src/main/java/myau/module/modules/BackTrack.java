@@ -399,6 +399,13 @@ public class BackTrack extends Module {
         return new Vec3(0.0D, 0.0D, 0.0D);
     }
 
+    public Vec3 getTrackedPositionForDebug(EntityLivingBase entity) {
+        if (!this.isEnabled() || mode.getValue() != 0 || entity == null || target == null || trackedPosition == null) return null;
+        if (entity.getEntityId() != target.getEntityId()) return null;
+        if (trackedPosition.xCoord == 0.0D && trackedPosition.yCoord == 0.0D && trackedPosition.zCoord == 0.0D) return null;
+        return trackedPosition;
+    }
+
     private void attackRealTarget(EntityLivingBase entity) {
         if (entity == null || mc.thePlayer == null || mc.getNetHandler() == null) return;
         mc.thePlayer.swingItem();
