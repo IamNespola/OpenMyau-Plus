@@ -39,7 +39,7 @@ public class Velocity extends Module {
             "Reverse", "SmoothReverse", "Jump", "Glitch", "Legit",
             "Vulcan", "MatrixReduce", "MatrixReducePlus", "IntaveReduce",
             "GrimC03", "Hypixel", "HypixelAir", "BlockSMC", "GrimCombat",
-            "Polar", "MatrixNoXZ", "Intave13", "SmartJumpReset", "Intave14",
+            "Polar", "MatrixNoXZ", "Intave13", "JumpReset", "Intave14",
             "HypixelPrediction"
     });
 
@@ -66,8 +66,11 @@ public class Velocity extends Module {
 
     public final FloatProperty intaveReduceFactor = new FloatProperty("ReduceFactor", 0.6f, 0.0f, 1.0f, () -> mode.getValue() == 13);
 
-    public final BooleanProperty smartJumpSneak = new BooleanProperty("SneakReduce", false, () -> mode.getValue() == 22);
-    public final BooleanProperty smartJumpBackward = new BooleanProperty("Backward", false, () -> mode.getValue() == 22);
+    public final IntProperty jumpResetChance = new IntProperty("JRChance", 100, 0, 100, () -> mode.getValue() == 22);
+    public final BooleanProperty jumpByReceivedHits = new BooleanProperty("JumpByHits", false, () -> mode.getValue() == 22);
+    public final IntProperty hitsUntilJump = new IntProperty("HitsUntilJump", 2, 0, 10, () -> mode.getValue() == 22 && jumpByReceivedHits.getValue());
+    public final BooleanProperty jumpByDelay = new BooleanProperty("JumpByDelay", true, () -> mode.getValue() == 22);
+    public final IntProperty jumpResetTicks = new IntProperty("UntilJump", 2, 0, 20, () -> mode.getValue() == 22 && jumpByDelay.getValue());
 
     public final FloatProperty grimRange = new FloatProperty("GrimRange", 3.5f, 0.0f, 6.0f, () -> mode.getValue() == 18);
     public final IntProperty grimAttacks = new IntProperty("GrimAttacks", 12, 1, 16, () -> mode.getValue() == 18);
@@ -95,6 +98,7 @@ public class Velocity extends Module {
     private int attackTimer = -1;
     private int lastHurtTime = 0;
     private boolean jumpFlag = false;
+    private boolean jumpResetFallDamage = false;
 
     public Velocity() {
         super("Velocity", false, false, "We Use Ur Dih to Remove KnockBack :D");
@@ -116,6 +120,7 @@ public class Velocity extends Module {
         attackTimer = -1;
         lastHurtTime = 0;
         jumpFlag = false;
+        jumpResetFallDamage = false;
     }
 
     private void reset() {
@@ -315,38 +320,11 @@ public class Velocity extends Module {
                     }
                     break;
                 case 22:
-                    if (player.hurtTime > 0) {
-                        boolean forwardPressed = ((IAccessorKeyBinding) mc.gameSettings.keyBindForward).getPressed();
-
-                        if (smartJumpBackward.getValue()) {
-                            if (player.hurtTime > 1) {
-                                ((IAccessorKeyBinding) mc.gameSettings.keyBindForward).setPressed(false);
-                                ((IAccessorKeyBinding) mc.gameSettings.keyBindBack).setPressed(true);
-                                ((IAccessorKeyBinding) mc.gameSettings.keyBindJump).setPressed(true);
-                            } else {
-                                if (mc.currentScreen == null) {
-                                    ((IAccessorKeyBinding) mc.gameSettings.keyBindForward).setPressed(GameSettings.isKeyDown(mc.gameSettings.keyBindForward));
-                                    ((IAccessorKeyBinding) mc.gameSettings.keyBindBack).setPressed(GameSettings.isKeyDown(mc.gameSettings.keyBindBack));
-                                    ((IAccessorKeyBinding) mc.gameSettings.keyBindJump).setPressed(GameSettings.isKeyDown(mc.gameSettings.keyBindJump));
-                                }
-                            }
-                        }
-
-                        if (player.onGround && player.hurtTime >= 8 && forwardPressed) {
-                            player.jump();
-                            player.motionX *= (1 - 1E-7);
-                            player.motionZ *= (1 - 1E-7);
-                        }
-
-                        if (smartJumpSneak.getValue()) {
-                            if (player.hurtTime == 9) {
-                                PacketUtil.sendPacket(new C0BPacketEntityAction(player, C0BPacketEntityAction.Action.START_SNEAKING));
-                                PacketUtil.sendPacket(new C0BPacketEntityAction(player, C0BPacketEntityAction.Action.STOP_SNEAKING));
-                            } else if (player.hurtTime == 8) {
-                                player.motionX *= (1 - 1E-7);
-                                player.motionZ *= (1 - 1E-7);
-                            }
-                        }
+                    if (this.shouldJumpReset(player)) {
+                        player.jump();
+                        limitUntilJump = 0;
+                    } else {
+                        this.updateJumpResetLimit(player);
                     }
                     break;
                 case 23:
@@ -398,6 +376,9 @@ public class Velocity extends Module {
 
             velocityTimer.reset();
             IAccessorS12PacketEntityVelocity accessor = (IAccessorS12PacketEntityVelocity) packet;
+            if (mode.getValue() == 22) {
+                jumpResetFallDamage = packet.getMotionX() == 0 && packet.getMotionZ() == 0 && packet.getMotionY() < 0;
+            }
 
             switch (mode.getValue()) {
                 case 24:
@@ -660,6 +641,36 @@ public class Velocity extends Module {
     @Override
     public String[] getSuffix() {
         return new String[]{CaseFormat.UPPER_UNDERSCORE.to(CaseFormat.UPPER_CAMEL, this.mode.getModeString())};
+    }
+
+    private boolean shouldJumpReset(EntityPlayerSP player) {
+        if (player.hurtTime != 9 || !player.onGround || !player.isSprinting() || jumpResetFallDamage) {
+            return false;
+        }
+        if (!this.isJumpResetCooldownOver()) {
+            return false;
+        }
+        return jumpResetChance.getValue() >= 100 || RandomUtil.nextInt(0, 100) < jumpResetChance.getValue();
+    }
+
+    private boolean isJumpResetCooldownOver() {
+        if (jumpByReceivedHits.getValue()) {
+            return limitUntilJump >= hitsUntilJump.getValue();
+        }
+        if (jumpByDelay.getValue()) {
+            return limitUntilJump >= jumpResetTicks.getValue();
+        }
+        return true;
+    }
+
+    private void updateJumpResetLimit(EntityPlayerSP player) {
+        if (jumpByReceivedHits.getValue()) {
+            if (player.hurtTime == 9) {
+                limitUntilJump++;
+            }
+            return;
+        }
+        limitUntilJump++;
     }
 
     private Rotation getRotations(Entity entity) {

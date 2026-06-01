@@ -14,10 +14,11 @@ import net.minecraft.client.network.NetworkPlayerInfo;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
-
 import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
+import net.minecraft.scoreboard.ScorePlayerTeam;
+import net.minecraft.util.IChatComponent;
 
 public class MurderDetector extends Module {
     private static final Minecraft mc = Minecraft.getMinecraft();
@@ -54,6 +55,21 @@ public class MurderDetector extends Module {
 
     public static boolean isMurderer(EntityPlayer player) {
         return player != null && MURDERER_IDS.contains(player.getUniqueID());
+    }
+
+    public static String getMurdererTabName(NetworkPlayerInfo info) {
+        if (info == null || info.getGameProfile() == null || !MURDERER_IDS.contains(info.getGameProfile().getId())) {
+            return null;
+        }
+
+        String name;
+        IChatComponent displayName = info.getDisplayName();
+        if (displayName != null) {
+            name = displayName.getFormattedText();
+        } else {
+            name = ScorePlayerTeam.formatPlayerName(info.getPlayerTeam(), info.getGameProfile().getName());
+        }
+        return "§c" + name + " §c[Murderer]";
     }
 
     public static void setTextPosition(int x, int y) {
@@ -98,10 +114,10 @@ public class MurderDetector extends Module {
         this.drawText("Murderers:", x, textY);
         int row = 1;
         if (this.murder1 != null) {
-            this.drawText("- §e" + this.murder1.getName(), x, textY + 11.0F * row++);
+            this.drawText("- §c" + this.murder1.getName(), x, textY + 11.0F * row++);
         }
         if (this.murder2 != null) {
-            this.drawText("- §e" + this.murder2.getName(), x, textY + 11.0F * row);
+            this.drawText("- §c" + this.murder2.getName(), x, textY + 11.0F * row);
         }
     }
 
