@@ -4,6 +4,7 @@ import com.google.common.base.CaseFormat;
 import lombok.Getter;
 import myau.Myau;
 import myau.enums.BlinkModules;
+import myau.event.EventManager;
 import myau.event.EventTarget;
 import myau.event.types.EventType;
 import myau.event.types.Priority;
@@ -100,7 +101,6 @@ public class KillAura extends Module {
     public final BooleanProperty animals;
     public final BooleanProperty golems;
     public final BooleanProperty silverfish;
-    public final BooleanProperty teams;
     public final ModeProperty showTarget;
     public final MultiModeProperty debugLog;
     public final BooleanProperty randomize;
@@ -135,6 +135,7 @@ public class KillAura extends Module {
     private int blockTick = 0;
     private int lastTickProcessed;
     private long lastRotationUpdateTime = 0;
+    private double smoothedDebugAttackRange = -1.0D;
 
     public KillAura() {
         super("KillAura", false, false, "Kill +999999 Aura");
@@ -186,7 +187,6 @@ public class KillAura extends Module {
         this.animals = new BooleanProperty("Animals", false);
         this.golems = new BooleanProperty("Golems", false);
         this.silverfish = new BooleanProperty("Silverfish", false);
-        this.teams = new BooleanProperty("Teams", true);
         this.showTarget = new ModeProperty("ShowTarget", 0, new String[]{"NONE", "Default"});
         this.debugLog = new MultiModeProperty("Debug", new String[]{"Health", "AttackRange"});
 
@@ -236,6 +236,12 @@ public class KillAura extends Module {
                     }
                 }
 
+                AttackEvent attackEvent = new AttackEvent(this.target.getEntity());
+                EventManager.call(attackEvent);
+                if (attackEvent.isCancelled()) {
+                    return false;
+                }
+
                 this.attackDelayMS = this.getAttackDelay();
                 mc.thePlayer.swingItem();
 
@@ -252,11 +258,14 @@ public class KillAura extends Module {
                 ((IAccessorPlayerControllerMP) mc.playerController).callSyncCurrentPlayItem();
                 PacketUtil.sendPacket(new C02PacketUseEntity(this.target.getEntity(), Action.ATTACK));
                 if (this.debugLog.isSelected("AttackRange")) {
+                    double rawRange = getRealAttackRange(this.target);
+                    double smoothRange = getSmoothedDebugAttackRange(rawRange);
                     ChatUtil.sendFormatted(
                             String.format(
-                                    "%sAttackRange: &a&l%.2f&r (&otick: %d&r)&r",
+                                    "%sAttackRange: &a&l%.2f&r &7(raw %.2f)&r (&otick: %d&r)&r",
                                     Myau.clientName,
-                                    getRealAttackRange(this.target),
+                                    smoothRange,
+                                    rawRange,
                                     mc.thePlayer.ticksExisted
                             )
                     );
@@ -377,7 +386,7 @@ public class KillAura extends Module {
                 } else if (TeamUtil.isFriend((EntityPlayer) entityLivingBase)) {
                     return false;
                 } else {
-                    return (!this.teams.getValue() || !TeamUtil.isSameTeam((EntityPlayer) entityLivingBase)) && (!this.botCheck.getValue() || !TeamUtil.isBot((EntityPlayer) entityLivingBase));
+                    return !isTeam((EntityPlayer) entityLivingBase) && (!this.botCheck.getValue() || !TeamUtil.isBot((EntityPlayer) entityLivingBase));
                 }
             } else if (entityLivingBase instanceof EntityDragon || entityLivingBase instanceof EntityWither) {
                 return this.bosses.getValue();
@@ -390,16 +399,26 @@ public class KillAura extends Module {
                 } else if (!(entityLivingBase instanceof EntityIronGolem)) {
                     return false;
                 } else {
-                    return this.golems.getValue() && (!this.teams.getValue() || !TeamUtil.hasTeamColor(entityLivingBase));
+                    return this.golems.getValue() && !hasTeamColor(entityLivingBase);
                 }
             } else if (!(entityLivingBase instanceof EntitySilverfish)) {
                 return this.mobs.getValue();
             } else {
-                return this.silverfish.getValue() && (!this.teams.getValue() || !TeamUtil.hasTeamColor(entityLivingBase));
+                return this.silverfish.getValue() && !hasTeamColor(entityLivingBase);
             }
         } else {
             return false;
         }
+    }
+
+    private boolean isTeam(EntityPlayer player) {
+        Teams teams = (Teams) Myau.moduleManager.getModule(Teams.class);
+        return teams != null && teams.isTeam(player);
+    }
+
+    private boolean hasTeamColor(EntityLivingBase entity) {
+        Teams teams = (Teams) Myau.moduleManager.getModule(Teams.class);
+        return teams != null && teams.hasTeamColor(entity);
     }
 
     private boolean isInRange(EntityLivingBase entityLivingBase) {
@@ -428,9 +447,18 @@ public class KillAura extends Module {
 
     private double getRealAttackRange(AttackData attackData) {
         if (attackData == null || mc.thePlayer == null) return 0.0D;
-        Vec3 playerPos = getServerPlayerPosition();
+        Vec3 playerPos = getServerPlayerPosition().addVector(0.0D, mc.thePlayer.getEyeHeight(), 0.0D);
         AxisAlignedBB targetBox = getRealTargetBox(attackData);
-        return RotationUtil.clampVecToBox(targetBox, playerPos.addVector(0.0D, mc.thePlayer.getEyeHeight(), 0.0D));
+        return RotationUtil.clampVecToBox(targetBox, playerPos);
+    }
+
+    private double getSmoothedDebugAttackRange(double rawRange) {
+        if (this.smoothedDebugAttackRange < 0.0D || Math.abs(rawRange - this.smoothedDebugAttackRange) > 0.8D) {
+            this.smoothedDebugAttackRange = rawRange;
+        } else {
+            this.smoothedDebugAttackRange += (rawRange - this.smoothedDebugAttackRange) * 0.45D;
+        }
+        return this.smoothedDebugAttackRange;
     }
 
     private Vec3 getServerPlayerPosition() {

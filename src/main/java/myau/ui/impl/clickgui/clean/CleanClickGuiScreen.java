@@ -23,6 +23,8 @@ public class CleanClickGuiScreen extends GuiScreen {
     private static final double FRICTION = 0.85D;
     private static final double SNAP_STRENGTH = 0.15D;
     private static final long ANIMATION_DURATION = 250L;
+    private static final int SEARCH_WIDTH = 116;
+    private static final int SEARCH_HEIGHT = 11;
     private static CleanClickGuiScreen instance;
 
     private final ArrayList<CleanFrame> frames = new ArrayList<>();
@@ -31,6 +33,8 @@ public class CleanClickGuiScreen extends GuiScreen {
     private int targetScrollY;
     private double velocity;
     private boolean isClosing;
+    private boolean searchFocused;
+    private String searchQuery = "";
     private long openTime;
     private long lastFrameTime;
 
@@ -43,6 +47,7 @@ public class CleanClickGuiScreen extends GuiScreen {
 
         List<Module> combatModules = Arrays.asList(
                 Myau.moduleManager.getModule(AimAssist.class),
+                Myau.moduleManager.getModule(AntiBot.class),
                 Myau.moduleManager.getModule(AutoClicker.class),
                 Myau.moduleManager.getModule(KillAura.class),
                 Myau.moduleManager.getModule(Wtap.class),
@@ -65,7 +70,8 @@ public class CleanClickGuiScreen extends GuiScreen {
                 Myau.moduleManager.getModule(Criticals.class),
                 Myau.moduleManager.getModule(BlockHit.class),
                 Myau.moduleManager.getModule(SprintReset.class),
-                Myau.moduleManager.getModule(Displace.class)
+                Myau.moduleManager.getModule(Displace.class),
+                Myau.moduleManager.getModule(Teams.class)
         );
 
         List<Module> movementModules = Arrays.asList(
@@ -113,7 +119,6 @@ public class CleanClickGuiScreen extends GuiScreen {
                 Myau.moduleManager.getModule(DynamicIsland.class),
                 Myau.moduleManager.getModule(ESP2D.class),
                 Myau.moduleManager.getModule(RiseClickGUIModule.class),
-                Myau.moduleManager.getModule(TeamHealthDisplay.class),
                 Myau.moduleManager.getModule(SeasonDisplay.class),
                 Myau.moduleManager.getModule(Animations.class),
                 Myau.moduleManager.getModule(HudEditor.class),
@@ -144,6 +149,7 @@ public class CleanClickGuiScreen extends GuiScreen {
                 Myau.moduleManager.getModule(Spammer.class),
                 Myau.moduleManager.getModule(BedNuker.class),
                 Myau.moduleManager.getModule(BedTracker.class),
+                Myau.moduleManager.getModule(TeamDisplay.class),
                 Myau.moduleManager.getModule(LightningTracker.class),
                 Myau.moduleManager.getModule(NoRotate.class),
                 Myau.moduleManager.getModule(NickHider.class),
@@ -223,6 +229,7 @@ public class CleanClickGuiScreen extends GuiScreen {
         super.initGui();
         myau.util.font.FontManager.initializeFonts();
         this.isClosing = false;
+        this.searchFocused = false;
         this.openTime = System.currentTimeMillis();
         this.lastFrameTime = System.nanoTime();
         this.scrollY = 0;
@@ -249,10 +256,11 @@ public class CleanClickGuiScreen extends GuiScreen {
         }
         float screenAlpha = isClosing ? (1.0F - Math.min(1.0F, (float) elapsedTime / ANIMATION_DURATION)) : Math.min(1.0F, (float) elapsedTime / ANIMATION_DURATION);
         screenAlpha = (float) (1.0D - Math.pow(1.0D - screenAlpha, 3));
-        Gui.drawRect(0, 0, this.width, this.height, ((int) (238 * screenAlpha) << 24));
+        Gui.drawRect(0, 0, this.width, this.height, ((int) (245 * screenAlpha) << 24));
         if (screenAlpha > 0.01F) {
+            drawSearchBox(screenAlpha);
             for (CleanFrame frame : frames) {
-                frame.render(mouseX, mouseY, partialTicks, screenAlpha, false, scrollY, deltaTime);
+                frame.render(mouseX, mouseY, partialTicks, screenAlpha, false, scrollY, deltaTime, searchQuery);
             }
             drawKeybinds(screenAlpha);
         }
@@ -262,6 +270,31 @@ public class CleanClickGuiScreen extends GuiScreen {
         } catch (Exception ignored) {
         }
         super.drawScreen(mouseX, mouseY, partialTicks);
+    }
+
+    private void drawSearchBox(float animationProgress) {
+        int alpha = (int) (255 * animationProgress);
+        int x = getSearchX();
+        int y = 6;
+        Gui.drawRect(x, y, x + SEARCH_WIDTH, y + SEARCH_HEIGHT, withAlpha(CleanTheme.PANEL_DARK, alpha));
+        Gui.drawRect(x, y + SEARCH_HEIGHT - 1, x + SEARCH_WIDTH, y + SEARCH_HEIGHT, withAlpha(searchFocused ? CleanTheme.ACCENT : 0xFF3A3A3A, alpha));
+        String text = searchQuery.isEmpty() ? "Search modules..." : searchQuery;
+        int color = searchQuery.isEmpty() ? CleanTheme.MUTED : CleanTheme.TEXT;
+        this.fontRendererObj.drawStringWithShadow(text, x + 4, y + 2, withAlpha(color, alpha));
+        if (searchFocused && (System.currentTimeMillis() / 450L) % 2L == 0L) {
+            int cursorX = x + 4 + this.fontRendererObj.getStringWidth(searchQuery);
+            Gui.drawRect(cursorX, y + 2, cursorX + 1, y + SEARCH_HEIGHT - 2, withAlpha(CleanTheme.ACCENT, alpha));
+        }
+    }
+
+    private int getSearchX() {
+        return this.width / 2 - SEARCH_WIDTH / 2;
+    }
+
+    private boolean isMouseOverSearch(int mouseX, int mouseY) {
+        int x = getSearchX();
+        int y = 6;
+        return mouseX >= x && mouseX <= x + SEARCH_WIDTH && mouseY >= y && mouseY <= y + SEARCH_HEIGHT;
     }
 
     private void handleInvWalk() {
@@ -306,9 +339,14 @@ public class CleanClickGuiScreen extends GuiScreen {
     protected void mouseClicked(int mouseX, int mouseY, int mouseButton) throws IOException {
         if (isClosing) return;
         super.mouseClicked(mouseX, mouseY, mouseButton);
+        if (mouseButton == 0 && isMouseOverSearch(mouseX, mouseY)) {
+            searchFocused = true;
+            return;
+        }
+        searchFocused = false;
         for (int i = frames.size() - 1; i >= 0; i--) {
             CleanFrame frame = frames.get(i);
-            if (frame.mouseClicked(mouseX, mouseY, mouseButton, scrollY)) {
+            if (frame.mouseClicked(mouseX, mouseY, mouseButton, scrollY, searchQuery)) {
                 draggingComponent = frame;
                 frames.remove(i);
                 frames.add(frame);
@@ -350,12 +388,35 @@ public class CleanClickGuiScreen extends GuiScreen {
             for (CleanFrame frame : frames) frame.keyTyped(typedChar, keyCode);
             return;
         }
+        if (searchFocused) {
+            if (keyCode == Keyboard.KEY_ESCAPE) {
+                searchFocused = false;
+                return;
+            }
+            if (keyCode == Keyboard.KEY_BACK && !searchQuery.isEmpty()) {
+                searchQuery = searchQuery.substring(0, searchQuery.length() - 1);
+                return;
+            }
+            if (keyCode == Keyboard.KEY_DELETE || (Keyboard.isKeyDown(Keyboard.KEY_LCONTROL) && keyCode == Keyboard.KEY_A)) {
+                searchQuery = "";
+                return;
+            }
+            if (isAllowedSearchChar(typedChar) && this.fontRendererObj.getStringWidth(searchQuery + typedChar) < SEARCH_WIDTH - 10) {
+                searchQuery += typedChar;
+                return;
+            }
+            return;
+        }
         Module clickGUIModule = Myau.moduleManager.getModule("ClickGUI");
         if (keyCode == Keyboard.KEY_ESCAPE || (clickGUIModule != null && keyCode == clickGUIModule.getKey())) {
             close();
             return;
         }
         for (CleanFrame frame : frames) frame.keyTyped(typedChar, keyCode);
+    }
+
+    private boolean isAllowedSearchChar(char typedChar) {
+        return typedChar >= 32 && typedChar < 127;
     }
 
     private void updateScroll() {

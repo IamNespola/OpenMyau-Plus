@@ -1,15 +1,12 @@
 package myau.ui.impl.clickgui.normal.component;
 
 import myau.property.properties.MultiModeProperty;
-import myau.ui.impl.clickgui.normal.MaterialTheme;
+import myau.ui.impl.clickgui.clean.CleanTheme;
 import myau.util.AnimationUtil;
-import myau.util.RenderUtil;
-import myau.util.font.FontManager;
-
-import java.awt.*;
+import net.minecraft.client.gui.Gui;
 
 public class MultiDropdown extends Component {
-    private static final int ITEM_HEIGHT = 18;
+    private static final int ITEM_HEIGHT = 12;
     private final MultiModeProperty property;
     private final int headerHeight;
     private boolean expanded;
@@ -33,47 +30,36 @@ public class MultiDropdown extends Component {
     @Override
     public void render(int mouseX, int mouseY, float partialTicks, float animationProgress, boolean isLast, int scrollOffset, float deltaTime) {
         if (!property.isVisible()) return;
-
-        float easedProgress = 1.0F - (float) Math.pow(1.0F - animationProgress, 4);
-        if (easedProgress <= 0.0F) return;
-
         int scrolledY = y - scrollOffset;
-        int alpha = (int) (255 * easedProgress);
-        RenderUtil.drawRoundedRect(x + 2, scrolledY, width - 4, headerHeight, 4.0F, new Color(30, 30, 35, alpha).getRGB(), true, true, true, true);
-
-        String text = property.getName() + ": " + property.getSelectedModesString();
-        int textColor = MaterialTheme.getRGBWithAlpha(MaterialTheme.TEXT_COLOR, alpha);
-        float textY = scrolledY + (headerHeight - 8) / 2.0F;
-        if (FontManager.productSans16 != null) {
-            FontManager.productSans16.drawString(text, x + 6, textY, textColor);
-        } else {
-            mc.fontRendererObj.drawStringWithShadow(text, x + 6, scrolledY + 6, textColor);
-        }
-
+        int alpha = (int) (255 * animationProgress);
         String[] modes = property.getModes();
         float targetAnim = expanded ? modes.length * ITEM_HEIGHT : 0.0F;
-        this.expandAnim = AnimationUtil.animateSmooth(targetAnim, this.expandAnim, 12.0F, deltaTime);
+        this.expandAnim = AnimationUtil.animateSmooth(targetAnim, this.expandAnim, 16.0F, deltaTime);
 
-        if (expandAnim > 0.5F && easedProgress >= 1.0F) {
-            int dropdownY = scrolledY + headerHeight + 2;
-            RenderUtil.drawRoundedRect(x + 2, dropdownY, width - 4, expandAnim, 4.0F, new Color(20, 20, 24, 240).getRGB(), true, true, true, true);
-            RenderUtil.scissor(x, dropdownY, width, expandAnim);
+        if (isMouseOver(mouseX, mouseY, scrollOffset)) Gui.drawRect(x, scrolledY, x + width, scrolledY + headerHeight, withAlpha(CleanTheme.ROW_HOVER, alpha));
+        String name = property.getName();
+        String value = property.getSelectedModesString();
+        mc.fontRendererObj.drawStringWithShadow(name, x + 5, scrolledY + 3, withAlpha(CleanTheme.TEXT, alpha));
+        mc.fontRendererObj.drawStringWithShadow(value, x + width - 11 - mc.fontRendererObj.getStringWidth(value), scrolledY + 3, withAlpha(CleanTheme.MUTED, alpha));
+        mc.fontRendererObj.drawStringWithShadow(expanded ? "<" : ">", x + width - 8, scrolledY + 3, withAlpha(CleanTheme.MUTED, alpha));
+
+        if (expandAnim > 0.5F) {
+            int dropdownY = scrolledY + headerHeight;
+            Gui.drawRect(x + 2, dropdownY, x + width, dropdownY + (int) expandAnim, withAlpha(0xEE0A0A0A, alpha));
             for (int i = 0; i < modes.length; i++) {
-                String mode = modes[i];
                 int itemY = dropdownY + i * ITEM_HEIGHT;
-                boolean hovered = mouseX >= x && mouseX <= x + width && mouseY >= itemY && mouseY < itemY + ITEM_HEIGHT;
+                if (itemY - dropdownY >= expandAnim) break;
                 boolean selected = property.isSelected(i);
-                int itemColor = selected ? MaterialTheme.getRGB(MaterialTheme.PRIMARY_COLOR) : MaterialTheme.getRGB(MaterialTheme.TEXT_COLOR_SECONDARY);
-                if (hovered && !selected) itemColor = MaterialTheme.getRGBWithAlpha(MaterialTheme.TEXT_COLOR, 255);
-                String prefix = selected ? "✓ " : "  ";
-                if (FontManager.productSans16 != null) {
-                    FontManager.productSans16.drawString(prefix + mode, x + 8, itemY + 5, itemColor);
-                } else {
-                    mc.fontRendererObj.drawStringWithShadow(prefix + mode, x + 8, itemY + 5, itemColor);
-                }
+                boolean hovered = mouseX >= x + 2 && mouseX <= x + width && mouseY >= itemY && mouseY < itemY + ITEM_HEIGHT;
+                if (hovered) Gui.drawRect(x + 2, itemY, x + width, itemY + ITEM_HEIGHT, withAlpha(CleanTheme.ROW_HOVER, alpha));
+                if (selected) Gui.drawRect(x + 2, itemY + 1, x + 4, itemY + ITEM_HEIGHT - 1, withAlpha(CleanTheme.ACCENT, alpha));
+                mc.fontRendererObj.drawStringWithShadow(modes[i], x + 7, itemY + 3, withAlpha(selected ? 0xFFFFFFFF : 0xFFBDBDBD, alpha));
             }
-            RenderUtil.releaseScissor();
         }
+    }
+
+    private int withAlpha(int color, int alpha) {
+        return (color & 0x00FFFFFF) | (Math.max(0, Math.min(255, alpha)) << 24);
     }
 
     @Override
@@ -91,12 +77,12 @@ public class MultiDropdown extends Component {
             }
         }
         if (expanded && expandAnim > 0.0F) {
-            int dropdownY = scrolledY + headerHeight + 2;
+            int dropdownY = scrolledY + headerHeight;
             if (mouseY >= dropdownY && mouseY <= dropdownY + expandAnim) {
                 String[] modes = property.getModes();
                 for (int i = 0; i < modes.length; i++) {
                     int itemY = dropdownY + i * ITEM_HEIGHT;
-                    if (mouseX >= x && mouseX <= x + width && mouseY >= itemY && mouseY < itemY + ITEM_HEIGHT) {
+                    if (mouseX >= x + 2 && mouseX <= x + width && mouseY >= itemY && mouseY < itemY + ITEM_HEIGHT) {
                         if (mouseButton == 0) {
                             property.toggle(i);
                             return true;

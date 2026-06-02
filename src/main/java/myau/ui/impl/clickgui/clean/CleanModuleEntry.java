@@ -70,6 +70,7 @@ public class CleanModuleEntry extends Component {
         int scrolledY = y - scrollOffset;
         int alpha = (int) (255 * animationProgress);
         if (isMouseOverHeader(mouseX, mouseY, scrollOffset)) Gui.drawRect(x, scrolledY, x + width, scrolledY + height, withAlpha(CleanTheme.ROW_HOVER, alpha));
+        if (module.isEnabled()) Gui.drawRect(x, scrolledY + 1, x + 2, scrolledY + height - 1, withAlpha(CleanTheme.ACCENT, alpha));
         mc.fontRendererObj.drawStringWithShadow(module.getName(), x + 5, scrolledY + 3, module.isEnabled() ? withAlpha(0xFFFFFFFF, alpha) : withAlpha(0xFFBDBDBD, alpha));
         if (!propertyComponents.isEmpty()) mc.fontRendererObj.drawStringWithShadow(expanded ? "<" : ">", x + width - 9, scrolledY + 3, withAlpha(CleanTheme.MUTED, alpha));
 
@@ -101,6 +102,10 @@ public class CleanModuleEntry extends Component {
 
     public float getCurrentHeight() {
         return height + currentSettingsHeight;
+    }
+
+    public boolean matches(String searchQuery) {
+        return searchQuery == null || searchQuery.trim().isEmpty() || module.getName().toLowerCase().contains(searchQuery.trim().toLowerCase());
     }
 
     private boolean isMouseOverHeader(int mouseX, int mouseY, int scrollOffset) {

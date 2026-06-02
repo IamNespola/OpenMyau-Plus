@@ -2,9 +2,9 @@ package myau.ui.impl.clickgui.normal.component;
 
 import lombok.Getter;
 import myau.module.Module;
-import myau.ui.impl.clickgui.normal.MaterialTheme;
+import myau.ui.impl.clickgui.clean.CleanTheme;
 import myau.util.KeyBindUtil;
-import myau.util.font.FontManager;
+import net.minecraft.client.gui.Gui;
 import org.lwjgl.input.Keyboard;
 
 public class KeybindComponent extends Component {
@@ -20,40 +20,18 @@ public class KeybindComponent extends Component {
 
     @Override
     public void render(int mouseX, int mouseY, float partialTicks, float animationProgress, boolean isLast, int scrollOffset, float deltaTime) {
-        float easedProgress = 1.0f - (float) Math.pow(1.0f - animationProgress, 4);
-        if (easedProgress <= 0) return;
         int scrolledY = y - scrollOffset;
-        int alpha = (int) (255 * easedProgress);
-        if (easedProgress > 0.9f) {
-            int textColor = MaterialTheme.getRGBWithAlpha(MaterialTheme.TEXT_COLOR, alpha);
-            int valueColor;
-            if (binding) {
-                valueColor = MaterialTheme.getRGBWithAlpha(MaterialTheme.PRIMARY_COLOR, alpha);
-            } else {
-                valueColor = MaterialTheme.getRGBWithAlpha(MaterialTheme.TEXT_COLOR_SECONDARY, alpha);
-            }
-            String nameText = "Keybind";
-            String bindText;
-            if (binding) {
-                bindText = "...";
-            } else {
-                int key = module.getKey();
-                if (key == Keyboard.KEY_NONE) {
-                    bindText = "None";
-                } else {
-                    bindText = KeyBindUtil.getKeyName(key);
-                }
-            }
-            float textY = scrolledY + (height - 8) / 2f;
-            if (FontManager.productSans16 != null) {
-                FontManager.productSans16.drawString(nameText, x + 6, textY, textColor);
-                float w = (float) FontManager.productSans16.getStringWidth(bindText);
-                FontManager.productSans16.drawString(bindText, x + width - w - 6, textY, valueColor);
-            } else {
-                mc.fontRendererObj.drawStringWithShadow(nameText, x + 6, scrolledY + 6, textColor);
-                mc.fontRendererObj.drawStringWithShadow(bindText, x + width - mc.fontRendererObj.getStringWidth(bindText) - 6, scrolledY + 6, valueColor);
-            }
-        }
+        int alpha = (int) (255 * animationProgress);
+        if (isMouseOver(mouseX, mouseY, scrollOffset)) Gui.drawRect(x, scrolledY, x + width, scrolledY + height, withAlpha(CleanTheme.ROW_HOVER, alpha));
+        String bindText;
+        if (binding) bindText = "...";
+        else bindText = module.getKey() == Keyboard.KEY_NONE ? "None" : KeyBindUtil.getKeyName(module.getKey());
+        mc.fontRendererObj.drawStringWithShadow("Keybind", x + 5, scrolledY + 3, withAlpha(CleanTheme.TEXT, alpha));
+        mc.fontRendererObj.drawStringWithShadow(bindText, x + width - 5 - mc.fontRendererObj.getStringWidth(bindText), scrolledY + 3, withAlpha(binding ? CleanTheme.ACCENT : CleanTheme.MUTED, alpha));
+    }
+
+    private int withAlpha(int color, int alpha) {
+        return (color & 0x00FFFFFF) | (Math.max(0, Math.min(255, alpha)) << 24);
     }
 
     @Override
@@ -66,20 +44,15 @@ public class KeybindComponent extends Component {
             this.binding = !this.binding;
             return true;
         }
-        if (this.binding && !isMouseOver(mouseX, mouseY, scrollOffset)) {
-            this.binding = false;
-        }
+        if (this.binding && !isMouseOver(mouseX, mouseY, scrollOffset)) this.binding = false;
         return false;
     }
 
     @Override
     public void keyTyped(char typedChar, int keyCode) {
         if (this.binding) {
-            if (keyCode == Keyboard.KEY_DELETE || keyCode == Keyboard.KEY_BACK || keyCode == Keyboard.KEY_ESCAPE) {
-                module.setKey(Keyboard.KEY_NONE);
-            } else {
-                module.setKey(keyCode);
-            }
+            if (keyCode == Keyboard.KEY_DELETE || keyCode == Keyboard.KEY_BACK || keyCode == Keyboard.KEY_ESCAPE) module.setKey(Keyboard.KEY_NONE);
+            else module.setKey(keyCode);
             this.binding = false;
         }
     }

@@ -70,6 +70,7 @@ public class Myau {
         registerClientAnticheat();
         moduleManager.modules.put(AimAssist.class, new AimAssist());
         moduleManager.modules.put(AntiAFK.class, new AntiAFK());
+        moduleManager.modules.put(AntiBot.class, new AntiBot());
         moduleManager.modules.put(AntiDebuff.class, new AntiDebuff());
         moduleManager.modules.put(AntiCheatDetector.class, new AntiCheatDetector());
         moduleManager.modules.put(AntiFireball.class, new AntiFireball());
@@ -168,7 +169,8 @@ public class Myau {
         moduleManager.modules.put(ViewClip.class, new ViewClip());
         moduleManager.modules.put(Wtap.class, new Wtap());
         moduleManager.modules.put(Xray.class, new Xray());
-        moduleManager.modules.put(TeamHealthDisplay.class, new TeamHealthDisplay());
+        moduleManager.modules.put(TeamDisplay.class, new TeamDisplay());
+        moduleManager.modules.put(Teams.class, new Teams());
         moduleManager.modules.put(Animations.class, new Animations());
         moduleManager.modules.put(AutoGapple.class, new AutoGapple());
         moduleManager.modules.put(HitParticleEffects.class, new HitParticleEffects());

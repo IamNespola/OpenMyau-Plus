@@ -61,8 +61,8 @@ public class RiseClickGUI extends GuiScreen {
     static {
         map(Tab.GHOST, "AimAssist", "AutoClicker", "Reach", "Velocity", "WTap", "Wtap", "HitBox",
                 "HitSelect", "BackTrack", "Hitflick", "MoreKB", "KnockbackDelay", "ClickAssits", "SprintReset", "BlockHit");
-        map(Tab.COMBAT, "KillAura", "TargetStrafe", "NoHitDelay", "AntiFireball", "LagRange", "Refill",
-                "Criticals", "Displace", "ServerLag");
+        map(Tab.COMBAT, "AntiBot", "KillAura", "TargetStrafe", "NoHitDelay", "AntiFireball", "LagRange", "Refill",
+                "Criticals", "Displace", "ServerLag", "Teams");
         map(Tab.MOVEMENT, "AntiAFK", "Fly", "FastBow", "Speed", "LongJump", "Sprint", "SafeWalk",
                 "Jesus", "NoFall", "NoSlow", "KeepSprint", "Eagle", "NoJumpDelay");
         map(Tab.PLAYER, "AutoHeal", "AutoTool", "ChestStealer", "InvManager", "InvWalk", "Scaffold",
@@ -71,10 +71,10 @@ public class RiseClickGUI extends GuiScreen {
         map(Tab.RENDER, "ESP", "Chams", "FullBright", "Fullbright", "Tracers", "NameTags", "Xray",
                 "TargetESP", "TargetHUD", "Indicators", "BedESP", "ItemESP", "ViewClip", "NoHurtCam",
                 "HUD", "ChestESP", "Trajectories", "Radar", "FPScounter", "Fpscounter", "WaterMark",
-                "HitParticleEffects", "DynamicIsland", "ESP2D", "TeamHealthDisplay", "SeasonDisplay",
+                "HitParticleEffects", "DynamicIsland", "ESP2D", "SeasonDisplay",
                 "Animations", "RenderFixes", "ClickGUI", "ClickGui");
         map(Tab.EXPLOIT, "Disabler", "ClientSpoofer", "NoRotate", "AntiObfuscate", "Blink", "Timer",
-                "TimerRangev999", "AntiVoid", "FakeLag", "GhostHand", "BedNuker", "BedTracker");
+                "TimerRangev999", "AntiVoid", "FakeLag", "GhostHand", "BedNuker", "BedTracker", "TeamDisplay");
     }
 
     private float windowX = -1f;

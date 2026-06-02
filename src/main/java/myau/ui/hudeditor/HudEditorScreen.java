@@ -42,6 +42,7 @@ public class HudEditorScreen extends GuiScreen {
         addTopLeft("WaterMark2", WaterMark2.x, WaterMark2.y, 80, 20, WaterMark2::setPosition);
         addTopLeft("DynamicIsland", defaulted(DynamicIsland.x, centerX(340)), DynamicIsland.y, 340, 26, DynamicIsland::setPosition);
         addTopLeft("SeasonDisplay", SeasonDisplay.x, SeasonDisplay.y, 145, 48, SeasonDisplay::setPosition);
+        addTeamDisplay();
         addCentered("FPSCounter", defaulted(FPScounter.x, resolution.getScaledWidth() / 2), defaulted(FPScounter.y, resolution.getScaledHeight() / 2), 70, 20, FPScounter::setPosition);
     }
 
@@ -52,6 +53,18 @@ public class HudEditorScreen extends GuiScreen {
         int height = hud == null ? 18 : Math.max(18, hud.getVisibleArrayListSize() * rowHeight);
         int width = hud == null ? 110 : Math.max(90, Math.round(hud.getVisibleArrayListWidth() * scale));
         addTopLeft("ArrayList", HUD.arrayListX, HUD.arrayListY, width, height, HUD::setArrayListPosition);
+    }
+
+    private void addTeamDisplay() {
+        TeamDisplay teamDisplay = (TeamDisplay) Myau.moduleManager.getModule(TeamDisplay.class);
+        if (teamDisplay == null) return;
+        int width = Math.round(150 * teamDisplay.scale.getValue());
+        int height = Math.round(36 * teamDisplay.scale.getValue());
+        addTopLeft("TeamDisplay", teamDisplay.offsetX.getValue(), teamDisplay.offsetY.getValue(), width, height,
+                (x, y) -> {
+                    teamDisplay.offsetX.setValue(x);
+                    teamDisplay.offsetY.setValue(y);
+                });
     }
 
     private int defaulted(int value, int fallback) {
@@ -73,7 +86,7 @@ public class HudEditorScreen extends GuiScreen {
     @Override
     public void drawScreen(int mouseX, int mouseY, float partialTicks) {
         drawRect(0, 0, resolution.getScaledWidth(), resolution.getScaledHeight(), OVERLAY_COLOR);
-        drawCenteredString(fontRendererObj, "HudEditor - drag directly on HUD elements | ESC to close", resolution.getScaledWidth() / 2, 8, 0xFFFFFFFF);
+        drawCenteredString(fontRendererObj, "HudEditor | ESC to close", resolution.getScaledWidth() / 2, 8, 0xFFFFFFFF);
 
         for (DraggableElement element : elements) {
             element.draw(mouseX, mouseY);

@@ -33,6 +33,7 @@ public class ClickGui extends GuiScreen {
 
         List<Module> combatModules = new ArrayList<>();
         combatModules.add(Myau.moduleManager.getModule(AimAssist.class));
+        combatModules.add(Myau.moduleManager.getModule(AntiBot.class));
         combatModules.add(Myau.moduleManager.getModule(AutoClicker.class));
         combatModules.add(Myau.moduleManager.getModule(KillAura.class));
         combatModules.add(Myau.moduleManager.getModule(Wtap.class));
@@ -54,6 +55,7 @@ public class ClickGui extends GuiScreen {
         combatModules.add(Myau.moduleManager.getModule(Criticals.class));
         combatModules.add(Myau.moduleManager.getModule(BlockHit.class));
         combatModules.add(Myau.moduleManager.getModule(SprintReset.class));
+        combatModules.add(Myau.moduleManager.getModule(Teams.class));
 
         List<Module> movementModules = new ArrayList<>();
         movementModules.add(Myau.moduleManager.getModule(AntiAFK.class));
@@ -99,7 +101,6 @@ public class ClickGui extends GuiScreen {
         renderModules.add(Myau.moduleManager.getModule(HitParticleEffects.class));
         renderModules.add(Myau.moduleManager.getModule(DynamicIsland.class));
         renderModules.add(Myau.moduleManager.getModule(ESP2D.class));
-        renderModules.add(Myau.moduleManager.getModule(TeamHealthDisplay.class));
         renderModules.add(Myau.moduleManager.getModule(SeasonDisplay.class));
         renderModules.add(Myau.moduleManager.getModule(Animations.class));
         renderModules.add(Myau.moduleManager.getModule(HudEditor.class));
@@ -127,6 +128,7 @@ public class ClickGui extends GuiScreen {
         miscModules.add(Myau.moduleManager.getModule(Spammer.class));
         miscModules.add(Myau.moduleManager.getModule(BedNuker.class));
         miscModules.add(Myau.moduleManager.getModule(BedTracker.class));
+        miscModules.add(Myau.moduleManager.getModule(TeamDisplay.class));
         miscModules.add(Myau.moduleManager.getModule(LightningTracker.class));
         miscModules.add(Myau.moduleManager.getModule(NoRotate.class));
         miscModules.add(Myau.moduleManager.getModule(NickHider.class));

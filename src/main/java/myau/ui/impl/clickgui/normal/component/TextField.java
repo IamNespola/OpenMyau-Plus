@@ -1,12 +1,10 @@
 package myau.ui.impl.clickgui.normal.component;
 
 import myau.property.properties.TextProperty;
-import myau.ui.impl.clickgui.normal.MaterialTheme;
 import myau.util.RenderUtil;
 import myau.util.font.FontManager;
 import org.lwjgl.input.Keyboard;
 
-import java.awt.*;
 
 public class TextField extends Component {
     private final TextProperty textProperty;
@@ -35,12 +33,15 @@ public class TextField extends Component {
 
         int scrolledY = y - scrollOffset;
         int alpha = (int) (255 * animationProgress);
-        int bgColor = new Color(30, 30, 35, alpha).getRGB();
-        int borderColor = focused ? MaterialTheme.getRGBWithAlpha(MaterialTheme.PRIMARY_COLOR, alpha) :
-                new Color(60, 60, 65).getRGB();
+        int bgColor = withAlpha(0xFF15151B, alpha);
+        int innerColor = withAlpha(0xFF202028, alpha);
+        int borderColor = focused ? withAlpha(0xFFE00012, alpha) : withAlpha(0xFF34343C, alpha);
+        int accentColor = withAlpha(0xFFE00012, focused ? alpha : Math.min(110, alpha));
 
-        RenderUtil.drawRoundedRect(x + 2, scrolledY, width - 4, height, 4.0f, bgColor, true, true, true, true);
-        RenderUtil.drawRoundedRectOutline(x + 2, scrolledY, width - 4, height, 4.0f, 1.0f, borderColor, true, true, true, true);
+        RenderUtil.drawRoundedRect(x + 2, scrolledY + 1, width - 4, height - 2, 4.0f, bgColor, true, true, true, true);
+        RenderUtil.drawRoundedRect(x + 4, scrolledY + 3, width - 8, height - 6, 3.0f, innerColor, true, true, true, true);
+        RenderUtil.drawRoundedRectOutline(x + 2, scrolledY + 1, width - 4, height - 2, 4.0f, focused ? 1.2f : 0.8f, borderColor, true, true, true, true);
+        RenderUtil.drawRoundedRect(x + 4, scrolledY + 4, 2, height - 8, 1.0f, accentColor, true, true, true, true);
 
         if (animationProgress > 0.5f) {
             if (focused) {
@@ -52,29 +53,32 @@ public class TextField extends Component {
             }
 
             String displayText = currentText.isEmpty() ? textProperty.getName() : currentText;
-            int textColor = currentText.isEmpty() ? new Color(120, 120, 120).getRGB() :
-                    MaterialTheme.getRGBWithAlpha(MaterialTheme.TEXT_COLOR, alpha);
+            int textColor = currentText.isEmpty() ? withAlpha(0xFF8A8A8A, alpha) : withAlpha(0xFFE6E6E6, alpha);
 
             float textY = scrolledY + (height - 8) / 2f;
             if (FontManager.productSans16 != null) {
-                float textX = x + 6;
+                float textX = x + 10;
 
                 FontManager.productSans16.drawString(displayText, textX, textY, textColor);
 
                 if (focused && cursorVisible) {
                     float cursorX = textX + (float) FontManager.productSans16.getStringWidth(displayText.substring(0, Math.min(cursorPos, displayText.length())));
-                    RenderUtil.drawLine(cursorX, textY, cursorX, textY + 10, 1.0f, textColor);
+                    RenderUtil.drawLine(cursorX, textY, cursorX, textY + 10, 1.0f, withAlpha(0xFFE00012, alpha));
                 }
             } else {
-                float textX = x + 6;
+                float textX = x + 10;
                 mc.fontRendererObj.drawStringWithShadow(displayText, textX, textY, textColor);
 
                 if (focused && cursorVisible) {
                     float cursorX = textX + mc.fontRendererObj.getStringWidth(displayText.substring(0, Math.min(cursorPos, displayText.length())));
-                    RenderUtil.drawLine(cursorX, textY, cursorX, textY + 10, 1.0f, textColor);
+                    RenderUtil.drawLine(cursorX, textY, cursorX, textY + 10, 1.0f, withAlpha(0xFFE00012, alpha));
                 }
             }
         }
+    }
+
+    private int withAlpha(int color, int alpha) {
+        return (color & 0x00FFFFFF) | (Math.max(0, Math.min(255, alpha)) << 24);
     }
 
     @Override

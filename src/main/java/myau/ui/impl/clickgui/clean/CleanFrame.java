@@ -39,20 +39,31 @@ public class CleanFrame extends Component {
 
     @Override
     public void render(int mouseX, int mouseY, float partialTicks, float animationProgress, boolean isLast, int scrollOffset, float deltaTime) {
+        render(mouseX, mouseY, partialTicks, animationProgress, isLast, scrollOffset, deltaTime, "");
+    }
+
+    public void render(int mouseX, int mouseY, float partialTicks, float animationProgress, boolean isLast, int scrollOffset, float deltaTime, String searchQuery) {
+        boolean searching = searchQuery != null && !searchQuery.trim().isEmpty();
+        if (searching && !hasMatches(searchQuery)) {
+            currentHeight = 0.0F;
+            return;
+        }
         int scrolledY = y - scrollOffset;
         currentHeight = height;
         if (expanded) {
-            for (CleanModuleEntry entry : moduleEntries) currentHeight += entry.getCurrentHeight();
-            for (CleanConfigEntry entry : configEntries) currentHeight += entry.getCurrentHeight();
+            for (CleanModuleEntry entry : moduleEntries) if (entry.matches(searchQuery)) currentHeight += entry.getCurrentHeight();
+            for (CleanConfigEntry entry : configEntries) if (entry.matches(searchQuery)) currentHeight += entry.getCurrentHeight();
         }
         int alpha = (int) (255 * animationProgress);
         Gui.drawRect(x, scrolledY, x + width, scrolledY + (int) currentHeight, withAlpha(CleanTheme.PANEL, alpha));
+        Gui.drawRect(x, scrolledY, x + 2, scrolledY + height, withAlpha(CleanTheme.ACCENT, alpha));
         Gui.drawRect(x, scrolledY, x + width, scrolledY + height, withAlpha(CleanTheme.PANEL_DARK, alpha));
-        mc.fontRendererObj.drawStringWithShadow(categoryName, x + 5, scrolledY + 3, withAlpha(CleanTheme.TEXT, alpha));
+        mc.fontRendererObj.drawStringWithShadow(categoryName, x + 6, scrolledY + 3, withAlpha(CleanTheme.TEXT, alpha));
         mc.fontRendererObj.drawStringWithShadow(expanded ? "-" : "+", x + width - 9, scrolledY + 3, withAlpha(CleanTheme.MUTED, alpha));
         if (!expanded) return;
         int currentY = y + height;
         for (CleanModuleEntry entry : moduleEntries) {
+            if (!entry.matches(searchQuery)) continue;
             entry.setX(x);
             entry.setY(currentY);
             entry.setWidth(width);
@@ -60,12 +71,19 @@ public class CleanFrame extends Component {
             currentY += (int) entry.getCurrentHeight();
         }
         for (CleanConfigEntry entry : configEntries) {
+            if (!entry.matches(searchQuery)) continue;
             entry.setX(x);
             entry.setY(currentY);
             entry.setWidth(width);
             entry.render(mouseX, mouseY, partialTicks, animationProgress, false, scrollOffset, deltaTime);
             currentY += (int) entry.getCurrentHeight();
         }
+    }
+
+    private boolean hasMatches(String searchQuery) {
+        for (CleanModuleEntry entry : moduleEntries) if (entry.matches(searchQuery)) return true;
+        for (CleanConfigEntry entry : configEntries) if (entry.matches(searchQuery)) return true;
+        return false;
     }
 
     private int withAlpha(int color, int alpha) {
@@ -79,6 +97,11 @@ public class CleanFrame extends Component {
 
     @Override
     public boolean mouseClicked(int mouseX, int mouseY, int mouseButton, int scrollOffset) {
+        return mouseClicked(mouseX, mouseY, mouseButton, scrollOffset, "");
+    }
+
+    public boolean mouseClicked(int mouseX, int mouseY, int mouseButton, int scrollOffset, String searchQuery) {
+        if (searchQuery != null && !searchQuery.trim().isEmpty() && !hasMatches(searchQuery)) return false;
         if (isMouseOverHeader(mouseX, mouseY, scrollOffset)) {
             if (mouseButton == 0) {
                 dragging = true;
@@ -91,8 +114,8 @@ public class CleanFrame extends Component {
             }
         }
         if (expanded) {
-            for (CleanModuleEntry entry : moduleEntries) if (entry.mouseClicked(mouseX, mouseY, mouseButton, scrollOffset)) return true;
-            for (CleanConfigEntry entry : configEntries) if (entry.mouseClicked(mouseX, mouseY, mouseButton, scrollOffset)) return true;
+            for (CleanModuleEntry entry : moduleEntries) if (entry.matches(searchQuery) && entry.mouseClicked(mouseX, mouseY, mouseButton, scrollOffset)) return true;
+            for (CleanConfigEntry entry : configEntries) if (entry.matches(searchQuery) && entry.mouseClicked(mouseX, mouseY, mouseButton, scrollOffset)) return true;
         }
         return false;
     }
@@ -134,4 +157,5 @@ public class CleanFrame extends Component {
         return currentHeight;
     }
 }
+
 

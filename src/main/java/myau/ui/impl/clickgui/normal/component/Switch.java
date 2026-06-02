@@ -1,21 +1,15 @@
 package myau.ui.impl.clickgui.normal.component;
 
 import myau.property.properties.BooleanProperty;
-import myau.ui.impl.clickgui.normal.MaterialTheme;
-import myau.util.AnimationUtil;
-import myau.util.RenderUtil;
-import myau.util.font.FontManager;
-
-import java.awt.*;
+import myau.ui.impl.clickgui.clean.CleanTheme;
+import net.minecraft.client.gui.Gui;
 
 public class Switch extends Component {
     private final BooleanProperty booleanProperty;
-    private float toggleAnim;
 
     public Switch(BooleanProperty booleanProperty, int x, int y, int width, int height) {
         super(x, y, width, height);
         this.booleanProperty = booleanProperty;
-        this.toggleAnim = booleanProperty.getValue() ? 1.0f : 0.0f;
     }
 
     public BooleanProperty getProperty() {
@@ -24,41 +18,18 @@ public class Switch extends Component {
 
     @Override
     public void render(int mouseX, int mouseY, float partialTicks, float animationProgress, boolean isLast, int scrollOffset, float deltaTime) {
-        if (!booleanProperty.isVisible()) {
-            return;
-        }
-
+        if (!booleanProperty.isVisible()) return;
         int scrolledY = y - scrollOffset;
         int alpha = (int) (255 * animationProgress);
-        float target = booleanProperty.getValue() ? 1.0f : 0.0f;
-        this.toggleAnim = AnimationUtil.animateSmooth(target, this.toggleAnim, 15.0f, deltaTime);
-        int textColor = MaterialTheme.getRGBWithAlpha(MaterialTheme.TEXT_COLOR, alpha);
+        boolean enabled = booleanProperty.getValue();
+        if (isMouseOver(mouseX, mouseY, scrollOffset)) Gui.drawRect(x, scrolledY, x + width, scrolledY + height, withAlpha(CleanTheme.ROW_HOVER, alpha));
+        if (enabled) Gui.drawRect(x + 2, scrolledY + 1, x + 4, scrolledY + height - 1, withAlpha(CleanTheme.ACCENT, alpha));
+        mc.fontRendererObj.drawStringWithShadow(booleanProperty.getName(), x + 7, scrolledY + 3, withAlpha(enabled ? 0xFFFFFFFF : 0xFFBDBDBD, alpha));
+        mc.fontRendererObj.drawStringWithShadow(enabled ? "On" : "Off", x + width - 5 - mc.fontRendererObj.getStringWidth(enabled ? "On" : "Off"), scrolledY + 3, withAlpha(enabled ? CleanTheme.ACCENT : CleanTheme.MUTED, alpha));
+    }
 
-        float textY = scrolledY + (height - 8) / 2f;
-        if (FontManager.productSans16 != null) {
-            FontManager.productSans16.drawString(booleanProperty.getName(), x + 2, textY, textColor);
-        } else {
-            mc.fontRendererObj.drawStringWithShadow(booleanProperty.getName(), x + 2, scrolledY + 6, textColor);
-        }
-
-        int switchW = 22;
-        int switchH = 12;
-        int switchX = x + width - switchW - 2;
-        int switchY = scrolledY + (height - switchH) / 2;
-
-        int disabledColor = new Color(60, 60, 65).getRGB();
-        int enabledColor = MaterialTheme.getRGB(MaterialTheme.PRIMARY_COLOR);
-
-        int switchColor = AnimationUtil.interpolateColor(disabledColor, enabledColor, toggleAnim);
-
-        if (alpha < 255) {
-            Color c = new Color(switchColor);
-            switchColor = new Color(c.getRed(), c.getGreen(), c.getBlue(), alpha).getRGB();
-        }
-
-        int knobX = switchX + (int) (toggleAnim * (switchW - switchH));
-        RenderUtil.drawRoundedRect(switchX, switchY, switchW, switchH, switchH / 2f, switchColor, true, true, true, true);
-        RenderUtil.drawRoundedRect(knobX, switchY + 1, switchH - 2, switchH - 2, (switchH - 2) / 2f, -1, true, true, true, true);
+    private int withAlpha(int color, int alpha) {
+        return (color & 0x00FFFFFF) | (Math.max(0, Math.min(255, alpha)) << 24);
     }
 
     @Override

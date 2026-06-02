@@ -41,6 +41,7 @@ import java.util.stream.Collectors;
 public class BedTracker extends Module {
     private static final Minecraft mc = Minecraft.getMinecraft();
     private static final long BED_SCAN_DELAY_MS = 3000L;
+    private static final long BED_RESCAN_DELAY_MS = 5000L;
     private final LinkedHashMap<String, Long> alertCooldowns;
     private final LinkedHashSet<EntityEnderPearl> trackedPearls;
     private final LinkedHashSet<String> whitelistedPlayers;
@@ -52,6 +53,8 @@ public class BedTracker extends Module {
     private long lastMarcoTime;
     private boolean waiting;
     private long bedScanAt;
+    private long lastBedScanAttempt;
+    private boolean scannedThisGame;
     public final BooleanProperty alerts;
     public final IntProperty alertRange;
     public final BooleanProperty alertOnPearl;
@@ -109,6 +112,8 @@ public class BedTracker extends Module {
         this.lastMarcoTime = -1L;
         this.waiting = false;
         this.bedScanAt = -1L;
+        this.lastBedScanAttempt = -1L;
+        this.scannedThisGame = false;
         this.alerts = new BooleanProperty("alerts", true);
         this.alertRange = new IntProperty("alerts-range", 48, 8, 128, this.alerts::getValue);
         this.alertOnPearl = new BooleanProperty("alerts-on-pearl", true);
@@ -134,10 +139,20 @@ public class BedTracker extends Module {
         this.whitelistedPlayers.clear();
         this.bedPos = null;
         this.lastMarcoTime = -1L;
+        this.lastBedScanAttempt = -1L;
     }
 
     private void scheduleBedScan() {
-        this.bedScanAt = System.currentTimeMillis() + BED_SCAN_DELAY_MS;
+        if (!this.scannedThisGame && this.bedScanAt == -1L) {
+            this.bedScanAt = System.currentTimeMillis() + BED_SCAN_DELAY_MS;
+        }
+    }
+
+    private void scheduleAutomaticBedScan() {
+        if (this.scannedThisGame || mc.theWorld == null || mc.thePlayer == null || this.isBed(this.bedPos)) return;
+        if (this.bedScanAt == -1L) {
+            this.bedScanAt = System.currentTimeMillis() + BED_SCAN_DELAY_MS;
+        }
     }
 
     private void runPendingBedScan() {
@@ -145,7 +160,9 @@ public class BedTracker extends Module {
             return;
         }
         this.bedScanAt = -1L;
+        this.lastBedScanAttempt = System.currentTimeMillis();
         if (mc.theWorld == null || mc.thePlayer == null) {
+            this.bedScanAt = System.currentTimeMillis() + BED_RESCAN_DELAY_MS;
             return;
         }
 
@@ -158,6 +175,7 @@ public class BedTracker extends Module {
                     BlockPos blockPos = new BlockPos(i, j, k);
                     if (this.isBed(blockPos)) {
                         this.bedPos = blockPos;
+                        this.scannedThisGame = true;
                         ChatUtil.sendFormatted(
                                 String.format(
                                         "%s%s: &fWhitelisted your bed at (%d, %d, %d) &a&l\u2714&r",
@@ -174,6 +192,8 @@ public class BedTracker extends Module {
                 }
             }
         }
+
+        this.bedScanAt = System.currentTimeMillis() + BED_RESCAN_DELAY_MS;
     }
 
     private void pruneTrackedPearls() {
@@ -194,6 +214,7 @@ public class BedTracker extends Module {
     @EventTarget
     public void onTick(TickEvent event) {
         if (this.isEnabled() && event.getType() == EventType.POST) {
+            this.scheduleAutomaticBedScan();
             this.runPendingBedScan();
             this.pruneTrackedPearls();
             if (!this.isBed(this.bedPos)) {
@@ -347,6 +368,7 @@ public class BedTracker extends Module {
     public void onLoadWorld(LoadWorldEvent event) {
         this.waiting = false;
         this.bedScanAt = -1L;
+        this.scannedThisGame = false;
         this.resetTracking();
     }
 
@@ -358,6 +380,7 @@ public class BedTracker extends Module {
                 if (msg.contains("§e§lProtect your bed and destroy the enemy bed") || msg.contains("§e§lDestroy the enemy bed and then eliminate them")) {
                     this.bedScanAt = -1L;
                     this.resetTracking();
+                    this.scannedThisGame = false;
                     this.waiting = true;
                 }
             }
@@ -372,6 +395,7 @@ public class BedTracker extends Module {
     public void onDisabled() {
         this.waiting = false;
         this.bedScanAt = -1L;
+        this.scannedThisGame = false;
         this.resetTracking();
     }
 }

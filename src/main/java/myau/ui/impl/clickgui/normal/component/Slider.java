@@ -5,12 +5,10 @@ import myau.property.Property;
 import myau.property.properties.FloatProperty;
 import myau.property.properties.IntProperty;
 import myau.property.properties.PercentProperty;
-import myau.ui.impl.clickgui.normal.MaterialTheme;
-import myau.util.RenderUtil;
-import myau.util.font.FontManager;
+import myau.ui.impl.clickgui.clean.CleanTheme;
+import net.minecraft.client.gui.Gui;
 import org.lwjgl.input.Mouse;
 
-import java.awt.*;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 
@@ -42,16 +40,10 @@ public class Slider extends Component {
 
     @Override
     public void render(int mouseX, int mouseY, float partialTicks, float animationProgress, boolean isLast, int scrollOffset, float deltaTime) {
-        if (!property.isVisible()) {
-            return;
-        }
-
+        if (!property.isVisible()) return;
         if (this.dragging) {
-            if (Mouse.isButtonDown(0)) {
-                updateSliderValue(mouseX);
-            } else {
-                this.dragging = false;
-            }
+            if (Mouse.isButtonDown(0)) updateSliderValue(mouseX);
+            else this.dragging = false;
         }
 
         double value, min, max;
@@ -74,49 +66,26 @@ public class Slider extends Component {
 
         int scrolledY = y - scrollOffset;
         int alpha = (int) (255 * animationProgress);
-        if (alpha < 5) return;
+        String name = property.getName();
+        String valStr = round(value) + (this.property instanceof PercentProperty ? "%" : "");
+        mc.fontRendererObj.drawStringWithShadow(name, x + 5, scrolledY + 2, withAlpha(CleanTheme.TEXT, alpha));
+        mc.fontRendererObj.drawStringWithShadow(valStr, x + width - 5 - mc.fontRendererObj.getStringWidth(valStr), scrolledY + 2, withAlpha(CleanTheme.MUTED, alpha));
 
-        float easedProgress = 1.0f - (float) Math.pow(1.0f - animationProgress, 4);
-
-        if (easedProgress > 0.5f) {
-            String name = property.getName();
-            String valStr = round(value) + (this.property instanceof PercentProperty ? "%" : "");
-            int textColor = MaterialTheme.getRGBWithAlpha(MaterialTheme.TEXT_COLOR, alpha);
-            float textY = scrolledY + 2;
-            if (FontManager.productSans16 != null) {
-                FontManager.productSans16.drawString(name, x + 2, textY, textColor);
-                float valW = (float) FontManager.productSans16.getStringWidth(valStr);
-                FontManager.productSans16.drawString(valStr, x + width - valW - 2, textY, textColor);
-            } else {
-                mc.fontRendererObj.drawStringWithShadow(name, x + 2, textY, textColor);
-                mc.fontRendererObj.drawStringWithShadow(valStr, x + width - mc.fontRendererObj.getStringWidth(valStr) - 2, textY, textColor);
-            }
-        }
-
-        int trackHeight = 4;
-        int trackY = scrolledY + height - 8;
-        int trackX = x + 2;
-        int trackWidth = width - 4;
-
-        RenderUtil.drawRoundedRect(trackX, trackY, trackWidth, trackHeight, trackHeight / 2f, new Color(40, 40, 45).getRGB(), true, true, true, true);
-
-        float fillWidth = (float) (trackWidth * fillProgress);
-        int accentColor = MaterialTheme.getRGBWithAlpha(MaterialTheme.PRIMARY_COLOR, alpha);
-        RenderUtil.drawRoundedRect(trackX, trackY, fillWidth, trackHeight, trackHeight / 2f, accentColor, true, false, false, true);
-
-        float knobX = trackX + fillWidth - 2;
-        RenderUtil.drawRoundedRect(knobX, trackY - 2, 4, trackHeight + 4, 2, -1, true, true, true, true);
+        int trackY = scrolledY + height - 5;
+        int trackX = x + 5;
+        int trackWidth = width - 10;
+        Gui.drawRect(trackX, trackY, trackX + trackWidth, trackY + 2, withAlpha(0xFF303030, alpha));
+        Gui.drawRect(trackX, trackY, trackX + (int) (trackWidth * fillProgress), trackY + 2, withAlpha(CleanTheme.ACCENT, alpha));
+        int knobX = trackX + (int) (trackWidth * fillProgress);
+        Gui.drawRect(knobX - 1, trackY - 2, knobX + 1, trackY + 4, withAlpha(0xFFFFFFFF, alpha));
     }
 
     private void updateSliderValue(int mouseX) {
-        float currentTrackX = x + 2;
-        float currentTrackWidth = width - 4;
-
+        float currentTrackX = x + 5;
+        float currentTrackWidth = width - 10;
         double progress = (mouseX - currentTrackX) / currentTrackWidth;
         progress = Math.max(0, Math.min(1, progress));
-
         double newValue = min + (max - min) * progress;
-
         if (property instanceof IntProperty) {
             property.setValue((int) Math.round(newValue));
         } else if (property instanceof PercentProperty) {
@@ -125,8 +94,7 @@ public class Slider extends Component {
             double steppedValue = Math.round(newValue / step) * step;
             BigDecimal bd = new BigDecimal(steppedValue);
             bd = bd.setScale(2, RoundingMode.HALF_UP);
-            newValue = bd.doubleValue();
-            newValue = Math.max(min, Math.min(max, newValue));
+            newValue = Math.max(min, Math.min(max, bd.doubleValue()));
             property.setValue((float) newValue);
         }
     }
@@ -137,6 +105,10 @@ public class Slider extends Component {
         return bd.doubleValue();
     }
 
+    private int withAlpha(int color, int alpha) {
+        return (color & 0x00FFFFFF) | (Math.max(0, Math.min(255, alpha)) << 24);
+    }
+
     @Override
     public boolean mouseClicked(int mouseX, int mouseY, int mouseButton) {
         return false;
@@ -145,7 +117,7 @@ public class Slider extends Component {
     @Override
     public boolean mouseClicked(int mouseX, int mouseY, int mouseButton, int scrollOffset) {
         int scrolledY = y - scrollOffset;
-        if (mouseX >= x && mouseX <= x + width && mouseY >= scrolledY + height - 12 && mouseY <= scrolledY + height) {
+        if (mouseX >= x && mouseX <= x + width && mouseY >= scrolledY + height - 9 && mouseY <= scrolledY + height) {
             if (mouseButton == 0) {
                 this.dragging = true;
                 updateSliderValue(mouseX);

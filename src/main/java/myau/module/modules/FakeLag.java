@@ -55,6 +55,7 @@ public class FakeLag extends Module {
 
     private final LinkedList<QueueData> packetQueue = new LinkedList<>();
     private final LinkedList<PositionData> positions = new LinkedList<>();
+    private final LinkedList<PositionData> renderPositions = new LinkedList<>();
 
     private long resetTimer;
     private boolean wasNearEnemy;
@@ -127,7 +128,9 @@ public class FakeLag extends Module {
             if (packet instanceof C03PacketPlayer) {
                 C03PacketPlayer playerPacket = (C03PacketPlayer) packet;
                 if (playerPacket.isMoving()) {
-                    this.positions.add(new PositionData(new Vec3(playerPacket.getPositionX(), playerPacket.getPositionY(), playerPacket.getPositionZ()), System.currentTimeMillis()));
+                    PositionData positionData = new PositionData(new Vec3(playerPacket.getPositionX(), playerPacket.getPositionY(), playerPacket.getPositionZ()), System.currentTimeMillis());
+                    this.positions.add(positionData);
+                    this.renderPositions.add(positionData);
                 }
             }
         }
@@ -157,7 +160,8 @@ public class FakeLag extends Module {
 
     @EventTarget
     public void onRender3D(Render3DEvent event) {
-        if (!this.isEnabled() || !this.line.getValue() || this.positions.size() < 2) return;
+        pruneRenderPositions();
+        if (!this.isEnabled() || !this.line.getValue() || this.renderPositions.size() < 2) return;
 
         Color color = new Color(this.lineColor.getValue(), true);
         double renderX = mc.getRenderManager().viewerPosX;
@@ -173,7 +177,7 @@ public class FakeLag extends Module {
         GL11.glLineWidth(2.0F);
         GL11.glColor4f(color.getRed() / 255.0F, color.getGreen() / 255.0F, color.getBlue() / 255.0F, color.getAlpha() / 255.0F);
         GL11.glBegin(GL11.GL_LINE_STRIP);
-        for (PositionData position : this.positions) {
+        for (PositionData position : this.renderPositions) {
             GL11.glVertex3d(position.pos.xCoord - renderX, position.pos.yCoord - renderY, position.pos.zCoord - renderZ);
         }
         GL11.glEnd();
@@ -250,11 +254,25 @@ public class FakeLag extends Module {
                 positionIterator.remove();
             }
         }
+        pruneRenderPositions();
+    }
+
+    private void pruneRenderPositions() {
+        long now = System.currentTimeMillis();
+        long keepTime = Math.max(this.delay.getValue(), this.recoilTime.getValue()) + 1000L;
+        Iterator<PositionData> renderIterator = this.renderPositions.iterator();
+        while (renderIterator.hasNext()) {
+            PositionData data = renderIterator.next();
+            if (data.time <= now - keepTime) {
+                renderIterator.remove();
+            }
+        }
     }
 
     private void clearPackets() {
         this.packetQueue.clear();
         this.positions.clear();
+        this.renderPositions.clear();
     }
 
     private boolean hasTimePassed(long timer, int delay) {
@@ -266,8 +284,10 @@ public class FakeLag extends Module {
     }
 
     public Vec3 getServerPositionForDebug() {
-        if (!this.isEnabled() || this.positions.isEmpty()) return null;
-        return this.positions.getFirst().pos;
+        if (!this.isEnabled()) return null;
+        if (!this.positions.isEmpty()) return this.positions.getFirst().pos;
+        pruneRenderPositions();
+        return this.renderPositions.isEmpty() ? null : this.renderPositions.getFirst().pos;
     }
 
     @Override

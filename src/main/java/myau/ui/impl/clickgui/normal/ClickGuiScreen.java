@@ -35,6 +35,7 @@ public class ClickGuiScreen extends GuiScreen {
 
         List<Module> combatModules = Arrays.asList(
                 Myau.moduleManager.getModule(AimAssist.class),
+                Myau.moduleManager.getModule(AntiBot.class),
                 Myau.moduleManager.getModule(AutoClicker.class),
                 Myau.moduleManager.getModule(KillAura.class),
                 Myau.moduleManager.getModule(Wtap.class),
@@ -57,7 +58,8 @@ public class ClickGuiScreen extends GuiScreen {
                 Myau.moduleManager.getModule(Criticals.class),
                 Myau.moduleManager.getModule(BlockHit.class),
                 Myau.moduleManager.getModule(SprintReset.class),
-                Myau.moduleManager.getModule(Displace.class)
+                Myau.moduleManager.getModule(Displace.class),
+                Myau.moduleManager.getModule(Teams.class)
         );
 
         List<Module> movementModules = Arrays.asList(
@@ -105,7 +107,6 @@ public class ClickGuiScreen extends GuiScreen {
                 Myau.moduleManager.getModule(DynamicIsland.class),
                 Myau.moduleManager.getModule(ESP2D.class),
                 Myau.moduleManager.getModule(RiseClickGUIModule.class),
-                Myau.moduleManager.getModule(TeamHealthDisplay.class),
                 Myau.moduleManager.getModule(SeasonDisplay.class),
                 Myau.moduleManager.getModule(Animations.class),
                 Myau.moduleManager.getModule(HudEditor.class),
@@ -136,6 +137,7 @@ public class ClickGuiScreen extends GuiScreen {
                 Myau.moduleManager.getModule(Spammer.class),
                 Myau.moduleManager.getModule(BedNuker.class),
                 Myau.moduleManager.getModule(BedTracker.class),
+                Myau.moduleManager.getModule(TeamDisplay.class),
                 Myau.moduleManager.getModule(LightningTracker.class),
                 Myau.moduleManager.getModule(NoRotate.class),
                 Myau.moduleManager.getModule(NickHider.class),
