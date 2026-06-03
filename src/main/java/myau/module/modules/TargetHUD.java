@@ -28,6 +28,7 @@ import myau.module.Module;
 import myau.property.properties.*;
 import myau.util.ColorUtil;
 import myau.util.RenderUtil;
+import myau.util.RotationUtil;
 import myau.util.TeamUtil;
 import myau.util.TimerUtil;
 import myau.util.shader.BlurUtils;
@@ -42,7 +43,7 @@ public class TargetHUD extends Module {
     private static final Minecraft mc = Minecraft.getMinecraft();
     private static final DecimalFormat healthFormat = new DecimalFormat("0.0", new DecimalFormatSymbols(Locale.US));
     private static final DecimalFormat diffFormat = new DecimalFormat("+0.0;-0.0", new DecimalFormatSymbols(Locale.US));
-    public final ModeProperty style = new ModeProperty("style", 0, new String[]{"DEFAULT", "RAVENBS-MODERN", "RAVENBS-LEGACY", "FACE", "THREED", "SIMPLE", "CIRCLE"});
+    public final ModeProperty style = new ModeProperty("style", 0, new String[]{"DEFAULT", "RAVENBS-MODERN", "RAVENBS-LEGACY", "FACE", "THREED", "SIMPLE", "CIRCLE", "CLEAN"});
     public final ModeProperty color = new ModeProperty("color", 0, new String[]{"DEFAULT", "HUD"});
     public final ModeProperty posX = new ModeProperty("position-x", 1, new String[]{"LEFT", "MIDDLE", "RIGHT"});
     public final ModeProperty posY = new ModeProperty("position-y", 1, new String[]{"TOP", "MIDDLE", "BOTTOM"});
@@ -197,6 +198,13 @@ public class TargetHUD extends Module {
                 if (fadeTimer != null) {
                     long elapsed = fadeTimer.getElapsedTime();
                     this.animatedScale = fadingIn ? Math.min(1f, elapsed / 400f) : Math.max(0f, 1f - elapsed / 400f);
+                    if (!fadingIn && elapsed >= 400L) {
+                        this.animatedScale = 0f;
+                        this.target = null;
+                        this.fadingEntity = null;
+                        this.fadeTimer = null;
+                        return;
+                    }
                 } else {
                     this.animatedScale = this.target != null ? 1f : 0f;
                 }
@@ -434,6 +442,9 @@ public class TargetHUD extends Module {
                 break;
             case 3:
                 drawCircleStyle(entity);
+                break;
+            case 4:
+                drawCleanStyle(entity);
                 break;
         }
     }
@@ -755,6 +766,97 @@ public class TargetHUD extends Module {
         mc.fontRendererObj.drawString(healthText, x + 40, y + 22, healthTextColor, RenderUtil.hudShadow());
 
         GL11.glPopMatrix();
+    }
+
+    private void drawCleanStyle(EntityLivingBase entity) {
+        float alpha = Math.min(1f, this.animatedScale);
+        int baseX = HUD.targetHUDX;
+        int baseY = HUD.targetHUDY;
+
+        String targetName = TeamUtil.stripName(entity);
+        String targetPrefix = "Target: ";
+        String healthPrefix = "Health: ";
+        String healthValue = healthFormat.format(entity.getHealth());
+        String status = getCleanStatus(entity);
+
+        int targetWidth = mc.fontRendererObj.getStringWidth(targetPrefix + targetName + (status.isEmpty() ? "" : " " + status));
+        int healthWidth = mc.fontRendererObj.getStringWidth(healthPrefix + healthValue);
+        int hudWidth = Math.max(98, Math.max(targetWidth, healthWidth) + 14);
+        int hudHeight = 30;
+
+        float sc = this.scale.getValue();
+        GL11.glPushMatrix();
+        GL11.glTranslated(baseX + hudWidth / 2.0, baseY + hudHeight / 2.0, 0);
+        GL11.glScalef(sc, sc, 1.0f);
+        GL11.glTranslated(-(baseX + hudWidth / 2.0), -(baseY + hudHeight / 2.0), 0);
+
+        int x = baseX;
+        int y = baseY;
+        int alphaInt = (int) (alpha * 255.0f);
+        int bgAlpha = Math.max(0, Math.min(150, alphaInt));
+        int bgColor = (bgAlpha << 24) | 0x000000;
+        int lineTopColor = (alphaInt << 24) | 0xC44DFF;
+        int lineBottomColor = (alphaInt << 24) | 0x4D8DFF;
+        int whiteColor = (alphaInt << 24) | 0xFFFFFF;
+        int greenColor = (alphaInt << 24) | 0x00FF38;
+        int redColor = (alphaInt << 24) | 0xFF3030;
+        int yellowColor = (alphaInt << 24) | 0xFFFF00;
+        int statusColor = "W".equals(status) ? greenColor : ("L".equals(status) ? redColor : yellowColor);
+
+        GlStateManager.enableBlend();
+        GlStateManager.disableTexture2D();
+        Gui.drawRect(x, y, x + hudWidth, y + hudHeight, bgColor);
+        GlStateManager.enableTexture2D();
+        RenderUtil.drawGradientRect(x, y, (float) (x + 2), y + hudHeight, lineTopColor, lineBottomColor);
+
+        int textX = x + 8;
+        int targetY = y + 5;
+        int healthY = y + 17;
+        mc.fontRendererObj.drawString(targetPrefix, textX, targetY, whiteColor, RenderUtil.hudShadow());
+        int nameX = textX + mc.fontRendererObj.getStringWidth(targetPrefix);
+        mc.fontRendererObj.drawString(targetName, nameX, targetY, whiteColor, RenderUtil.hudShadow());
+        if (!status.isEmpty()) {
+            int statusX = nameX + mc.fontRendererObj.getStringWidth(targetName + " ");
+            mc.fontRendererObj.drawString(status, statusX, targetY, statusColor, RenderUtil.hudShadow());
+        }
+
+        mc.fontRendererObj.drawString(healthPrefix, textX, healthY, whiteColor, RenderUtil.hudShadow());
+        int healthX = textX + mc.fontRendererObj.getStringWidth(healthPrefix);
+        mc.fontRendererObj.drawString(healthValue, healthX, healthY, greenColor, RenderUtil.hudShadow());
+
+        GL11.glPopMatrix();
+    }
+
+    private String getCleanStatus(EntityLivingBase entity) {
+        if (mc.thePlayer == null || entity == null) {
+            return "N";
+        }
+
+        KillAura killAura = (KillAura) Myau.moduleManager.modules.get(KillAura.class);
+        boolean killAuraReady = killAura != null
+                && killAura.isEnabled()
+                && killAura.isAttackAllowed()
+                && killAura.getTarget() == entity
+                && RotationUtil.distanceToEntity(entity) <= (double) killAura.attackRange.getValue();
+
+        float playerScore = getCleanFightScore(mc.thePlayer);
+        float targetScore = getCleanFightScore(entity);
+
+        if (killAuraReady && playerScore >= targetScore * 0.92f) {
+            return "W";
+        }
+        if (!killAuraReady || playerScore < targetScore * 0.85f) {
+            return "L";
+        }
+        return "N";
+    }
+
+    private float getCleanFightScore(EntityLivingBase entity) {
+        float health = entity.getHealth() + entity.getAbsorptionAmount();
+        if (entity instanceof EntityPlayer) {
+            health += ((EntityPlayer) entity).getTotalArmorValue() * 0.45f;
+        }
+        return health;
     }
 
     @EventTarget

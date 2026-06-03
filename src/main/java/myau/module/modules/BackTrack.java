@@ -114,7 +114,7 @@ public class BackTrack extends Module {
 
     @EventTarget
     public void onTick(TickEvent event) {
-        if (event.getType() != EventType.PRE) return;
+        if (!this.isEnabled() || event.getType() != EventType.PRE) return;
         if (mc.thePlayer == null || mc.theWorld == null || mc.thePlayer.ticksExisted <= 10) {
             clear(false, true, false);
             removeFakePlayer();
@@ -149,7 +149,7 @@ public class BackTrack extends Module {
 
     @EventTarget
     public void onPacket(PacketEvent event) {
-        if (mode.getValue() != 0 || event.getType() != EventType.RECEIVE || event.isCancelled()) return;
+        if (!this.isEnabled() || mode.getValue() != 0 || event.getType() != EventType.RECEIVE || event.isCancelled()) return;
         if (mc.thePlayer == null || mc.theWorld == null || mc.thePlayer.ticksExisted <= 10) {
             clear(false, true, false);
             return;
@@ -185,6 +185,7 @@ public class BackTrack extends Module {
 
     @EventTarget
     public void onAttack(AttackEvent event) {
+        if (!this.isEnabled()) return;
         if (mode.getValue() == 1) {
             handleFakePlayerAttack(event);
             return;
@@ -202,7 +203,7 @@ public class BackTrack extends Module {
 
     @EventTarget
     public void onRender3D(Render3DEvent event) {
-        if (mode.getValue() != 0 || target == null || trackedPosition == null || target.isDead || currentLatency <= 0) return;
+        if (!this.isEnabled() || mode.getValue() != 0 || target == null || trackedPosition == null || target.isDead || currentLatency <= 0) return;
         if (espMode.getValue() == 0) return;
 
         Color color = new Color(espColor.getValue(), true);

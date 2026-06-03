@@ -85,6 +85,7 @@ public class FakeLag extends Module {
     @EventTarget
     public void onPacket(PacketEvent event) {
         if (!this.isEnabled() || mc.thePlayer == null || mc.theWorld == null || event.isCancelled()) return;
+        if (event.getType() != EventType.SEND) return;
         if (this.ignoreWholeTick || this.wasNearEnemy) return;
 
         Packet<?> packet = event.getPacket();
@@ -121,17 +122,15 @@ public class FakeLag extends Module {
             return;
         }
 
-        if (event.getType() == EventType.SEND) {
-            event.setCancelled(true);
-            this.packetQueue.add(new QueueData(packet, System.currentTimeMillis()));
+        event.setCancelled(true);
+        this.packetQueue.add(new QueueData(packet, System.currentTimeMillis()));
 
-            if (packet instanceof C03PacketPlayer) {
-                C03PacketPlayer playerPacket = (C03PacketPlayer) packet;
-                if (playerPacket.isMoving()) {
-                    PositionData positionData = new PositionData(new Vec3(playerPacket.getPositionX(), playerPacket.getPositionY(), playerPacket.getPositionZ()), System.currentTimeMillis());
-                    this.positions.add(positionData);
-                    this.renderPositions.add(positionData);
-                }
+        if (packet instanceof C03PacketPlayer) {
+            C03PacketPlayer playerPacket = (C03PacketPlayer) packet;
+            if (playerPacket.isMoving()) {
+                PositionData positionData = new PositionData(new Vec3(playerPacket.getPositionX(), playerPacket.getPositionY(), playerPacket.getPositionZ()), System.currentTimeMillis());
+                this.positions.add(positionData);
+                this.renderPositions.add(positionData);
             }
         }
     }
@@ -161,7 +160,7 @@ public class FakeLag extends Module {
     @EventTarget
     public void onRender3D(Render3DEvent event) {
         pruneRenderPositions();
-        if (!this.isEnabled() || !this.line.getValue() || this.renderPositions.size() < 2) return;
+        if (!this.isEnabled() || !this.line.getValue() || this.renderPositions.isEmpty() || mc.thePlayer == null) return;
 
         Color color = new Color(this.lineColor.getValue(), true);
         double renderX = mc.getRenderManager().viewerPosX;
@@ -180,6 +179,7 @@ public class FakeLag extends Module {
         for (PositionData position : this.renderPositions) {
             GL11.glVertex3d(position.pos.xCoord - renderX, position.pos.yCoord - renderY, position.pos.zCoord - renderZ);
         }
+        GL11.glVertex3d(mc.thePlayer.posX - renderX, mc.thePlayer.posY - renderY, mc.thePlayer.posZ - renderZ);
         GL11.glEnd();
         GL11.glColor4f(1.0F, 1.0F, 1.0F, 1.0F);
         GL11.glEnable(GL11.GL_DEPTH_TEST);
