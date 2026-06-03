@@ -12,6 +12,7 @@ import myau.property.properties.ModeProperty;
 import myau.property.properties.PercentProperty;
 import myau.property.properties.TextProperty;
 import myau.util.AnimationUtil;
+import myau.util.KeyBindUtil;
 import myau.util.RenderUtil;
 import myau.util.font.FontManager;
 import org.lwjgl.input.Keyboard;
@@ -255,8 +256,7 @@ public class RiseModuleCard {
     private String keyName() {
         int key = module.getKey();
         if (key == 0) return "";
-        String name = Keyboard.getKeyName(key);
-        return name == null ? "" : name;
+        return KeyBindUtil.getKeyName(key);
     }
 
     private Color mix(Color from, Color to, float amount) {

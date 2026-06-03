@@ -58,7 +58,8 @@ public class AccountManager {
                             Optional.ofNullable(jsonObject.get("username")).map(JsonElement::getAsString).orElse(""),
                             Optional.ofNullable(jsonObject.get("unban")).map(JsonElement::getAsLong).orElse(0L),
                             Optional.ofNullable(jsonObject.get("clientId")).map(JsonElement::getAsString).orElse(""),
-                            Optional.ofNullable(jsonObject.get("scope")).map(JsonElement::getAsString).orElse("")
+                            Optional.ofNullable(jsonObject.get("scope")).map(JsonElement::getAsString).orElse(""),
+                            Optional.ofNullable(jsonObject.get("type")).map(JsonElement::getAsString).orElse(Account.TYPE_MICROSOFT)
                     ));
                 }
             }
@@ -78,6 +79,7 @@ public class AccountManager {
                 jsonObject.addProperty("unban", account.getUnban());
                 jsonObject.addProperty("clientId", account.getClientId());
                 jsonObject.addProperty("scope", account.getScope());
+                jsonObject.addProperty("type", account.getType());
                 jsonArray.add(jsonObject);
             }
             PrintWriter printWriter = new PrintWriter(new FileWriter(file));

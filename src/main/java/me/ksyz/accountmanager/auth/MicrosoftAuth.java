@@ -6,6 +6,7 @@ import me.ksyz.accountmanager.utils.SSLUtils;
 import net.minecraft.util.Session;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.http.Header;
 import org.apache.http.HttpResponse;
 import org.apache.http.NameValuePair;
 import org.apache.http.client.config.RequestConfig;
@@ -29,6 +30,7 @@ import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.*;
@@ -59,6 +61,29 @@ public final class MicrosoftAuth {
         }
 
         return HttpClients.createDefault();
+    }
+
+    // Same as createTrustedHttpClient, but redirects are returned to us instead
+    // of being followed automatically. The cookie login needs to inspect the
+    // OAuth redirect to the (never actually contacted) localhost callback in
+    // order to extract the authorization code.
+    private static CloseableHttpClient createTrustedHttpClientNoRedirect() {
+        try {
+            SSLConnectionSocketFactory sf = new SSLConnectionSocketFactory(
+                    SSLUtils.getSSLContext().getSocketFactory(),
+                    new String[]{"TLSv1.2"},
+                    null,
+                    new BrowserCompatHostnameVerifier()
+            );
+            return HttpClientBuilder.create()
+                    .setSSLSocketFactory(sf)
+                    .disableRedirectHandling()
+                    .build();
+        } catch (Exception ignored) {
+            //
+        }
+
+        return HttpClients.custom().disableRedirectHandling().build();
     }
 
     // A reusable Apache HTTP request config
@@ -164,6 +189,151 @@ public final class MicrosoftAuth {
                 throw new CancellationException("Microsoft auth code acquisition was cancelled!");
             } catch (Exception e) {
                 throw new CompletionException("Unable to acquire Microsoft auth code!", e);
+            }
+        }, executor);
+    }
+
+    private static String buildCookieHeader(Map<String, String> jar) {
+        StringBuilder sb = new StringBuilder();
+        for (Map.Entry<String, String> entry : jar.entrySet()) {
+            if (sb.length() > 0) {
+                sb.append("; ");
+            }
+            sb.append(entry.getKey()).append('=').append(entry.getValue());
+        }
+        return sb.toString();
+    }
+
+    /**
+     * Silently obtains an OAuth2 authorization code from a set of Microsoft
+     * login cookies, without ever opening a browser. We hit the authorize
+     * endpoint with the supplied cookies; if the session is still valid
+     * Microsoft single-signs-on and replies with a redirect straight to our
+     * (never contacted) localhost callback carrying the {@code code}. The code
+     * is then exchanged for tokens through the regular Microsoft flow.
+     *
+     * @param cookies an ordered {@code name -> value} jar, e.g. from
+     *                {@link me.ksyz.accountmanager.utils.CookieUtils#parse(String)}
+     */
+    public static CompletableFuture<String> acquireMSAuthCodeFromCookies(Map<String, String> cookies, Executor executor) {
+        return CompletableFuture.supplyAsync(() -> {
+            try (CloseableHttpClient client = createTrustedHttpClientNoRedirect()) {
+                final String redirectUri = String.format("http://localhost:%d/callback", PORT);
+                String url = new URIBuilder("https://login.live.com/oauth20_authorize.srf")
+                        .addParameter("client_id", CLIENT_ID)
+                        .addParameter("response_type", "code")
+                        .addParameter("redirect_uri", redirectUri)
+                        .addParameter("scope", SCOPE)
+                        .addParameter("state", "cookielogin")
+                        .build()
+                        .toString();
+
+                // Carry (and accumulate) cookies ourselves across the redirect hops.
+                Map<String, String> jar = new LinkedHashMap<>();
+                if (cookies != null) {
+                    jar.putAll(cookies);
+                }
+                if (jar.isEmpty()) {
+                    throw new Exception("No cookies were provided.");
+                }
+
+                for (int hop = 0; hop < 15; hop++) {
+                    HttpGet request = new HttpGet(url);
+                    request.setConfig(REQUEST_CONFIG);
+                    request.setHeader("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36");
+                    request.setHeader("Accept", "text/html,application/xhtml+xml,application/xml");
+                    request.setHeader("Cookie", buildCookieHeader(jar));
+
+                    HttpResponse res = client.execute(request);
+                    int status = res.getStatusLine().getStatusCode();
+
+                    // Accumulate any Set-Cookie values issued during the hop.
+                    for (Header header : res.getHeaders("Set-Cookie")) {
+                        String[] kv = header.getValue().split(";", 2)[0].split("=", 2);
+                        if (kv.length == 2 && !kv[0].trim().isEmpty() && !StringUtils.isBlank(kv[1])) {
+                            jar.put(kv[0].trim(), kv[1].trim());
+                        }
+                    }
+
+                    if (status >= 300 && status < 400) {
+                        Header location = res.getFirstHeader("Location");
+                        EntityUtils.consumeQuietly(res.getEntity());
+                        if (location == null || StringUtils.isBlank(location.getValue())) {
+                            throw new Exception("Received a redirect without a location.");
+                        }
+
+                        // Resolve relative locations against the current url.
+                        URI resolved = URI.create(url).resolve(location.getValue().trim());
+                        if (resolved.toString().startsWith(redirectUri)) {
+                            // Reached the OAuth callback — pull out the code (or error).
+                            String rawQuery = resolved.getRawQuery();
+                            Map<String, String> query = URLEncodedUtils
+                                    .parse(rawQuery == null ? "" : rawQuery, StandardCharsets.UTF_8)
+                                    .stream()
+                                    .collect(Collectors.toMap(
+                                            NameValuePair::getName, NameValuePair::getValue, (a, b) -> a
+                                    ));
+                            if (!StringUtils.isBlank(query.get("code"))) {
+                                return query.get("code");
+                            }
+                            if (query.containsKey("error")) {
+                                throw new Exception(String.format(
+                                        "%s: %s",
+                                        query.get("error"),
+                                        Optional.ofNullable(query.get("error_description")).orElse("")
+                                ));
+                            }
+                            throw new Exception("The callback did not contain an auth code.");
+                        }
+
+                        url = resolved.toString();
+                        continue;
+                    }
+
+                    // Not a redirect. Usually this means Microsoft wants to show the
+                    // login page (cookies missing/expired). But some SSO responses
+                    // embed the callback in an auto-submitting form on a 200 page, so
+                    // scan the body for our callback URL before giving up.
+                    String body = res.getEntity() != null ? EntityUtils.toString(res.getEntity()) : "";
+                    int idx = body.indexOf(redirectUri);
+                    if (idx >= 0) {
+                        int end = idx;
+                        while (end < body.length() && "\"'< >\\\r\n\t".indexOf(body.charAt(end)) < 0) {
+                            end++;
+                        }
+                        String candidate = body.substring(idx, end).replace("&amp;", "&");
+                        try {
+                            String rawQuery = URI.create(candidate).getRawQuery();
+                            Map<String, String> query = URLEncodedUtils
+                                    .parse(rawQuery == null ? "" : rawQuery, StandardCharsets.UTF_8)
+                                    .stream()
+                                    .collect(Collectors.toMap(
+                                            NameValuePair::getName, NameValuePair::getValue, (a, b) -> a
+                                    ));
+                            if (!StringUtils.isBlank(query.get("code"))) {
+                                return query.get("code");
+                            }
+                            if (query.containsKey("error")) {
+                                throw new Exception(String.format(
+                                        "%s: %s",
+                                        query.get("error"),
+                                        Optional.ofNullable(query.get("error_description")).orElse("")
+                                ));
+                            }
+                        } catch (IllegalArgumentException ignored) {
+                            //
+                        }
+                    }
+                    throw new Exception(String.format(
+                            "Cookies are invalid or expired (interaction required, HTTP %d).", status
+                    ));
+                }
+
+                throw new Exception("Too many redirects while authenticating with cookies.");
+            } catch (InterruptedException e) {
+                throw new CancellationException("Cookie authentication was cancelled!");
+            } catch (Exception e) {
+                throw new CompletionException("Unable to authenticate with cookies!", e);
             }
         }, executor);
     }

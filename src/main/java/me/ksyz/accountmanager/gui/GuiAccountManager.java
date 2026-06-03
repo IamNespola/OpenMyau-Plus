@@ -51,25 +51,23 @@ public class GuiAccountManager extends GuiScreen {
         AccountManager.load();
         Keyboard.enableRepeatEvents(true);
 
-        buttonList.add(loginButton = new GuiButton(
-                0, width / 2 - 150, height - 52, 95, 20, "Login"
-        ));
-        buttonList.add(new GuiButton(
-                1, width / 2 - 50, height - 52, 95, 20, "Add"
-        ));
-        buttonList.add(new GuiButton(
-                4, width / 2 + 50, height - 52, 95, 20, "Session"
-        ));
+        // Two rows of four buttons centred under the account list.
+        final int bw = 72, gap = 3;
+        final int x0 = width / 2 - (bw * 4 + gap * 3) / 2;
+        final int c0 = x0, c1 = x0 + (bw + gap), c2 = x0 + (bw + gap) * 2, c3 = x0 + (bw + gap) * 3;
+        final int row1 = height - 52, row2 = height - 28;
 
-        buttonList.add(deleteButton = new GuiButton(
-                2, width / 2 - 150, height - 28, 95, 20, "Delete"
-        ));
-        buttonList.add(cancelButton = new GuiButton(
-                3, width / 2 + 50, height - 28, 95, 20, "Cancel"
-        ));
-        buttonList.add(new GuiButton(
-                5, width / 2 - 50, height - 28, 95, 20, "Add Token"
-        ));
+        // Row 1: account actions + Microsoft sign-in methods.
+        buttonList.add(loginButton = new GuiButton(0, c0, row1, bw, 20, "Login"));
+        buttonList.add(new GuiButton(1, c1, row1, bw, 20, "Add"));
+        buttonList.add(new GuiButton(5, c2, row1, bw, 20, "Add Token"));
+        buttonList.add(new GuiButton(4, c3, row1, bw, 20, "Session"));
+
+        // Row 2: delete + the new Cracked / Cookie sign-in methods + cancel.
+        buttonList.add(deleteButton = new GuiButton(2, c0, row2, bw, 20, "Delete"));
+        buttonList.add(new GuiButton(6, c1, row2, bw, 20, "Cracked"));
+        buttonList.add(new GuiButton(7, c2, row2, bw, 20, "Cookie"));
+        buttonList.add(cancelButton = new GuiButton(3, c3, row2, bw, 20, "Cancel"));
 
         guiAccountList = new GuiAccountList(mc);
         guiAccountList.registerScrollButtons(11, 12);
@@ -190,10 +188,20 @@ public class GuiAccountManager extends GuiScreen {
             switch (button.id) {
                 case 0: { // Login
                     if (task == null || task.isDone()) {
+                        Account account = AccountManager.accounts.get(selectedAccount);
+
+                        // Cracked accounts log in offline, without any network request.
+                        if (account.isCracked()) {
+                            SessionManager.set(SessionManager.offline(account.getUsername()));
+                            notification = new Notification(TextFormatting.translate(String.format(
+                                    "&aSuccessful login! (%s)&r", account.getUsername()
+                            )), 5000L);
+                            break;
+                        }
+
                         if (executor == null) {
                             executor = Executors.newSingleThreadExecutor();
                         }
-                        Account account = AccountManager.accounts.get(selectedAccount);
                         String username = StringUtils.isBlank(account.getUsername()) ? "???" : account.getUsername();
                         AtomicReference<String> refreshToken = new AtomicReference<>("");
                         AtomicReference<String> accessToken = new AtomicReference<>("");
@@ -298,6 +306,14 @@ public class GuiAccountManager extends GuiScreen {
                     mc.displayGuiScreen(new GuiAddToken(this));
                 }
                 break;
+                case 6:{ // Cracked
+                    mc.displayGuiScreen(new GuiCrackedLogin(this));
+                }
+                break;
+                case 7:{ // Cookie
+                    mc.displayGuiScreen(new GuiCookieLogin(this));
+                }
+                break;
                 default: {
                     guiAccountList.actionPerformed(button);
                 }
@@ -371,6 +387,27 @@ public class GuiAccountManager extends GuiScreen {
             GuiAccountManager.this.drawString(
                     fr, username, x + 2, y + 2, -1
             );
+
+            // Tag each entry with its account type so the three login methods
+            // are distinguishable at a glance.
+            String tag;
+            if (account.isCracked()) {
+                tag = "&8[&cCracked&8]";
+            } else if (Account.TYPE_COOKIE.equals(account.getType())) {
+                tag = "&8[&6Cookie&8]";
+            } else {
+                tag = "&8[&bMS&8]";
+            }
+            tag = TextFormatting.translate(tag);
+            GuiAccountManager.this.drawString(
+                    fr, tag, x + 2 + fr.getStringWidth(username) + 4, y + 2, -1
+            );
+
+            // Ban tracking is online-server specific; it does not apply to
+            // offline cracked accounts.
+            if (account.isCracked()) {
+                return;
+            }
 
             long currentTime = System.currentTimeMillis();
             long unbanTime = account.getUnban();

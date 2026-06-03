@@ -6,6 +6,10 @@ import org.lwjgl.input.Mouse;
 
 public class KeyBindUtil {
     public static String getKeyName(int keyCode) {
+        if (keyCode == Keyboard.KEY_NONE) {
+            return "None";
+        }
+
         if (keyCode < 0) {
             int mouseButton = keyCode + 100;
             switch (mouseButton) {
@@ -26,11 +30,20 @@ public class KeyBindUtil {
                 case 7:
                     return "MOUSE7";
                 default:
-                    String buttonName = Mouse.getButtonName(mouseButton);
-                    return buttonName != null ? buttonName : "MOUSE" + mouseButton;
+                    if (mouseButton >= 0 && mouseButton < Mouse.getButtonCount()) {
+                        String buttonName = Mouse.getButtonName(mouseButton);
+                        return buttonName != null ? buttonName : "MOUSE" + mouseButton;
+                    }
+                    return "MOUSE" + mouseButton;
             }
         }
-        return Keyboard.getKeyName(keyCode);
+
+        if (keyCode >= Keyboard.KEYBOARD_SIZE) {
+            return "KEY" + keyCode;
+        }
+
+        String keyName = Keyboard.getKeyName(keyCode);
+        return keyName != null ? keyName : "KEY" + keyCode;
     }
 
     public static boolean isKeyDown(int keyCode) {
