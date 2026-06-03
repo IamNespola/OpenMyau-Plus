@@ -1,4 +1,8 @@
+<<<<<<< HEAD
 name: openmyau
+=======
+name: openmyau 
+>>>>>>> 7748c564cb16c7c5a414f7cf1dc95430e79bee8f
 
 on:
   push:
@@ -16,7 +20,11 @@ env:
 
 jobs:
   build:
+<<<<<<< HEAD
     name: openmyau build
+=======
+    name: Build openmyau + ver
+>>>>>>> 7748c564cb16c7c5a414f7cf1dc95430e79bee8f
     runs-on: ubuntu-latest
 
     steps:
