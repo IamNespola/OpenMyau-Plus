@@ -1,4 +1,4 @@
-name: openmyau + ver
+name: openmyau 
 
 on:
   push:
@@ -23,11 +23,11 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Set up JDK 8
+      - name: Set up JDK 17
         uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: '8'
+          java-version: '17'
           cache: gradle
 
       - name: Make Gradle wrapper executable
