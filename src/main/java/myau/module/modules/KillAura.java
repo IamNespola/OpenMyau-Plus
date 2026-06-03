@@ -146,7 +146,7 @@ public class KillAura extends Module {
 
         this.mode = new ModeProperty("Mode", 1, new String[]{"Single", "Switch"});
         this.sort = new ModeProperty("Sort", 1, new String[]{"Distance", "Health", "HurtTime", "FOV"});
-        this.autoBlock = new ModeProperty("auto-block", 3, new String[]{"NONE", "VANILLA", "SPOOF", "HYPIXEL", "BLINK", "INTERACT", "SWAP", "LEGIT", "FAKE", "REBLOCK"});
+        this.autoBlock = new ModeProperty("auto-block", 3, new String[]{"NONE", "VANILLA", "SPOOF", "HYPIXEL", "BLINK", "INTERACT", "SWAP", "LEGIT", "FAKE", "REBLOCK", "Grim"});
         this.autoBlockCPS = new FloatProperty("AutoBlockCPS", 8.0F, 1.0F, 10.0F);
         this.autoBlockRequirePress = new BooleanProperty("AutoBlockRequirePress", false);
         this.reBlockDelay = new IntProperty("ReBlockDelay", 10, 1, 100, () -> autoBlock.getValue() == 9);
@@ -544,7 +544,8 @@ public class KillAura extends Module {
                     || this.autoBlock.getValue() == 4
                     || this.autoBlock.getValue() == 5
                     || this.autoBlock.getValue() == 6
-                    || this.autoBlock.getValue() == 7);
+                    || this.autoBlock.getValue() == 7
+                    || this.autoBlock.getValue() == 10);
         } else {
             return false;
         }
@@ -864,15 +865,42 @@ public class KillAura extends Module {
                             case 10:
                                 Myau.blinkManager.setBlinkState(false, BlinkModules.AUTO_BLOCK);
                                 if (this.hasValidTarget()) {
-                                    if (!this.isPlayerBlocking() && !Myau.playerStateManager.digging && !Myau.playerStateManager.placing) {
-                                        swap = true;
+                                    int item = ((IAccessorPlayerControllerMP) mc.playerController).getCurrentPlayerItem();
+                                    if (mc.thePlayer.inventory.currentItem == item && !Myau.playerStateManager.digging && !Myau.playerStateManager.placing) {
+                                        switch (this.blockTick) {
+                                            case 0:
+                                                if (!this.isPlayerBlocking()) {
+                                                    swap = true;
+                                                }
+                                                this.blockTick = 1;
+                                                break;
+                                            case 1:
+                                                if (this.isPlayerBlocking() && this.attackDelayMS <= 50L) {
+                                                    this.stopBlock();
+                                                    attack = false;
+                                                    this.blinkReset = true;
+                                                    this.blockTick = 2;
+                                                }
+                                                break;
+                                            case 2:
+                                                if (!this.isPlayerBlocking()) {
+                                                    swap = true;
+                                                }
+                                                this.blockTick = 0;
+                                                break;
+                                            default:
+                                                this.blockTick = 0;
+                                        }
                                     }
                                     this.isBlocking = true;
-                                    this.fakeBlockState = false;
+                                    this.fakeBlockState = true;
                                 } else {
+                                    Myau.blinkManager.setBlinkState(false, BlinkModules.AUTO_BLOCK);
                                     this.isBlocking = false;
                                     this.fakeBlockState = false;
+                                    this.blockTick = 0;
                                 }
+                                break;
                         }
                     }
                     boolean attacked = false;

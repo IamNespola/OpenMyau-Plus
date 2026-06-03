@@ -15,6 +15,7 @@ import myau.property.properties.ModeProperty;
 import myau.util.MoveUtil;
 import myau.util.PacketUtil;
 import myau.util.RandomUtil;
+import myau.util.TeamUtil;
 import myau.util.TimerUtil;
 import myau.util.rotation.Rotation;
 import net.minecraft.client.Minecraft;
@@ -22,6 +23,7 @@ import net.minecraft.client.entity.EntityPlayerSP;
 import net.minecraft.client.settings.GameSettings;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityLivingBase;
+import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.network.play.client.C02PacketUseEntity;
 import net.minecraft.network.play.client.C0APacketAnimation;
 import net.minecraft.network.play.client.C0BPacketEntityAction;
@@ -40,7 +42,7 @@ public class Velocity extends Module {
             "Vulcan", "MatrixReduce", "MatrixReducePlus", "IntaveReduce",
             "GrimC03", "Hypixel", "HypixelAir", "BlockSMC", "GrimCombat",
             "Polar", "MatrixNoXZ", "Intave13", "JumpReset", "Intave14",
-            "HypixelPrediction"
+            "HypixelPrediction", "GrimReduce"
     });
 
     public final FloatProperty horizontal = new FloatProperty("Horizontal", 0.0f, -2.0f, 2.0f, () -> mode.getValue() == 0 || mode.getValue() == 9);
@@ -77,6 +79,7 @@ public class Velocity extends Module {
 
     public final FloatProperty intave14Timer1 = new FloatProperty("Intave14-T1", 0.3f, 0.1f, 2.0f, () -> mode.getValue() == 23);
     public final FloatProperty intave14Timer2 = new FloatProperty("Intave14-T2", 5.0f, 1.0f, 10.0f, () -> mode.getValue() == 23);
+    public final BooleanProperty grimReduceRequireSwing = new BooleanProperty("GrimReqSwing", false, () -> mode.getValue() == 25);
 
     private final TimerUtil velocityTimer = new TimerUtil();
     private boolean hasReceivedVelocity = false;
@@ -99,6 +102,7 @@ public class Velocity extends Module {
     private int lastHurtTime = 0;
     private boolean jumpFlag = false;
     private boolean jumpResetFallDamage = false;
+    private int grimReduceTicks = 0;
 
     public Velocity() {
         super("Velocity", false, false, "We Use Ur Dih to Remove KnockBack :D");
@@ -121,6 +125,7 @@ public class Velocity extends Module {
         lastHurtTime = 0;
         jumpFlag = false;
         jumpResetFallDamage = false;
+        grimReduceTicks = 0;
     }
 
     private void reset() {
@@ -319,6 +324,20 @@ public class Velocity extends Module {
                         if (player.hurtTime == 0) attacked = false;
                     }
                     break;
+                case 25:
+                    if (grimReduceTicks > 0) {
+                        grimReduceTicks--;
+                        if (player.ticksExisted > 20
+                                && (!grimReduceRequireSwing.getValue() || player.isSwingInProgress)
+                                && !hasBadPacketState()) {
+                            EntityLivingBase target = findGrimReduceTarget();
+                            if (target != null) {
+                                PacketUtil.sendPacket(new C0APacketAnimation());
+                                mc.playerController.attackEntity(player, target);
+                            }
+                        }
+                    }
+                    break;
                 case 22:
                     if (this.shouldJumpReset(player)) {
                         player.jump();
@@ -484,6 +503,8 @@ public class Velocity extends Module {
                 case 21:
                 case 22:
                 case 23:
+                case 25:
+                    grimReduceTicks = 14;
                     hasReceivedVelocity = true;
                     break;
                 case 2:
@@ -636,6 +657,62 @@ public class Velocity extends Module {
             hasReceivedVelocity = false;
         }
         if (mc.thePlayer.hurtTime == 9) limitUntilJump++;
+    }
+
+    private boolean hasBadPacketState() {
+        return Myau.playerStateManager != null
+                && (Myau.playerStateManager.attacking
+                || Myau.playerStateManager.digging
+                || Myau.playerStateManager.placing
+                || Myau.playerStateManager.swapping
+                || Myau.playerStateManager.swinging);
+    }
+
+    private boolean isValidGrimReduceTarget(EntityLivingBase target) {
+        if (target == null || target == mc.thePlayer || target.isDead || target.deathTime > 0) {
+            return false;
+        }
+        if (target instanceof EntityPlayer) {
+            EntityPlayer player = (EntityPlayer) target;
+            if (TeamUtil.isFriend(player) || TeamUtil.isBot(player) || TeamUtil.isSameTeam(player)) {
+                return false;
+            }
+        }
+        return mc.thePlayer.getDistanceToEntity(target) <= 7.0F;
+    }
+
+    private EntityLivingBase findGrimReduceTarget() {
+        KillAura killAura = (KillAura) Myau.moduleManager.modules.get(KillAura.class);
+        if (killAura != null) {
+            EntityLivingBase killAuraTarget = killAura.getTarget();
+            if (this.isValidGrimReduceTarget(killAuraTarget)) {
+                return killAuraTarget;
+            }
+        }
+
+        if (mc.objectMouseOver != null && mc.objectMouseOver.entityHit instanceof EntityLivingBase) {
+            EntityLivingBase target = (EntityLivingBase) mc.objectMouseOver.entityHit;
+            if (this.isValidGrimReduceTarget(target)) {
+                return target;
+            }
+        }
+
+        EntityLivingBase nearest = null;
+        double nearestDistance = 7.0D;
+        for (Entity entity : mc.theWorld.loadedEntityList) {
+            if (entity instanceof EntityLivingBase) {
+                EntityLivingBase target = (EntityLivingBase) entity;
+                if (this.isValidGrimReduceTarget(target)) {
+                    double distance = mc.thePlayer.getDistanceToEntity(target);
+                    if (distance <= nearestDistance) {
+                        nearestDistance = distance;
+                        nearest = target;
+                    }
+                }
+            }
+        }
+
+        return nearest;
     }
 
     @Override

@@ -85,6 +85,7 @@ public class Myau {
         moduleManager.modules.put(AutoTool.class, new AutoTool());
         moduleManager.modules.put(AutoSwap.class, new AutoSwap());
         moduleManager.modules.put(BedNuker.class, new BedNuker());
+        moduleManager.modules.put(AutoBedDef.class, new AutoBedDef());
         moduleManager.modules.put(BedESP.class, new BedESP());
         moduleManager.modules.put(BedTracker.class, new BedTracker());
         moduleManager.modules.put(Blink.class, new Blink());
@@ -132,6 +133,7 @@ public class Myau {
         moduleManager.modules.put(HitBox.class, new HitBox());
         moduleManager.modules.put(HudEditor.class, new HudEditor());
         moduleManager.modules.put(KillAura.class, new KillAura());
+        moduleManager.modules.put(CombatHelper.class, new CombatHelper());
         moduleManager.modules.put(LagRange.class, new LagRange());
         moduleManager.modules.put(LightningTracker.class, new LightningTracker());
         moduleManager.modules.put(LongJump.class, new LongJump());
