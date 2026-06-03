@@ -24,9 +24,7 @@ import net.minecraft.network.play.server.S0CPacketSpawnPlayer;
 import net.minecraft.network.play.server.S13PacketDestroyEntities;
 import net.minecraft.network.play.server.S14PacketEntity;
 import net.minecraft.network.play.server.S38PacketPlayerListItem;
-import net.minecraft.network.play.server.S41PacketServerDifficulty;
 import net.minecraft.util.EnumChatFormatting;
-import net.minecraft.world.WorldSettings;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -40,9 +38,7 @@ import java.util.UUID;
 public class AntiBot extends Module {
     private static final Minecraft mc = Minecraft.getMinecraft();
 
-    public final BooleanProperty czechMatrix = new BooleanProperty("CzechMatrix", false);
-    public final BooleanProperty czechPingCheck = new BooleanProperty("PingCheck", true, czechMatrix::getValue);
-    public final BooleanProperty czechGamemodeCheck = new BooleanProperty("GamemodeCheck", true, czechMatrix::getValue);
+    public final BooleanProperty matrixBot = new BooleanProperty("MatrixBot", false);
     public final BooleanProperty tab = new BooleanProperty("Tab", true);
     public final ModeProperty tabMode = new ModeProperty("TabMode", 1, new String[]{"Equals", "Contains"}, tab::getValue);
     public final BooleanProperty entityID = new BooleanProperty("EntityID", true);
@@ -85,7 +81,11 @@ public class AntiBot extends Module {
     private final Set<Integer> spawnedInCombat = new HashSet<>();
     private final Set<Integer> hit = new HashSet<>();
     private final Set<UUID> duplicate = new HashSet<>();
-    private boolean wasAdded = mc.thePlayer != null;
+    private final List<EntityPlayer> matrixPlayerList = new ArrayList<>();
+    private final List<EntityPlayer> matrixNotAlwaysInRadius = new ArrayList<>();
+    private final Map<EntityPlayer, Double> matrixX = new HashMap<>();
+    private final Map<EntityPlayer, Double> matrixZ = new HashMap<>();
+    private boolean matrixNext;
 
     public AntiBot() {
         super("AntiBot", true, true);
@@ -94,6 +94,8 @@ public class AntiBot extends Module {
     @EventTarget
     public void onTick(TickEvent event) {
         if (!isEnabled() || mc.thePlayer == null || mc.theWorld == null) return;
+        handleMatrixBot();
+
         if (!removeFromWorld.getValue() || mc.thePlayer.ticksExisted <= 0 || mc.thePlayer.ticksExisted % removeInterval.getValue() != 0) return;
 
         List<EntityPlayer> bots = new ArrayList<>();
@@ -115,8 +117,6 @@ public class AntiBot extends Module {
         if (!isEnabled() || event.getType() != EventType.RECEIVE || mc.thePlayer == null || mc.theWorld == null) return;
         Packet<?> packet = event.getPacket();
 
-        if (czechMatrix.getValue()) handleCzechMatrix(event, packet);
-
         if (packet instanceof S14PacketEntity) {
             handleEntityPacket((S14PacketEntity) packet);
         } else if (packet instanceof S0BPacketAnimation) {
@@ -132,28 +132,64 @@ public class AntiBot extends Module {
         }
     }
 
-    private void handleCzechMatrix(PacketEvent event, Packet<?> packet) {
-        if (packet instanceof S41PacketServerDifficulty) wasAdded = false;
-        if (!(packet instanceof S38PacketPlayerListItem)) return;
+    private void handleMatrixBot() {
+        if (!matrixBot.getValue()) return;
 
-        S38PacketPlayerListItem item = (S38PacketPlayerListItem) packet;
-        if (item.getEntries().isEmpty()) return;
-        S38PacketPlayerListItem.AddPlayerData data = item.getEntries().get(0);
-        if (data.getProfile() == null || data.getProfile().getName() == null) return;
+        if (matrixNotAlwaysInRadius.size() > 1000) matrixNotAlwaysInRadius.clear();
 
-        if (!wasAdded) {
-            wasAdded = data.getProfile().getName().equals(mc.thePlayer.getName());
-            return;
-        }
-
-        boolean validPing = !czechPingCheck.getValue() || data.getPing() != 0;
-        boolean validGamemode = !czechGamemodeCheck.getValue() || data.getGameMode() != WorldSettings.GameType.NOT_SET;
-        if (!mc.thePlayer.isSpectator() && !mc.thePlayer.capabilities.allowFlying && validPing && validGamemode) {
-            event.setCancelled(true);
-            if (debug.getValue()) {
-                ChatUtil.sendFormatted(String.format("%sAntiBot/Matrix: &fPrevented &r%s &ffrom spawning.", Myau.clientName, data.getProfile().getName()));
+        for (Entity entity : mc.theWorld.loadedEntityList) {
+            if (entity instanceof EntityPlayer
+                    && (mc.thePlayer.getDistanceToEntity(entity) > 10.0F || !within(entity.posY, mc.thePlayer.posY - 1.5, mc.thePlayer.posY + 1.5))
+                    && !matrixNotAlwaysInRadius.contains(entity)) {
+                matrixNotAlwaysInRadius.add((EntityPlayer) entity);
             }
         }
+
+        if (!matrixNext) {
+            for (Entity entity : mc.theWorld.loadedEntityList) {
+                if (!(entity instanceof EntityPlayer) || matrixNotAlwaysInRadius.contains(entity)) continue;
+
+                EntityPlayer player = (EntityPlayer) entity;
+                matrixPlayerList.add(player);
+                matrixX.put(player, player.posX);
+                matrixZ.put(player, player.posZ);
+            }
+        } else {
+            for (EntityPlayer player : matrixPlayerList) {
+                Double lastX = matrixX.get(player);
+                Double lastZ = matrixZ.get(player);
+                if (lastX == null || lastZ == null) continue;
+
+                double xDiff = player.posX - lastX;
+                double zDiff = player.posZ - lastZ;
+                double speed = Math.sqrt(xDiff * xDiff + zDiff * zDiff) * 10.0;
+
+                if (isMatrixBot(player, speed)) {
+                    mc.theWorld.removeEntity(player);
+                    if (debug.getValue()) {
+                        ChatUtil.sendFormatted(String.format("%sAntiBot/MatrixBot: &fRemoved &r%s&f.", Myau.clientName, player.getName()));
+                    }
+                }
+            }
+
+            matrixPlayerList.clear();
+            matrixX.clear();
+            matrixZ.clear();
+        }
+
+        matrixNext = !matrixNext;
+    }
+
+    private boolean isMatrixBot(EntityPlayer player, double speed) {
+        return player != mc.thePlayer
+                && speed > 6.75
+                && speed < 27.5
+                && mc.thePlayer.getDistanceToEntity(player) <= 5.5F
+                && within(player.posY, mc.thePlayer.posY - 1.5, mc.thePlayer.posY + 1.5);
+    }
+
+    private boolean within(double value, double min, double max) {
+        return value >= min && value <= max;
     }
 
     private void handleEntityPacket(S14PacketEntity packet) {
@@ -223,6 +259,11 @@ public class AntiBot extends Module {
         hasRemovedEntities.clear();
         spawnedInCombat.clear();
         duplicate.clear();
+        matrixPlayerList.clear();
+        matrixNotAlwaysInRadius.clear();
+        matrixX.clear();
+        matrixZ.clear();
+        matrixNext = false;
     }
 
     @Override

@@ -1,0 +1,52 @@
+name: openmyau
+
+on:
+  push:
+    branches:
+      - main
+      - master
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  GRADLE_OPTS: -Dorg.gradle.daemon=false
+
+jobs:
+  build:
+    name: openmyau build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: gradle
+
+      - name: Make Gradle wrapper executable
+        run: chmod +x ./gradlew
+
+      - name: Read project version
+        id: version
+        shell: bash
+        run: |
+          VERSION=$(grep -E '^version\s*=' gradle.properties | sed -E 's/^version\s*=\s*//')
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "Project version: $VERSION"
+
+      - name: Build with Gradle
+        run: ./gradlew --no-daemon clean build
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: openmyau-${{ steps.version.outputs.version }}
+          path: build/libs/*.jar
+          if-no-files-found: error
