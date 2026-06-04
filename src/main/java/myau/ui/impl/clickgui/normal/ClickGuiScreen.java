@@ -42,7 +42,6 @@ public class ClickGuiScreen extends GuiScreen {
                 Myau.moduleManager.getModule(TargetStrafe.class),
                 Myau.moduleManager.getModule(AntiFireball.class),
                 Myau.moduleManager.getModule(KnockbackDelay.class),
-                Myau.moduleManager.getModule(LagRange.class),
                 Myau.moduleManager.getModule(HitBox.class),
                 Myau.moduleManager.getModule(Refill.class),
                 Myau.moduleManager.getModule(HitSelect.class),
@@ -147,7 +146,8 @@ public class ClickGuiScreen extends GuiScreen {
                 Myau.moduleManager.getModule(BackTrack.class),
                 Myau.moduleManager.getModule(FakeLag.class),
                 Myau.moduleManager.getModule(TimerRange.class),
-                Myau.moduleManager.getModule(ServerLag.class)
+                Myau.moduleManager.getModule(ServerLag.class),
+                Myau.moduleManager.getModule(LagRange.class)
         );
 
         List<Module> clientModules = Arrays.asList(
@@ -178,49 +178,23 @@ public class ClickGuiScreen extends GuiScreen {
         int frameWidth = 110;
         int frameHeight = 24;
 
-        List<Module> combat = new ArrayList<>(combatModules);
-        combat.removeIf(m -> m == null);
-        if (!combat.isEmpty()) {
-            frames.add(new Frame("Combat", combat, currentX, currentY, frameWidth, frameHeight));
-            currentX += (frameWidth + 15);
+        List<CategoryFrame> categoryFrames = Arrays.asList(
+                new CategoryFrame("Combat", combatModules),
+                new CategoryFrame("Movement", movementModules),
+                new CategoryFrame("Render", renderModules),
+                new CategoryFrame("Player", playerModules),
+                new CategoryFrame("Misc", miscModules),
+                new CategoryFrame("Ghost", ghostModules),
+                new CategoryFrame("Latency", latencyModules),
+                new CategoryFrame("Client", clientModules)
+        );
+        categoryFrames.sort((first, second) -> Integer.compare(second.filteredModules.size(), first.filteredModules.size()));
+        for (CategoryFrame categoryFrame : categoryFrames) {
+            if (!categoryFrame.filteredModules.isEmpty()) {
+                frames.add(new Frame(categoryFrame.name, categoryFrame.filteredModules, currentX, currentY, frameWidth, frameHeight));
+                currentX += (frameWidth + 15);
+            }
         }
-
-        List<Module> movement = new ArrayList<>(movementModules);
-        movement.removeIf(m -> m == null);
-        if (!movement.isEmpty()) {
-            frames.add(new Frame("Movement", movement, currentX, currentY, frameWidth, frameHeight));
-            currentX += (frameWidth + 15);
-        }
-
-        List<Module> render = new ArrayList<>(renderModules);
-        render.removeIf(m -> m == null);
-        if (!render.isEmpty()) {
-            frames.add(new Frame("Render", render, currentX, currentY, frameWidth, frameHeight));
-            currentX += (frameWidth + 15);
-        }
-
-        List<Module> player = new ArrayList<>(playerModules);
-        player.removeIf(m -> m == null);
-        if (!player.isEmpty()) {
-            frames.add(new Frame("Player", player, currentX, currentY, frameWidth, frameHeight));
-            currentX += (frameWidth + 15);
-        }
-
-        List<Module> misc = new ArrayList<>(miscModules);
-        misc.removeIf(m -> m == null);
-        if (!misc.isEmpty()) {
-            frames.add(new Frame("Misc", misc, currentX, currentY, frameWidth, frameHeight));
-            currentX += (frameWidth + 15);
-        }
-
-        addModuleFrame("Ghost", ghostModules, currentX, currentY, frameWidth, frameHeight);
-        currentX += (frameWidth + 15);
-
-        addModuleFrame("Latency", latencyModules, currentX, currentY, frameWidth, frameHeight);
-        currentX += (frameWidth + 15);
-
-        addModuleFrame("Client", clientModules, currentX, currentY, frameWidth, frameHeight);
-        currentX += (frameWidth + 15);
 
         List<String> configs = getConfigs();
         if (!configs.isEmpty()) {
@@ -228,11 +202,14 @@ public class ClickGuiScreen extends GuiScreen {
         }
     }
 
-    private void addModuleFrame(String name, List<Module> modules, int x, int y, int width, int height) {
-        List<Module> filtered = new ArrayList<>(modules);
-        filtered.removeIf(m -> m == null);
-        if (!filtered.isEmpty()) {
-            frames.add(new Frame(name, filtered, x, y, width, height));
+    private static class CategoryFrame {
+        private final String name;
+        private final List<Module> filteredModules;
+
+        private CategoryFrame(String name, List<Module> modules) {
+            this.name = name;
+            this.filteredModules = new ArrayList<>(modules);
+            this.filteredModules.removeIf(m -> m == null);
         }
     }
 

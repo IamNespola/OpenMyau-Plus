@@ -59,7 +59,7 @@ public abstract class MixinGuiNewChat {
         if (formatted.equals(myau$lastMessage) && myau$lastMessageId != 0) {
             myau$lastMessageCount++;
             this.deleteChatLine(myau$lastMessageId);
-            myau$printDedupedMessage(formatted + " §7[x" + myau$lastMessageCount + "]", myau$lastMessageId);
+            myau$printDedupedMessage(formatted + " §7[ x" + myau$lastMessageCount + " ]", myau$lastMessageId);
             return;
         }
 

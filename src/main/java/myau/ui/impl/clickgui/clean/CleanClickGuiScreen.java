@@ -55,7 +55,6 @@ public class CleanClickGuiScreen extends GuiScreen {
                 Myau.moduleManager.getModule(TargetStrafe.class),
                 Myau.moduleManager.getModule(AntiFireball.class),
                 Myau.moduleManager.getModule(KnockbackDelay.class),
-                Myau.moduleManager.getModule(LagRange.class),
                 Myau.moduleManager.getModule(HitBox.class),
                 Myau.moduleManager.getModule(Refill.class),
                 Myau.moduleManager.getModule(HitSelect.class),
@@ -159,7 +158,8 @@ public class CleanClickGuiScreen extends GuiScreen {
                 Myau.moduleManager.getModule(BackTrack.class),
                 Myau.moduleManager.getModule(FakeLag.class),
                 Myau.moduleManager.getModule(TimerRange.class),
-                Myau.moduleManager.getModule(ServerLag.class)
+                Myau.moduleManager.getModule(ServerLag.class),
+                Myau.moduleManager.getModule(LagRange.class)
         );
 
         List<Module> clientModules = Arrays.asList(
@@ -190,25 +190,40 @@ public class CleanClickGuiScreen extends GuiScreen {
         int frameWidth = 92;
         int frameHeight = 12;
 
-        currentX = addFrame("Combat", combatModules, currentX, currentY, frameWidth, frameHeight);
-        currentX = addFrame("Movement", movementModules, currentX, currentY, frameWidth, frameHeight);
-        currentX = addFrame("Render", renderModules, currentX, currentY, frameWidth, frameHeight);
-        currentX = addFrame("Player", playerModules, currentX, currentY, frameWidth, frameHeight);
-        currentX = addFrame("Misc", miscModules, currentX, currentY, frameWidth, frameHeight);
-        currentX = addFrame("Ghost", ghostModules, currentX, currentY, frameWidth, frameHeight);
-        currentX = addFrame("Latency", latencyModules, currentX, currentY, frameWidth, frameHeight);
-        currentX = addFrame("Client", clientModules, currentX, currentY, frameWidth, frameHeight);
+        List<CategoryFrame> categoryFrames = Arrays.asList(
+                new CategoryFrame("Combat", combatModules),
+                new CategoryFrame("Movement", movementModules),
+                new CategoryFrame("Render", renderModules),
+                new CategoryFrame("Player", playerModules),
+                new CategoryFrame("Misc", miscModules),
+                new CategoryFrame("Ghost", ghostModules),
+                new CategoryFrame("Latency", latencyModules),
+                new CategoryFrame("Client", clientModules)
+        );
+        categoryFrames.sort((first, second) -> Integer.compare(second.filteredModules.size(), first.filteredModules.size()));
+        for (CategoryFrame categoryFrame : categoryFrames) {
+            currentX = addFrame(categoryFrame.name, categoryFrame.filteredModules, currentX, currentY, frameWidth, frameHeight);
+        }
         addConfigFrame("Configs", getConfigs(), currentX, currentY, frameWidth, frameHeight);
     }
 
     private int addFrame(String name, List<Module> modules, int x, int y, int width, int height) {
-        List<Module> filtered = new ArrayList<>(modules);
-        filtered.removeIf(module -> module == null);
-        if (!filtered.isEmpty()) {
-            frames.add(new CleanFrame(name, filtered, x, y, width, height));
+        if (!modules.isEmpty()) {
+            frames.add(new CleanFrame(name, modules, x, y, width, height));
             return x + width + 6;
         }
         return x;
+    }
+
+    private static class CategoryFrame {
+        private final String name;
+        private final List<Module> filteredModules;
+
+        private CategoryFrame(String name, List<Module> modules) {
+            this.name = name;
+            this.filteredModules = new ArrayList<>(modules);
+            this.filteredModules.removeIf(module -> module == null);
+        }
     }
 
     private List<String> getConfigs() {

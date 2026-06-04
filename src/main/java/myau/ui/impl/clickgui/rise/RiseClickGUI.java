@@ -62,7 +62,7 @@ public class RiseClickGUI extends GuiScreen {
         map(Tab.GHOST, "AimAssist", "AutoClicker", "BlockHit", "FastPlace", "Eagle", "MoreKB", "WTap", "Wtap", "NoHitDelay");
         map(Tab.COMBAT, "AntiBot", "KillAura", "CombatHelper", "Reach", "Velocity", "HitBox",
                 "HitSelect", "BackTrack", "Hitflick", "KnockbackDelay", "ClickAssits", "SprintReset",
-                "TargetStrafe", "AntiFireball", "LagRange", "Refill", "Criticals", "Displace", "ServerLag", "Teams");
+                "TargetStrafe", "AntiFireball", "Refill", "Criticals", "Displace", "ServerLag", "Teams");
         map(Tab.MOVEMENT, "AntiAFK", "Fly", "FastBow", "Speed", "LongJump", "Sprint", "SafeWalk",
                 "Jesus", "NoFall", "NoSlow", "KeepSprint", "NoJumpDelay");
         map(Tab.PLAYER, "AutoHeal", "AutoTool", "ChestStealer", "InvManager", "InvWalk", "Scaffold",
@@ -77,7 +77,7 @@ public class RiseClickGUI extends GuiScreen {
                 "NickHider", "AntiObbyTrap", "AntiObfuscate", "AutoAnduril", "InventoryClicker", "Disabler",
                 "ClientSpoofer", "MurderDetector", "AutoHypixel", "Panic");
         map(Tab.EXPLOIT, "Disabler", "ClientSpoofer", "NoRotate", "AntiObfuscate", "Blink", "Timer",
-                "TimerRange", "AntiVoid", "FakeLag", "GhostHand", "BedNuker", "BedTracker", "TeamDisplay");
+                "TimerRange", "LagRange", "AntiVoid", "FakeLag", "GhostHand", "BedNuker", "BedTracker", "TeamDisplay");
     }
 
     private float windowX = -1f;
