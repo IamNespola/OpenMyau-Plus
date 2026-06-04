@@ -59,14 +59,14 @@ public class RiseClickGUI extends GuiScreen {
     private static final Map<String, Tab> MODULE_TABS = new HashMap<String, Tab>();
 
     static {
-        map(Tab.GHOST, "AimAssist", "AutoClicker", "Reach", "Velocity", "WTap", "Wtap", "HitBox",
-                "HitSelect", "BackTrack", "Hitflick", "MoreKB", "KnockbackDelay", "ClickAssits", "SprintReset", "BlockHit");
-        map(Tab.COMBAT, "AntiBot", "KillAura", "CombatHelper", "TargetStrafe", "NoHitDelay", "AntiFireball", "LagRange", "Refill",
-                "Criticals", "Displace", "ServerLag", "Teams");
+        map(Tab.GHOST, "AimAssist", "AutoClicker", "BlockHit", "FastPlace", "Eagle", "MoreKB", "WTap", "Wtap", "NoHitDelay");
+        map(Tab.COMBAT, "AntiBot", "KillAura", "CombatHelper", "Reach", "Velocity", "HitBox",
+                "HitSelect", "BackTrack", "Hitflick", "KnockbackDelay", "ClickAssits", "SprintReset",
+                "TargetStrafe", "AntiFireball", "LagRange", "Refill", "Criticals", "Displace", "ServerLag", "Teams");
         map(Tab.MOVEMENT, "AntiAFK", "Fly", "FastBow", "Speed", "LongJump", "Sprint", "SafeWalk",
-                "Jesus", "NoFall", "NoSlow", "KeepSprint", "Eagle", "NoJumpDelay");
+                "Jesus", "NoFall", "NoSlow", "KeepSprint", "NoJumpDelay");
         map(Tab.PLAYER, "AutoHeal", "AutoTool", "ChestStealer", "InvManager", "InvWalk", "Scaffold",
-                "AutoBedDef", "AutoBlockIn", "AutoSwap", "SpeedMine", "FastPlace", "MCF", "AntiDebuff", "FlagDetector",
+                "AutoBedDef", "AutoBlockIn", "AutoSwap", "SpeedMine", "MCF", "AntiDebuff", "FlagDetector",
                 "AutoGapple", "Gapple", "ThrowAura", "InventoryClicker", "PacketConsume");
         map(Tab.RENDER, "ESP", "Chams", "FullBright", "Fullbright", "Tracers", "NameTags", "Xray",
                 "TargetESP", "TargetHUD", "Indicators", "BedESP", "ItemESP", "ViewClip", "NoHurtCam",

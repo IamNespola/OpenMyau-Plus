@@ -30,6 +30,7 @@ public class ClickGUIModule extends Module {
     };
 
     public ModeProperty mode = new ModeProperty("Mode", 0, new String[]{"Clean", "Normal"});
+    public FloatProperty cleanScale = new FloatProperty("Scale", 1.0f, 0.6f, 1.4f, () -> mode.getValue() == 0);
     public ModeProperty accentColor = new ModeProperty("Color", 0, COLOR_NAMES, () -> mode.getValue() == 1);
     public BooleanProperty saveGuiState = new BooleanProperty("Save GUI State", true, () -> mode.getValue() == 1);
     public BooleanProperty shadow = new BooleanProperty("Shadow", true, () -> mode.getValue() == 1);

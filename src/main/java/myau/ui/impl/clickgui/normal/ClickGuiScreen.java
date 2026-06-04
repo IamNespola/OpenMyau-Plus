@@ -34,22 +34,17 @@ public class ClickGuiScreen extends GuiScreen {
         this.frames = new ArrayList<>();
 
         List<Module> combatModules = Arrays.asList(
-                Myau.moduleManager.getModule(AimAssist.class),
                 Myau.moduleManager.getModule(AntiBot.class),
-                Myau.moduleManager.getModule(AutoClicker.class),
                 Myau.moduleManager.getModule(KillAura.class),
                 Myau.moduleManager.getModule(CombatHelper.class),
-                Myau.moduleManager.getModule(Wtap.class),
                 Myau.moduleManager.getModule(Velocity.class),
                 Myau.moduleManager.getModule(ServerLag.class),
                 Myau.moduleManager.getModule(Reach.class),
                 Myau.moduleManager.getModule(TargetStrafe.class),
-                Myau.moduleManager.getModule(NoHitDelay.class),
                 Myau.moduleManager.getModule(AntiFireball.class),
                 Myau.moduleManager.getModule(KnockbackDelay.class),
                 Myau.moduleManager.getModule(LagRange.class),
                 Myau.moduleManager.getModule(HitBox.class),
-                Myau.moduleManager.getModule(MoreKB.class),
                 Myau.moduleManager.getModule(Refill.class),
                 Myau.moduleManager.getModule(HitSelect.class),
                 Myau.moduleManager.getModule(BackTrack.class),
@@ -57,7 +52,6 @@ public class ClickGuiScreen extends GuiScreen {
                 Myau.moduleManager.getModule(TimerRangev999.class),
                 Myau.moduleManager.getModule(ClickAssits.class),
                 Myau.moduleManager.getModule(Criticals.class),
-                Myau.moduleManager.getModule(BlockHit.class),
                 Myau.moduleManager.getModule(SprintReset.class),
                 Myau.moduleManager.getModule(Displace.class),
                 Myau.moduleManager.getModule(Teams.class)
@@ -78,7 +72,6 @@ public class ClickGuiScreen extends GuiScreen {
                 Myau.moduleManager.getModule(NoFall.class),
                 Myau.moduleManager.getModule(NoSlow.class),
                 Myau.moduleManager.getModule(KeepSprint.class),
-                Myau.moduleManager.getModule(Eagle.class),
                 Myau.moduleManager.getModule(NoJumpDelay.class),
                 Myau.moduleManager.getModule(AntiVoid.class)
         );
@@ -126,7 +119,6 @@ public class ClickGuiScreen extends GuiScreen {
                 Myau.moduleManager.getModule(AutoBlockIn.class),
                 Myau.moduleManager.getModule(AutoSwap.class),
                 Myau.moduleManager.getModule(SpeedMine.class),
-                Myau.moduleManager.getModule(FastPlace.class),
                 Myau.moduleManager.getModule(GhostHand.class),
                 Myau.moduleManager.getModule(MCF.class),
                 Myau.moduleManager.getModule(AntiDebuff.class),
@@ -154,12 +146,24 @@ public class ClickGuiScreen extends GuiScreen {
                 Myau.moduleManager.getModule(AutoHypixel.class)
         );
 
+        List<Module> ghostModules = Arrays.asList(
+                Myau.moduleManager.getModule(AimAssist.class),
+                Myau.moduleManager.getModule(AutoClicker.class),
+                Myau.moduleManager.getModule(BlockHit.class),
+                Myau.moduleManager.getModule(FastPlace.class),
+                Myau.moduleManager.getModule(Eagle.class),
+                Myau.moduleManager.getModule(MoreKB.class),
+                Myau.moduleManager.getModule(Wtap.class),
+                Myau.moduleManager.getModule(NoHitDelay.class)
+        );
+
         Comparator<Module> comparator = Comparator.comparing(m -> m.getName().toLowerCase());
         combatModules.sort(comparator);
         movementModules.sort(comparator);
         renderModules.sort(comparator);
         playerModules.sort(comparator);
         miscModules.sort(comparator);
+        ghostModules.sort(comparator);
 
         int currentX = 20;
         int currentY = 20;
@@ -198,6 +202,13 @@ public class ClickGuiScreen extends GuiScreen {
         misc.removeIf(m -> m == null);
         if (!misc.isEmpty()) {
             frames.add(new Frame("Misc", misc, currentX, currentY, frameWidth, frameHeight));
+            currentX += (frameWidth + 15);
+        }
+
+        List<Module> ghost = new ArrayList<>(ghostModules);
+        ghost.removeIf(m -> m == null);
+        if (!ghost.isEmpty()) {
+            frames.add(new Frame("Ghost", ghost, currentX, currentY, frameWidth, frameHeight));
             currentX += (frameWidth + 15);
         }
 

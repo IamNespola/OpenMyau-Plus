@@ -8,6 +8,7 @@ import myau.util.KeyBindUtil;
 import net.minecraft.client.gui.Gui;
 import net.minecraft.client.gui.GuiScreen;
 import net.minecraft.client.gui.ScaledResolution;
+import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.client.settings.KeyBinding;
 import org.lwjgl.input.Keyboard;
 import org.lwjgl.input.Mouse;
@@ -46,22 +47,17 @@ public class CleanClickGuiScreen extends GuiScreen {
         frames.clear();
 
         List<Module> combatModules = Arrays.asList(
-                Myau.moduleManager.getModule(AimAssist.class),
                 Myau.moduleManager.getModule(AntiBot.class),
-                Myau.moduleManager.getModule(AutoClicker.class),
                 Myau.moduleManager.getModule(KillAura.class),
                 Myau.moduleManager.getModule(CombatHelper.class),
-                Myau.moduleManager.getModule(Wtap.class),
                 Myau.moduleManager.getModule(Velocity.class),
                 Myau.moduleManager.getModule(ServerLag.class),
                 Myau.moduleManager.getModule(Reach.class),
                 Myau.moduleManager.getModule(TargetStrafe.class),
-                Myau.moduleManager.getModule(NoHitDelay.class),
                 Myau.moduleManager.getModule(AntiFireball.class),
                 Myau.moduleManager.getModule(KnockbackDelay.class),
                 Myau.moduleManager.getModule(LagRange.class),
                 Myau.moduleManager.getModule(HitBox.class),
-                Myau.moduleManager.getModule(MoreKB.class),
                 Myau.moduleManager.getModule(Refill.class),
                 Myau.moduleManager.getModule(HitSelect.class),
                 Myau.moduleManager.getModule(BackTrack.class),
@@ -69,7 +65,6 @@ public class CleanClickGuiScreen extends GuiScreen {
                 Myau.moduleManager.getModule(TimerRangev999.class),
                 Myau.moduleManager.getModule(ClickAssits.class),
                 Myau.moduleManager.getModule(Criticals.class),
-                Myau.moduleManager.getModule(BlockHit.class),
                 Myau.moduleManager.getModule(SprintReset.class),
                 Myau.moduleManager.getModule(Displace.class),
                 Myau.moduleManager.getModule(Teams.class)
@@ -90,7 +85,6 @@ public class CleanClickGuiScreen extends GuiScreen {
                 Myau.moduleManager.getModule(NoFall.class),
                 Myau.moduleManager.getModule(NoSlow.class),
                 Myau.moduleManager.getModule(KeepSprint.class),
-                Myau.moduleManager.getModule(Eagle.class),
                 Myau.moduleManager.getModule(NoJumpDelay.class),
                 Myau.moduleManager.getModule(AntiVoid.class)
         );
@@ -138,7 +132,6 @@ public class CleanClickGuiScreen extends GuiScreen {
                 Myau.moduleManager.getModule(AutoBlockIn.class),
                 Myau.moduleManager.getModule(AutoSwap.class),
                 Myau.moduleManager.getModule(SpeedMine.class),
-                Myau.moduleManager.getModule(FastPlace.class),
                 Myau.moduleManager.getModule(GhostHand.class),
                 Myau.moduleManager.getModule(MCF.class),
                 Myau.moduleManager.getModule(AntiDebuff.class),
@@ -165,12 +158,24 @@ public class CleanClickGuiScreen extends GuiScreen {
                 Myau.moduleManager.getModule(AutoHypixel.class)
         );
 
+        List<Module> ghostModules = Arrays.asList(
+                Myau.moduleManager.getModule(AimAssist.class),
+                Myau.moduleManager.getModule(AutoClicker.class),
+                Myau.moduleManager.getModule(BlockHit.class),
+                Myau.moduleManager.getModule(FastPlace.class),
+                Myau.moduleManager.getModule(Eagle.class),
+                Myau.moduleManager.getModule(MoreKB.class),
+                Myau.moduleManager.getModule(Wtap.class),
+                Myau.moduleManager.getModule(NoHitDelay.class)
+        );
+
         Comparator<Module> comparator = Comparator.comparing(module -> module.getName().toLowerCase());
         combatModules.sort(comparator);
         movementModules.sort(comparator);
         renderModules.sort(comparator);
         playerModules.sort(comparator);
         miscModules.sort(comparator);
+        ghostModules.sort(comparator);
 
         int currentX = 12;
         int currentY = 26;
@@ -182,6 +187,7 @@ public class CleanClickGuiScreen extends GuiScreen {
         currentX = addFrame("Render", renderModules, currentX, currentY, frameWidth, frameHeight);
         currentX = addFrame("Player", playerModules, currentX, currentY, frameWidth, frameHeight);
         currentX = addFrame("Misc", miscModules, currentX, currentY, frameWidth, frameHeight);
+        currentX = addFrame("Ghost", ghostModules, currentX, currentY, frameWidth, frameHeight);
         addConfigFrame("Configs", getConfigs(), currentX, currentY, frameWidth, frameHeight);
     }
 
@@ -260,11 +266,17 @@ public class CleanClickGuiScreen extends GuiScreen {
         screenAlpha = (float) (1.0D - Math.pow(1.0D - screenAlpha, 3));
         Gui.drawRect(0, 0, this.width, this.height, ((int) (245 * screenAlpha) << 24));
         if (screenAlpha > 0.01F) {
+            float cleanScale = getCleanScale();
+            int scaledMouseX = scaleMouse(mouseX, cleanScale);
+            int scaledMouseY = scaleMouse(mouseY, cleanScale);
+            GlStateManager.pushMatrix();
+            GlStateManager.scale(cleanScale, cleanScale, 1.0F);
             drawSearchBox(screenAlpha);
             for (CleanFrame frame : frames) {
-                frame.render(mouseX, mouseY, partialTicks, screenAlpha, false, scrollY, deltaTime, searchQuery);
+                frame.render(scaledMouseX, scaledMouseY, partialTicks, screenAlpha, false, scrollY, deltaTime, searchQuery);
             }
             drawKeybinds(screenAlpha);
+            GlStateManager.popMatrix();
         }
         try {
             Module invWalkModule = Myau.moduleManager.getModule("InvWalk");
@@ -329,6 +341,19 @@ public class CleanClickGuiScreen extends GuiScreen {
         return (color & 0x00FFFFFF) | (Math.max(0, Math.min(255, alpha)) << 24);
     }
 
+    private float getCleanScale() {
+        Module clickGui = Myau.moduleManager.getModule("ClickGUI");
+        if (clickGui instanceof ClickGUIModule) {
+            float scale = ((ClickGUIModule) clickGui).cleanScale.getValue();
+            return Math.max(0.6F, Math.min(1.4F, scale));
+        }
+        return 1.0F;
+    }
+
+    private int scaleMouse(int coordinate, float scale) {
+        return (int) (coordinate / scale);
+    }
+
     @Override
     public void handleMouseInput() throws IOException {
         if (isClosing) return;
@@ -341,14 +366,16 @@ public class CleanClickGuiScreen extends GuiScreen {
     protected void mouseClicked(int mouseX, int mouseY, int mouseButton) throws IOException {
         if (isClosing) return;
         super.mouseClicked(mouseX, mouseY, mouseButton);
-        if (mouseButton == 0 && isMouseOverSearch(mouseX, mouseY)) {
+        int scaledMouseX = scaleMouse(mouseX, getCleanScale());
+        int scaledMouseY = scaleMouse(mouseY, getCleanScale());
+        if (mouseButton == 0 && isMouseOverSearch(scaledMouseX, scaledMouseY)) {
             searchFocused = true;
             return;
         }
         searchFocused = false;
         for (int i = frames.size() - 1; i >= 0; i--) {
             CleanFrame frame = frames.get(i);
-            if (frame.mouseClicked(mouseX, mouseY, mouseButton, scrollY, searchQuery)) {
+            if (frame.mouseClicked(scaledMouseX, scaledMouseY, mouseButton, scrollY, searchQuery)) {
                 draggingComponent = frame;
                 frames.remove(i);
                 frames.add(frame);
@@ -361,18 +388,20 @@ public class CleanClickGuiScreen extends GuiScreen {
     protected void mouseReleased(int mouseX, int mouseY, int state) {
         if (isClosing) return;
         super.mouseReleased(mouseX, mouseY, state);
+        int scaledMouseX = scaleMouse(mouseX, getCleanScale());
+        int scaledMouseY = scaleMouse(mouseY, getCleanScale());
         if (draggingComponent != null) {
-            draggingComponent.mouseReleased(mouseX, mouseY, state, scrollY);
+            draggingComponent.mouseReleased(scaledMouseX, scaledMouseY, state, scrollY);
             draggingComponent = null;
         }
-        for (CleanFrame frame : frames) frame.mouseReleased(mouseX, mouseY, state, scrollY);
+        for (CleanFrame frame : frames) frame.mouseReleased(scaledMouseX, scaledMouseY, state, scrollY);
     }
 
     @Override
     protected void mouseClickMove(int mouseX, int mouseY, int clickedMouseButton, long timeSinceLastClick) {
         if (isClosing) return;
         super.mouseClickMove(mouseX, mouseY, clickedMouseButton, timeSinceLastClick);
-        if (draggingComponent != null) draggingComponent.updatePosition(mouseX, mouseY);
+        if (draggingComponent != null) draggingComponent.updatePosition(scaleMouse(mouseX, getCleanScale()), scaleMouse(mouseY, getCleanScale()));
     }
 
     @Override
