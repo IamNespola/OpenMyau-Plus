@@ -44,11 +44,11 @@ public class ClickGuiScreen extends GuiScreen {
                 Myau.moduleManager.getModule(KnockbackDelay.class),
                 Myau.moduleManager.getModule(HitBox.class),
                 Myau.moduleManager.getModule(Refill.class),
-                Myau.moduleManager.getModule(HitSelect.class),
                 Myau.moduleManager.getModule(Hitflick.class),
                 Myau.moduleManager.getModule(ClickAssits.class),
                 Myau.moduleManager.getModule(Criticals.class),
                 Myau.moduleManager.getModule(SprintReset.class),
+                Myau.moduleManager.getModule(ProjectileAimBot.class),
                 Myau.moduleManager.getModule(Displace.class),
                 Myau.moduleManager.getModule(Teams.class)
         );
@@ -88,7 +88,7 @@ public class ClickGuiScreen extends GuiScreen {
                 Myau.moduleManager.getModule(Trajectories.class),
                 Myau.moduleManager.getModule(Radar.class),
                 Myau.moduleManager.getModule(FPScounter.class),
-                Myau.moduleManager.getModule(HitParticleEffects.class),
+                Myau.moduleManager.getModule(AttackEffects.class),
                 Myau.moduleManager.getModule(ESP2D.class),
                 Myau.moduleManager.getModule(Animations.class)
         );
@@ -139,6 +139,7 @@ public class ClickGuiScreen extends GuiScreen {
                 Myau.moduleManager.getModule(Eagle.class),
                 Myau.moduleManager.getModule(MoreKB.class),
                 Myau.moduleManager.getModule(Wtap.class),
+                Myau.moduleManager.getModule(HitSelect.class),
                 Myau.moduleManager.getModule(NoHitDelay.class)
         );
 

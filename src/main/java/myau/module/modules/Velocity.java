@@ -43,11 +43,11 @@ public class Velocity extends Module {
             "Vulcan", "MatrixReduce", "Matrix", "Intave",
             "GrimC03", "Hypixel", "HypixelAir", "BlockSMC", "GrimCombat",
             "Polar", "MatrixNoXZ", "Intave13", "JumpReset", "Intave14",
-            "HypixelPrediction", "GrimReduce"
+            "HypixelPrediction", "GrimReduce", "IntaveReduce"
     });
 
-    public final FloatProperty horizontal = new FloatProperty("Horizontal", 0.0f, -2.0f, 2.0f, () -> mode.getValue() == 0);
-    public final FloatProperty vertical = new FloatProperty("Vertical", 0.0f, -2.0f, 2.0f, () -> mode.getValue() == 0);
+    public final FloatProperty horizontal = new FloatProperty("Horizontal", 0.0f, -2.0f, 2.0f, () -> mode.getValue() == 0 || mode.getValue() == 9);
+    public final FloatProperty vertical = new FloatProperty("Vertical", 0.0f, -2.0f, 2.0f, () -> mode.getValue() == 0 || mode.getValue() == 9);
 
     public final IntProperty predictionChance = new IntProperty("PredChance", 100, 0, 100, () -> mode.getValue() == 24);
     public final FloatProperty predictionHorizontal = new FloatProperty("PredHorizontal", 0.0f, 0.0f, 1.0f, () -> mode.getValue() == 24);
@@ -67,14 +67,15 @@ public class Velocity extends Module {
     public final IntProperty chance = new IntProperty("Chance", 100, 0, 100, () -> mode.getValue() == 7);
     public final IntProperty ticksUntilJump = new IntProperty("JumpTicks", 4, 0, 20, () -> mode.getValue() == 7);
 
+    public final BooleanProperty legitDisableInAir = new BooleanProperty("DisableInAir", true, () -> mode.getValue() == 9);
     public final BooleanProperty legitJumpInInv = new BooleanProperty("Jump in inv", false, () -> mode.getValue() == 9);
-    public final ModeProperty legitJumpDelayMode = new ModeProperty("Jump delay mode", 1, new String[]{"Delay", "Chance"}, () -> mode.getValue() == 9);
-    public final IntProperty legitMinDelay = new IntProperty("Min delay", 0, 0, 150, () -> mode.getValue() == 9 && legitJumpDelayMode.getValue() == 0);
-    public final IntProperty legitMaxDelay = new IntProperty("Max delay", 0, 0, 150, () -> mode.getValue() == 9 && legitJumpDelayMode.getValue() == 0);
-    public final IntProperty legitChance = new IntProperty("Chance", 80, 0, 100, () -> mode.getValue() == 9 && legitJumpDelayMode.getValue() == 1);
-    public final BooleanProperty legitTargetNearbyCheck = new BooleanProperty("Target nearby check", false, () -> mode.getValue() == 9);
-    public final BooleanProperty legitIgnoreLiquid = new BooleanProperty("Ignore liquid", true, () -> mode.getValue() == 9);
-    public final BooleanProperty legitSkipJumpWithBoost = new BooleanProperty("Skip jump if Jump Boost", true, () -> mode.getValue() == 9);
+    public final ModeProperty legitJumpDelayMode = new ModeProperty("Jump delay mode", 1, new String[]{"Delay", "Chance"}, () -> false);
+    public final IntProperty legitMinDelay = new IntProperty("Min delay", 0, 0, 150, () -> false);
+    public final IntProperty legitMaxDelay = new IntProperty("Max delay", 0, 0, 150, () -> false);
+    public final IntProperty legitChance = new IntProperty("Chance", 80, 0, 100, () -> mode.getValue() == 9);
+    public final BooleanProperty legitTargetNearbyCheck = new BooleanProperty("Target nearby check", false, () -> false);
+    public final BooleanProperty legitIgnoreLiquid = new BooleanProperty("Ignore liquid", true, () -> false);
+    public final BooleanProperty legitSkipJumpWithBoost = new BooleanProperty("Skip jump if Jump Boost", true, () -> false);
 
     public final BooleanProperty matrixDebug = new BooleanProperty("Debug", false, () -> mode.getValue() == 12);
 
@@ -88,6 +89,8 @@ public class Velocity extends Module {
     public final BooleanProperty intaveNotWhileSpeed = new BooleanProperty("Not while speed", false, () -> mode.getValue() == 13);
     public final BooleanProperty intaveNotWhileJumpBoost = new BooleanProperty("Not while jump boost", false, () -> mode.getValue() == 13);
     public final BooleanProperty intaveDebug = new BooleanProperty("Debug", false, () -> mode.getValue() == 13);
+    public final FloatProperty intaveReduceFactor = new FloatProperty("Factor", 0.6f, 0.6f, 1.0f, () -> mode.getValue() == 26);
+    public final IntProperty intaveReduceHurtTime = new IntProperty("HurtTime", 9, 1, 10, () -> mode.getValue() == 26);
 
     public final IntProperty jumpResetChance = new IntProperty("JRChance", 100, 0, 100, () -> mode.getValue() == 22);
     public final BooleanProperty jumpByReceivedHits = new BooleanProperty("JumpByHits", false, () -> mode.getValue() == 22);
@@ -375,6 +378,18 @@ public class Velocity extends Module {
                         hasReceivedVelocity = false;
                     }
                     break;
+                case 26:
+                    if (!hasReceivedVelocity) break;
+                    intaveTick++;
+                    if (player.hurtTime == 2) {
+                        intaveDamageTick++;
+                        if (player.onGround && intaveTick % 2 == 0 && intaveDamageTick <= 10) {
+                            player.jump();
+                            intaveTick = 0;
+                        }
+                        hasReceivedVelocity = false;
+                    }
+                    break;
                 case 22:
                     if (this.shouldJumpReset(player)) {
                         player.jump();
@@ -541,6 +556,7 @@ public class Velocity extends Module {
                 case 22:
                 case 23:
                 case 25:
+                case 26:
                     grimReduceTicks = 14;
                     hasReceivedVelocity = true;
                     break;
@@ -712,6 +728,13 @@ public class Velocity extends Module {
                 }
                 matrixReduced = true;
             }
+        } else if (mode.getValue() == 26) {
+            if (!hasReceivedVelocity) return;
+            if (mc.thePlayer.hurtTime == intaveReduceHurtTime.getValue() && System.currentTimeMillis() - lastAttackTime <= 8000L) {
+                mc.thePlayer.motionX *= intaveReduceFactor.getValue();
+                mc.thePlayer.motionZ *= intaveReduceFactor.getValue();
+            }
+            lastAttackTime = System.currentTimeMillis();
         }
     }
 
@@ -743,27 +766,14 @@ public class Velocity extends Module {
     }
 
     private void handleLegitVelocity() {
-        if (mc.thePlayer == null || mc.thePlayer.maxHurtTime <= 0) return;
-        if (legitIgnoreLiquid.getValue() && isInLiquidOrWeb()) return;
-        if (legitTargetNearbyCheck.getValue() && !isTargetNearby()) return;
+        if (mc.thePlayer == null) return;
+        if (legitDisableInAir.getValue() && !mc.thePlayer.onGround) return;
+        if (mc.thePlayer.maxHurtResistantTime != mc.thePlayer.hurtResistantTime || mc.thePlayer.maxHurtResistantTime == 0) return;
 
-        if (legitJumpDelayMode.getValue() == 0) {
-            int min = Math.min(legitMinDelay.getValue(), legitMaxDelay.getValue());
-            int max = Math.max(legitMinDelay.getValue(), legitMaxDelay.getValue());
-            int delay = max <= 0 ? 0 : RandomUtil.nextInt(min, max + 1);
-            if (delay <= 0) {
-                if (canLegitJump()) mc.thePlayer.jump();
-            } else {
-                new Thread(() -> {
-                    try {
-                        Thread.sleep(delay);
-                    } catch (InterruptedException ignored) {
-                    }
-                    if (canLegitJump()) mc.thePlayer.jump();
-                }, "Myau-LegitVelocity").start();
-            }
-        } else if (legitChance.getValue() >= 100 || RandomUtil.nextInt(0, 100) < legitChance.getValue()) {
-            if (canLegitJump()) mc.thePlayer.jump();
+        if (legitChance.getValue() >= 100 || RandomUtil.nextInt(0, 100) < legitChance.getValue()) {
+            mc.thePlayer.motionX *= horizontal.getValue() / 100.0D;
+            mc.thePlayer.motionZ *= horizontal.getValue() / 100.0D;
+            mc.thePlayer.motionY *= vertical.getValue() / 100.0D;
         }
     }
 

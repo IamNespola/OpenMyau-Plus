@@ -46,15 +46,18 @@ public class ClickGui extends GuiScreen {
         combatModules.add(Myau.moduleManager.getModule(HitBox.class));
         combatModules.add(Myau.moduleManager.getModule(MoreKB.class));
         combatModules.add(Myau.moduleManager.getModule(Refill.class));
-        combatModules.add(Myau.moduleManager.getModule(HitSelect.class));
         combatModules.add(Myau.moduleManager.getModule(BackTrack.class));
         combatModules.add(Myau.moduleManager.getModule(Hitflick.class));
         combatModules.add(Myau.moduleManager.getModule(TimerRange.class));
         combatModules.add(Myau.moduleManager.getModule(ClickAssits.class));
         combatModules.add(Myau.moduleManager.getModule(Criticals.class));
         combatModules.add(Myau.moduleManager.getModule(BlockHit.class));
+        combatModules.add(Myau.moduleManager.getModule(ProjectileAimBot.class));
         combatModules.add(Myau.moduleManager.getModule(SprintReset.class));
         combatModules.add(Myau.moduleManager.getModule(Teams.class));
+
+        List<Module> ghostModules = new ArrayList<>();
+        ghostModules.add(Myau.moduleManager.getModule(HitSelect.class));
 
         List<Module> movementModules = new ArrayList<>();
         movementModules.add(Myau.moduleManager.getModule(AntiAFK.class));
@@ -97,7 +100,7 @@ public class ClickGui extends GuiScreen {
         renderModules.add(Myau.moduleManager.getModule(FPScounter.class));
         renderModules.add(Myau.moduleManager.getModule(WaterMark.class));
         renderModules.add(Myau.moduleManager.getModule(WaterMark2.class));
-        renderModules.add(Myau.moduleManager.getModule(HitParticleEffects.class));
+        renderModules.add(Myau.moduleManager.getModule(AttackEffects.class));
         renderModules.add(Myau.moduleManager.getModule(DynamicIsland.class));
         renderModules.add(Myau.moduleManager.getModule(ESP2D.class));
         renderModules.add(Myau.moduleManager.getModule(SeasonDisplay.class));
@@ -144,6 +147,7 @@ public class ClickGui extends GuiScreen {
 
         Comparator<Module> comparator = Comparator.comparing(m -> m.getName().toLowerCase());
         combatModules.sort(comparator);
+        ghostModules.sort(comparator);
         movementModules.sort(comparator);
         renderModules.sort(comparator);
         playerModules.sort(comparator);
@@ -151,6 +155,7 @@ public class ClickGui extends GuiScreen {
 
         Set<Module> registered = new HashSet<>();
         registered.addAll(combatModules);
+        registered.addAll(ghostModules);
         registered.addAll(movementModules);
         registered.addAll(renderModules);
         registered.addAll(playerModules);
@@ -168,6 +173,11 @@ public class ClickGui extends GuiScreen {
         CategoryComponent combat = new CategoryComponent("Combat", combatModules);
         combat.setY(topOffset);
         categoryList.add(combat);
+        topOffset += 20;
+
+        CategoryComponent ghost = new CategoryComponent("Ghost", ghostModules);
+        ghost.setY(topOffset);
+        categoryList.add(ghost);
         topOffset += 20;
 
         CategoryComponent movement = new CategoryComponent("Movement", movementModules);

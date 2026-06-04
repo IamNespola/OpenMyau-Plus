@@ -93,6 +93,7 @@ public class Myau {
         moduleManager.modules.put(BHop.class, new BHop());
         moduleManager.modules.put(BackTrack.class, new BackTrack());
         moduleManager.modules.put(Hitflick.class, new Hitflick());
+        moduleManager.modules.put(ProjectileAimBot.class, new ProjectileAimBot());
         moduleManager.modules.put(AutoHeadHitter.class, new AutoHeadHitter());
         moduleManager.modules.put(FPScounter.class, new FPScounter());
         moduleManager.modules.put(Chams.class, new Chams());
@@ -176,7 +177,7 @@ public class Myau {
         moduleManager.modules.put(Teams.class, new Teams());
         moduleManager.modules.put(Animations.class, new Animations());
         moduleManager.modules.put(AutoGapple.class, new AutoGapple());
-        moduleManager.modules.put(HitParticleEffects.class, new HitParticleEffects());
+        moduleManager.modules.put(AttackEffects.class, new AttackEffects());
         commandManager.commands.add(new BindCommand());
         commandManager.commands.add(new ClickGuiCommand());
         commandManager.commands.add(new ConfigCommand());

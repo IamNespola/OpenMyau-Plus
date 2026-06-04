@@ -59,9 +59,9 @@ public class RiseClickGUI extends GuiScreen {
     private static final Map<String, Tab> MODULE_TABS = new HashMap<String, Tab>();
 
     static {
-        map(Tab.GHOST, "AimAssist", "AutoClicker", "BlockHit", "FastPlace", "Eagle", "MoreKB", "WTap", "Wtap", "NoHitDelay");
+        map(Tab.GHOST, "AimAssist", "AutoClicker", "BlockHit", "FastPlace", "Eagle", "MoreKB", "WTap", "Wtap", "NoHitDelay", "HitSelect");
         map(Tab.COMBAT, "AntiBot", "KillAura", "CombatHelper", "Reach", "Velocity", "HitBox",
-                "HitSelect", "BackTrack", "Hitflick", "KnockbackDelay", "ClickAssits", "SprintReset",
+                "BackTrack", "Hitflick", "KnockbackDelay", "ClickAssits", "SprintReset", "ProjectileAimBot",
                 "TargetStrafe", "AntiFireball", "Refill", "Criticals", "Displace", "ServerLag", "Teams");
         map(Tab.MOVEMENT, "AntiAFK", "Fly", "FastBow", "Speed", "LongJump", "Sprint", "SafeWalk",
                 "Jesus", "NoFall", "NoSlow", "KeepSprint", "NoJumpDelay");
@@ -71,7 +71,7 @@ public class RiseClickGUI extends GuiScreen {
         map(Tab.RENDER, "ESP", "Chams", "FullBright", "Fullbright", "Tracers", "NameTags", "Xray",
                 "TargetESP", "TargetHUD", "Indicators", "BedESP", "BreakProgress", "ItemESP", "ViewClip", "NoHurtCam",
                 "HUD", "ChestESP", "Trajectories", "Radar", "FPScounter", "Fpscounter", "WaterMark",
-                "HitParticleEffects", "DynamicIsland", "ESP2D", "SeasonDisplay",
+                "AttackEffects", "DynamicIsland", "ESP2D", "SeasonDisplay",
                 "Animations", "RenderFixes", "ClickGUI", "ClickGui");
         map(Tab.MISC, "Spammer", "BedNuker", "BedTracker", "TeamDisplay", "LightningTracker", "NoRotate",
                 "NickHider", "AntiObbyTrap", "AntiObfuscate", "AutoAnduril", "InventoryClicker", "Disabler",

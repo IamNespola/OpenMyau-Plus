@@ -42,6 +42,8 @@ import net.minecraft.network.play.client.C02PacketUseEntity.Action;
 import net.minecraft.network.play.client.C07PacketPlayerDigging;
 import net.minecraft.network.play.client.C08PacketPlayerBlockPlacement;
 import net.minecraft.network.play.client.C09PacketHeldItemChange;
+import net.minecraft.network.play.client.C0APacketAnimation;
+import net.minecraft.network.play.client.C0FPacketConfirmTransaction;
 import net.minecraft.network.play.server.S06PacketUpdateHealth;
 import net.minecraft.network.play.server.S1CPacketEntityMetadata;
 import net.minecraft.util.*;
@@ -146,7 +148,7 @@ public class KillAura extends Module {
 
         this.mode = new ModeProperty("Mode", 1, new String[]{"Single", "Switch"});
         this.sort = new ModeProperty("Sort", 1, new String[]{"Distance", "Health", "HurtTime", "FOV"});
-        this.autoBlock = new ModeProperty("auto-block", 3, new String[]{"NONE", "VANILLA", "SPOOF", "HYPIXEL", "BLINK", "INTERACT", "SWAP", "LEGIT", "FAKE", "REBLOCK", "Grim", "SMART"});
+        this.autoBlock = new ModeProperty("auto-block", 3, new String[]{"NONE", "VANILLA", "SPOOF", "HYPIXEL", "BLINK", "INTERACT", "Swap", "LEGIT", "FAKE", "REBLOCK", "Grim", "SMART", "Interact A", "Interact B", "QuickMacro"});
         this.autoBlockCPS = new FloatProperty("AutoBlockCPS", 8.0F, 1.0F, 10.0F);
         this.autoBlockRequirePress = new BooleanProperty("AutoBlockRequirePress", false);
         this.reBlockDelay = new IntProperty("ReBlockDelay", 10, 1, 100, () -> autoBlock.getValue() == 9);
@@ -313,16 +315,22 @@ public class KillAura extends Module {
     }
 
     private void interactAttack(float yaw, float pitch) {
+        this.interactAttack(yaw, pitch, true);
+    }
+
+    private void interactAttack(float yaw, float pitch, boolean sendInteractAt) {
         if (this.target != null) {
             MovingObjectPosition mop = RotationUtil.rayTrace(this.target.getBox(), yaw, pitch, 8.0);
             if (mop != null) {
                 ((IAccessorPlayerControllerMP) mc.playerController).callSyncCurrentPlayItem();
-                PacketUtil.sendPacket(
-                        new C02PacketUseEntity(
-                                this.target.getEntity(),
-                                new Vec3(mop.hitVec.xCoord - this.target.getX(), mop.hitVec.yCoord - this.target.getY(), mop.hitVec.zCoord - this.target.getZ())
-                        )
-                );
+                if (sendInteractAt) {
+                    PacketUtil.sendPacket(
+                            new C02PacketUseEntity(
+                                    this.target.getEntity(),
+                                    new Vec3(mop.hitVec.xCoord - this.target.getX(), mop.hitVec.yCoord - this.target.getY(), mop.hitVec.zCoord - this.target.getZ())
+                            )
+                    );
+                }
                 PacketUtil.sendPacket(new C02PacketUseEntity(this.target.getEntity(), Action.INTERACT));
                 PacketUtil.sendPacket(new C08PacketPlayerBlockPlacement(mc.thePlayer.getHeldItem()));
                 mc.thePlayer.setItemInUse(mc.thePlayer.getHeldItem(), mc.thePlayer.getHeldItem().getMaxItemUseDuration());
@@ -546,7 +554,10 @@ public class KillAura extends Module {
                     || this.autoBlock.getValue() == 6
                     || this.autoBlock.getValue() == 7
                     || this.autoBlock.getValue() == 10
-                    || this.autoBlock.getValue() == 11);
+                    || this.autoBlock.getValue() == 11
+                    || this.autoBlock.getValue() == 12
+                    || this.autoBlock.getValue() == 13
+                    || this.autoBlock.getValue() == 14);
         } else {
             return false;
         }
@@ -902,6 +913,61 @@ public class KillAura extends Module {
                                     this.blockTick = 0;
                                 }
                                 break;
+                            case 12:
+                            case 13:
+                                if (this.hasValidTarget()) {
+                                    int item = ((IAccessorPlayerControllerMP) mc.playerController).getCurrentPlayerItem();
+                                    if (mc.thePlayer.inventory.currentItem == item && !Myau.playerStateManager.digging && !Myau.playerStateManager.placing) {
+                                        switch (this.blockTick) {
+                                            case 0:
+                                                if (!this.isPlayerBlocking()) {
+                                                    swap = true;
+                                                }
+                                                this.blinkReset = true;
+                                                this.blockTick = 1;
+                                                break;
+                                            case 1:
+                                                if (this.isPlayerBlocking()) {
+                                                    this.stopBlock();
+                                                    attack = false;
+                                                }
+                                                if (this.attackDelayMS <= 50L) {
+                                                    this.blockTick = 0;
+                                                }
+                                                break;
+                                            default:
+                                                this.blockTick = 0;
+                                        }
+                                    }
+                                    this.isBlocking = true;
+                                    this.fakeBlockState = true;
+                                } else {
+                                    Myau.blinkManager.setBlinkState(false, BlinkModules.AUTO_BLOCK);
+                                    this.isBlocking = false;
+                                    this.fakeBlockState = false;
+                                    this.blockTick = 0;
+                                }
+                                break;
+                            case 14:
+                                Myau.blinkManager.setBlinkState(false, BlinkModules.AUTO_BLOCK);
+                                if (this.hasValidTarget()) {
+                                    this.isBlocking = true;
+                                    this.fakeBlockState = true;
+                                    if (this.attackDelayMS <= 50L && this.target != null && !Myau.playerStateManager.digging && !Myau.playerStateManager.placing) {
+                                        boolean quickMacroAttacked = this.performAttack(event.getNewYaw(), event.getNewPitch());
+                                        if (quickMacroAttacked && mc.thePlayer.getHeldItem() != null && mc.thePlayer.getHeldItem().getItem() instanceof ItemSword) {
+                                            PacketUtil.sendPacket(new C0FPacketConfirmTransaction(random.nextInt(Integer.MAX_VALUE), (short) RandomUtil.nextInt(Short.MIN_VALUE, -1), true));
+                                            PacketUtil.sendPacket(new C0APacketAnimation());
+                                            this.sendUseItem();
+                                        }
+                                        attack = false;
+                                    }
+                                } else {
+                                    this.isBlocking = false;
+                                    this.fakeBlockState = false;
+                                    this.blockTick = 0;
+                                }
+                                break;
                             case 11:
                                 Myau.blinkManager.setBlinkState(false, BlinkModules.AUTO_BLOCK);
                                 if (this.hasValidTarget() && this.target != null) {
@@ -1017,7 +1083,11 @@ public class KillAura extends Module {
                     }
                     if (swap) {
                         if (attacked) {
-                            this.interactAttack(event.getNewYaw(), event.getNewPitch());
+                            if (this.autoBlock.getValue() == 12 || this.autoBlock.getValue() == 13) {
+                                this.interactAttack(event.getNewYaw(), event.getNewPitch(), this.autoBlock.getValue() == 13);
+                            } else {
+                                this.interactAttack(event.getNewYaw(), event.getNewPitch());
+                            }
                         } else {
                             this.sendUseItem();
                         }

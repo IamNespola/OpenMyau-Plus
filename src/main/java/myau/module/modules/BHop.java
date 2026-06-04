@@ -113,19 +113,14 @@ public class BHop extends Module {
     }
 
     private void handleLegit() {
-        if (mc.thePlayer.onGround) {
-            mc.thePlayer.jump();
+        EntityPlayerSP player = mc.thePlayer;
+
+        if (player.onGround && MoveUtil.isForwardPressed()) {
+            player.jump();
         }
-        if (!mc.thePlayer.onGround && legitRotation.getValue()) {
-            mc.thePlayer.rotationYaw = mc.thePlayer.moveStrafing > 0.0F
-                    ? mc.thePlayer.rotationYaw + 45.0F
-                    : mc.thePlayer.rotationYaw - 45.0F;
-        }
-        if (legitCpuSpeedUpExploit.getValue()) {
-            setTimer(1.004F);
-        } else {
-            resetTimer();
-        }
+
+        player.setSprinting(player.movementInput.moveForward > 0.8F);
+        resetTimer();
     }
 
     private void handleIntave14() {
