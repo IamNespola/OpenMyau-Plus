@@ -146,7 +146,7 @@ public class KillAura extends Module {
 
         this.mode = new ModeProperty("Mode", 1, new String[]{"Single", "Switch"});
         this.sort = new ModeProperty("Sort", 1, new String[]{"Distance", "Health", "HurtTime", "FOV"});
-        this.autoBlock = new ModeProperty("auto-block", 3, new String[]{"NONE", "VANILLA", "SPOOF", "HYPIXEL", "BLINK", "INTERACT", "SWAP", "LEGIT", "FAKE", "REBLOCK", "Grim"});
+        this.autoBlock = new ModeProperty("auto-block", 3, new String[]{"NONE", "VANILLA", "SPOOF", "HYPIXEL", "BLINK", "INTERACT", "SWAP", "LEGIT", "FAKE", "REBLOCK", "Grim", "SMART"});
         this.autoBlockCPS = new FloatProperty("AutoBlockCPS", 8.0F, 1.0F, 10.0F);
         this.autoBlockRequirePress = new BooleanProperty("AutoBlockRequirePress", false);
         this.reBlockDelay = new IntProperty("ReBlockDelay", 10, 1, 100, () -> autoBlock.getValue() == 9);
@@ -545,7 +545,8 @@ public class KillAura extends Module {
                     || this.autoBlock.getValue() == 5
                     || this.autoBlock.getValue() == 6
                     || this.autoBlock.getValue() == 7
-                    || this.autoBlock.getValue() == 10);
+                    || this.autoBlock.getValue() == 10
+                    || this.autoBlock.getValue() == 11);
         } else {
             return false;
         }
@@ -899,6 +900,34 @@ public class KillAura extends Module {
                                     this.isBlocking = false;
                                     this.fakeBlockState = false;
                                     this.blockTick = 0;
+                                }
+                                break;
+                            case 11:
+                                Myau.blinkManager.setBlinkState(false, BlinkModules.AUTO_BLOCK);
+                                if (this.hasValidTarget() && this.target != null) {
+                                    boolean shouldBlock = this.target.getEntity().hurtTime > 3
+                                            && this.isInBlockRange(this.target.getEntity())
+                                            && !Myau.playerStateManager.digging
+                                            && !Myau.playerStateManager.placing;
+                                    if (shouldBlock) {
+                                        if (!this.isPlayerBlocking()) {
+                                            swap = true;
+                                        }
+                                        this.isBlocking = true;
+                                        this.fakeBlockState = false;
+                                    } else {
+                                        if (this.isPlayerBlocking() && !Myau.playerStateManager.digging && !Myau.playerStateManager.placing) {
+                                            this.stopBlock();
+                                        }
+                                        this.isBlocking = false;
+                                        this.fakeBlockState = false;
+                                    }
+                                } else {
+                                    if (this.isPlayerBlocking() && !Myau.playerStateManager.digging && !Myau.playerStateManager.placing) {
+                                        this.stopBlock();
+                                    }
+                                    this.isBlocking = false;
+                                    this.fakeBlockState = false;
                                 }
                                 break;
                         }

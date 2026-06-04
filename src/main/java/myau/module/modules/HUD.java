@@ -73,6 +73,15 @@ public class HUD extends Module {
             NickHider.class, AntiObbyTrap.class, AntiObfuscate.class, AutoAnduril.class,
             Disabler.class, ClientSpoofer.class, MurderDetector.class, AutoHypixel.class
     ));
+    private static final Set<Class<?>> GHOST_MODULES = new HashSet<>(Arrays.<Class<?>>asList(
+            AimAssist.class, AutoClicker.class, BlockHit.class, FastPlace.class, Eagle.class,
+            MoreKB.class, Wtap.class, NoHitDelay.class
+    ));
+    private static final Set<Class<?>> CLIENT_MODULES = new HashSet<>(Arrays.<Class<?>>asList(
+            HUD.class, HudEditor.class, DynamicIsland.class, TargetHUD.class, TargetESP.class,
+            WaterMark.class, WaterMark2.class, SeasonDisplay.class, Panic.class,
+            Notification.class, ClickGUIModule.class
+    ));
     private List<Module> activeModules = new ArrayList<>();
     public final ModeProperty colorMode = new ModeProperty(
             "color", 3, new String[]{"RAINBOW", "CHROMA", "ASTOLFO", "CUSTOM1", "CUSTOM12", "CUSTOM123"}
@@ -102,6 +111,9 @@ public class HUD extends Module {
     public final BooleanProperty hideRender = new BooleanProperty("hide-render", false);
     public final BooleanProperty hidePlayer = new BooleanProperty("hide-player", false);
     public final BooleanProperty hideMisc = new BooleanProperty("hide-misc", false);
+    public final BooleanProperty hideClient = new BooleanProperty("hide-client", false);
+    public final BooleanProperty hideGhost = new BooleanProperty("hide-ghost", false);
+    public final BooleanProperty hideBackTrack = new BooleanProperty("hide-backtrack", false);
     public final BooleanProperty chatOutline = new BooleanProperty("chat-outline", true);
     public final BooleanProperty blinkTimer = new BooleanProperty("blink-timer", true);
     public final BooleanProperty notifications = new BooleanProperty("notifications", true);
@@ -139,9 +151,6 @@ public class HUD extends Module {
 
 
     private int getModuleWidth(Module module) {
-        if (this.interfaceMode.getValue() == 1) {
-            return Math.round(this.getCreidaModuleWidth(module));
-        }
         return this.calculateStringWidth(
                 this.getModuleName(module), this.getModuleSuffix(module)
         );
@@ -150,7 +159,7 @@ public class HUD extends Module {
     public int getVisibleArrayListWidth() {
         int width = 90;
         for (Module module : this.activeModules) {
-            width = Math.max(width, this.getModuleWidth(module) + Math.round(this.padding.getValue() * 2.0F) + 4);
+            width = Math.max(width, this.getModuleWidth(module) + 4);
         }
         return width;
     }
@@ -160,33 +169,17 @@ public class HUD extends Module {
     }
 
     private int calculateStringWidth(String string, String[] arr) {
-        int width;
-        switch (fontMode.getValue()) {
-            case 0: // SANS
-                width = fontRenderer.getStringWidth(string);
-                break;
-            case 1: // MINECRAFT
-                width = mcFont.getStringWidth(string);
-                break;
-            default:
-                width = fontRenderer.getStringWidth(string);
-                break;
-        }
+        int width = mc.fontRendererObj.getStringWidth(string);
         if (this.suffixes.getValue()) {
             for (String str : arr) {
-                width += getStringWidth(this.formatSuffix(str));
+                width += 3 + mc.fontRendererObj.getStringWidth(str);
             }
         }
         return width;
     }
 
     private int getStringWidth(String string) {
-        switch (fontMode.getValue()) {
-            case 1:
-                return mcFont.getStringWidth(string);
-            default:
-                return fontRenderer.getStringWidth(string);
-        }
+        return mc.fontRendererObj.getStringWidth(string);
     }
 
     private String formatSuffix(String suffix) {
@@ -322,7 +315,10 @@ public class HUD extends Module {
         Class<?> moduleClass = module.getClass();
         return (this.hideRender.getValue() && RENDER_MODULES.contains(moduleClass))
                 || (this.hidePlayer.getValue() && PLAYER_MODULES.contains(moduleClass))
-                || (this.hideMisc.getValue() && MISC_MODULES.contains(moduleClass));
+                || (this.hideMisc.getValue() && MISC_MODULES.contains(moduleClass))
+                || (this.hideClient.getValue() && CLIENT_MODULES.contains(moduleClass))
+                || (this.hideGhost.getValue() && GHOST_MODULES.contains(moduleClass))
+                || (this.hideBackTrack.getValue() && moduleClass == BackTrack.class);
     }
 
     private boolean hasSidebar() {
@@ -425,9 +421,9 @@ public class HUD extends Module {
             if (this.interfaceMode.getValue() == 1) {
                 renderCreidaInterface();
             } else {
-            float height = (float) fontRenderer.FONT_HEIGHT - 1.0F;
+            float height = (float) mc.fontRendererObj.FONT_HEIGHT - 1.0F;
             float x = (float) HUD.arrayListX
-                    + (1.0F + (this.hasSidebar() ? 1.0F : 0.0F)) * this.scale.getValue();
+                    + (1.0F + (this.showBar.getValue() ? (this.shadow.getValue() ? 2.0F : 1.0F) : 0.0F)) * this.scale.getValue();
             float y = (float) HUD.arrayListY + 1.0F * this.scale.getValue();
             if (this.posX.getValue() == 1) {
                 x = (float) new ScaledResolution(mc).getScaledWidth() - x;
@@ -437,120 +433,89 @@ public class HUD extends Module {
             }
             GlStateManager.pushMatrix();
             GlStateManager.scale(this.scale.getValue(), this.scale.getValue(), 0.0F);
-
             long l = System.currentTimeMillis();
             long offset = 0L;
             for (Module module : this.activeModules) {
                 String moduleName = this.getModuleName(module);
                 String[] moduleSuffix = this.getModuleSuffix(module);
-                float totalWidth = this.getModuleRenderWidth(module);
+                float totalWidth = (float) (this.calculateStringWidth(moduleName, moduleSuffix) - (this.shadow.getValue() ? 0 : 1));
                 int color = this.getColor(l, offset).getRGB();
-                float pad = this.padding.getValue();
-                float bgX1 = x / this.scale.getValue() - 1.0F - pad - (this.posX.getValue() == 0 ? 0.0F : totalWidth);
-                float bgY1 = y / this.scale.getValue() - pad - (this.posY.getValue() == 0 ? (offset == 0L ? 1.0F : 0.0F) : (this.shadow.getValue() ? 1.0F : 0.0F));
-                float bgX2 = x / this.scale.getValue() + 1.0F + pad + (this.posX.getValue() == 0 ? totalWidth : 0.0F);
-                float bgY2 = y / this.scale.getValue() + height + pad + (this.posY.getValue() == 0 ? (this.shadow.getValue() ? 1.0F : 0.0F) : (offset == 0L ? 1.0F : 0.0F));
                 RenderUtil.enableRenderState();
                 if (this.background.getValue() > 0) {
-                    int bgColor = new Color(0.0F, 0.0F, 0.0F, this.background.getValue().floatValue() / 100.0F).getRGB();
-                    if (this.rounded.getValue()) {
-                        float bgW = bgX2 - bgX1;
-                        float bgH = bgY2 - bgY1;
-                        float rad = this.cornerRadius.getValue();
-                        boolean isFirst = (offset == 0L);
-                        boolean isLast = (offset == this.activeModules.size() - 1);
-                        boolean sideLeft = this.posX.getValue() == 1;
-                        boolean sideRight = this.posX.getValue() == 0;
-                        boolean isTopEntry = (this.posY.getValue() == 0) ? isFirst : isLast;
-                        boolean isBottomEntry = (this.posY.getValue() == 0) ? isLast : isFirst;
-                        RenderUtil.drawRoundedRect(
-                                bgX1, bgY1, bgW, bgH, rad, bgColor,
-                                sideLeft && isTopEntry, sideRight && isTopEntry,
-                                sideLeft && isBottomEntry, sideRight && isBottomEntry
+                    RenderUtil.drawRect(
+                            x / this.scale.getValue() - 1.0F - (this.posX.getValue() == 0 ? 0.0F : totalWidth),
+                            y / this.scale.getValue() - (this.posY.getValue() == 0 ? (offset == 0L ? 1.0F : 0.0F) : (this.shadow.getValue() ? 1.0F : 0.0F)),
+                            x / this.scale.getValue() + 1.0F + (this.posX.getValue() == 0 ? totalWidth : 0.0F),
+                            y / this.scale.getValue() + height + (this.posY.getValue() == 0 ? (this.shadow.getValue() ? 1.0F : 0.0F) : (offset == 0L ? 1.0F : 0.0F)),
+                            new Color(0.0F, 0.0F, 0.0F, this.background.getValue().floatValue() / 100.0F).getRGB()
+                    );
+                }
+                if (this.showBar.getValue()) {
+                    if (this.shadow.getValue()) {
+                        RenderUtil.drawRect(
+                                x / this.scale.getValue() + (this.posX.getValue() == 0 ? -3.0F : 1.0F),
+                                y / this.scale.getValue() - (this.posY.getValue() == 0 ? (offset == 0L ? 1.0F : 0.0F) : 1.0F),
+                                x / this.scale.getValue() + (this.posX.getValue() == 0 ? -2.0F : 2.0F),
+                                y / this.scale.getValue() + height + (this.posY.getValue() == 0 ? 1.0F : (offset == 0L ? 1.0F : 0.0F)),
+                                color
+                        );
+                        RenderUtil.drawRect(
+                                x / this.scale.getValue() + (this.posX.getValue() == 0 ? -2.0F : 2.0F),
+                                y / this.scale.getValue() - (this.posY.getValue() == 0 ? (offset == 0L ? 1.0F : 0.0F) : 1.0F),
+                                x / this.scale.getValue() + (this.posX.getValue() == 0 ? -1.0F : 3.0F),
+                                y / this.scale.getValue() + height + (this.posY.getValue() == 0 ? 1.0F : (offset == 0L ? 1.0F : 0.0F)),
+                                (color & 16579836) >> 2 | color & 0xFF000000
                         );
                     } else {
-                        RenderUtil.drawRect(bgX1, bgY1, bgX2, bgY2, bgColor);
+                        RenderUtil.drawRect(
+                                x / this.scale.getValue() + (this.posX.getValue() == 0 ? -2.0F : 1.0F),
+                                y / this.scale.getValue() - (this.posY.getValue() == 0 ? (offset == 0L ? 1.0F : 0.0F) : 0.0F),
+                                x / this.scale.getValue() + (this.posX.getValue() == 0 ? -1.0F : 2.0F),
+                                y / this.scale.getValue() + height + (this.posY.getValue() == 0 ? 0.0F : (offset == 0L ? 1.0F : 0.0F)),
+                                color
+                        );
                     }
                 }
-                renderSidebar(module, (int) offset, bgX1, bgY1, bgX2, bgY2, color);
                 RenderUtil.disableRenderState();
                 GlStateManager.disableDepth();
                 if (this.shadow.getValue()) {
-                    if (fontMode.getValue() == 1) {
-                        mcFont.drawStringWithShadow(moduleName, x / this.scale.getValue() - (this.posX.getValue() == 1 ? totalWidth : 0.0F), y / this.scale.getValue(), color);
-                    } else {
-                        fontRenderer.drawStringWithShadow(moduleName, x / this.scale.getValue() - (this.posX.getValue() == 1 ? totalWidth : 0.0F), y / this.scale.getValue(), color);
-                    }
+                    mc.fontRendererObj
+                            .drawStringWithShadow(moduleName, x / this.scale.getValue() - (this.posX.getValue() == 1 ? totalWidth : 0.0F), y / this.scale.getValue(), color);
                 } else {
-                    if (fontMode.getValue() == 1) {
-                        mcFont.drawString(
-                                moduleName,
-                                x / this.scale.getValue() - (this.posX.getValue() == 1 ? totalWidth : 0.0F),
-                                y / this.scale.getValue() + (this.posY.getValue() == 1 ? 1.0F : 0.0F),
-                                color,
-                                false
-                        );
-                    } else {
-                        fontRenderer.drawString(
-                                moduleName,
-                                x / this.scale.getValue() - (this.posX.getValue() == 1 ? totalWidth : 0.0F),
-                                y / this.scale.getValue() + (this.posY.getValue() == 1 ? 1.0F : 0.0F),
-                                color,
-                                false
-                        );
-                    }
+                    mc.fontRendererObj
+                            .drawString(
+                                    moduleName,
+                                    x / this.scale.getValue() - (this.posX.getValue() == 1 ? totalWidth : 0.0F),
+                                    y / this.scale.getValue() + (this.posY.getValue() == 1 ? 1.0F : 0.0F),
+                                    color,
+                                    false
+                            );
                 }
                 if (this.suffixes.getValue() && moduleSuffix.length > 0) {
-                    float width;
-                    switch (fontMode.getValue()) {
-                        case 1:
-                            width = (float) mcFont.getStringWidth(moduleName);
-                            break;
-                        default:
-                            width = (float) fontRenderer.getStringWidth(moduleName);
-                            break;
-                    }
-                    for (String suffix : moduleSuffix) {
-                        String string = this.formatSuffix(suffix);
+                    float width = (float) mc.fontRendererObj.getStringWidth(moduleName) + 3.0F;
+                    for (String string : moduleSuffix) {
                         if (this.shadow.getValue()) {
-                            if (fontMode.getValue() == 1) {
-                                mcFont.drawStringWithShadow(
-                                        string,
-                                        x / this.scale.getValue() - (this.posX.getValue() == 1 ? totalWidth : 0.0F) + width,
-                                        y / this.scale.getValue(),
-                                        ChatColors.GRAY.toAwtColor()
-                                );
-                            } else {
-                                fontRenderer.drawStringWithShadow(
-                                        string,
-                                        x / this.scale.getValue() - (this.posX.getValue() == 1 ? totalWidth : 0.0F) + width,
-                                        y / this.scale.getValue(),
-                                        ChatColors.GRAY.toAwtColor()
-                                );
-                            }
+                            mc.fontRendererObj
+                                    .drawStringWithShadow(
+                                            string,
+                                            x / this.scale.getValue() - (this.posX.getValue() == 1 ? totalWidth : 0.0F) + width,
+                                            y / this.scale.getValue(),
+                                            ChatColors.GRAY.toAwtColor()
+                                    );
                         } else {
-                            if (fontMode.getValue() == 1) {
-                                mcFont.drawString(
-                                        string,
-                                        x / this.scale.getValue() - (this.posX.getValue() == 1 ? totalWidth : 0.0F) + width,
-                                        y / this.scale.getValue() + (this.posY.getValue() == 1 ? 1.0F : 0.0F),
-                                        ChatColors.GRAY.toAwtColor(),
-                                        false
-                                );
-                            } else {
-                                fontRenderer.drawString(
-                                        string,
-                                        x / this.scale.getValue() - (this.posX.getValue() == 1 ? totalWidth : 0.0F) + width,
-                                        y / this.scale.getValue() + (this.posY.getValue() == 1 ? 1.0F : 0.0F),
-                                        ChatColors.GRAY.toAwtColor(),
-                                        false
-                                );
-                            }
+                            mc.fontRendererObj
+                                    .drawString(
+                                            string,
+                                            x / this.scale.getValue() - (this.posX.getValue() == 1 ? totalWidth : 0.0F) + width,
+                                            y / this.scale.getValue() + (this.posY.getValue() == 1 ? 1.0F : 0.0F),
+                                            ChatColors.GRAY.toAwtColor(),
+                                            false
+                                    );
                         }
-                        width += this.getStringWidth(string);
+                        width += (float) mc.fontRendererObj.getStringWidth(string) + (this.shadow.getValue() ? 3.0F : 2.0F);
                     }
                 }
-                y += (height + (this.shadow.getValue() ? 1.0F : 0.0F) + this.padding.getValue() * 2.0F) * this.scale.getValue() * (this.posY.getValue() == 0 ? 1.0F : -1.0F);
+                y += (height + (this.shadow.getValue() ? 1.0F : 0.0F)) * this.scale.getValue() * (this.posY.getValue() == 0 ? 1.0F : -1.0F);
                 offset++;
             }
             if (this.blinkTimer.getValue()) {

@@ -55,11 +55,13 @@ public class BedTracker extends Module {
     private long bedScanAt;
     private long lastBedScanAttempt;
     private boolean scannedThisGame;
+    private long lastAutoIncTime;
     public final BooleanProperty alerts;
     public final IntProperty alertRange;
     public final BooleanProperty alertOnPearl;
     public final ModeProperty alertSound;
     public final IntProperty alertFrequency;
+    public final BooleanProperty autoInc;
     public final BooleanProperty marco;
     public final IntProperty marcoRange;
     public final BooleanProperty marcoOnPreal;
@@ -114,11 +116,13 @@ public class BedTracker extends Module {
         this.bedScanAt = -1L;
         this.lastBedScanAttempt = -1L;
         this.scannedThisGame = false;
+        this.lastAutoIncTime = -1L;
         this.alerts = new BooleanProperty("alerts", true);
         this.alertRange = new IntProperty("alerts-range", 48, 8, 128, this.alerts::getValue);
         this.alertOnPearl = new BooleanProperty("alerts-on-pearl", true);
         this.alertSound = new ModeProperty("alerts-sound", 1, new String[]{"NONE", "MEOW", "ANVIL"}, () -> this.alerts.getValue() || this.alertOnPearl.getValue());
         this.alertFrequency = new IntProperty("alerts-frequency", 5, 1, 30, () -> this.alerts.getValue() || this.alertOnPearl.getValue());
+        this.autoInc = new BooleanProperty("auto-inc", false);
         this.marco = new BooleanProperty("macro", false);
         this.marcoRange = new IntProperty("macro-range", 24, 8, 128, this.marco::getValue);
         this.marcoOnPreal = new BooleanProperty("macro-on-pearl", false);
@@ -140,6 +144,7 @@ public class BedTracker extends Module {
         this.bedPos = null;
         this.lastMarcoTime = -1L;
         this.lastBedScanAttempt = -1L;
+        this.lastAutoIncTime = -1L;
     }
 
     private void scheduleBedScan() {
@@ -263,6 +268,12 @@ public class BedTracker extends Module {
                                     String.format("%s%s: %s&r &fis %d blocks away from your bed &e&l⚠&r", Myau.clientName, this.getName(), text, (int) distance + 1)
                             );
                             pearl = true;
+                        }
+                        if (this.autoInc.getValue() && this.lastAutoIncTime + (long) this.alertFrequency.getValue() * 1000L <= millis) {
+                            this.lastAutoIncTime = millis;
+                            ChatUtil.sendMessage("inc");
+                            ChatUtil.sendMessage("inc");
+                            ChatUtil.sendMessage("inc");
                         }
                     }
                     if (this.alertOnPearl.getValue() && isPearl) {
