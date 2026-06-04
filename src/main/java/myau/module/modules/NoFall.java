@@ -8,6 +8,7 @@ import myau.event.types.EventType;
 import myau.event.types.Priority;
 import myau.events.PacketEvent;
 import myau.events.TickEvent;
+import myau.events.UpdateEvent;
 import myau.mixin.IAccessorC03PacketPlayer;
 import myau.mixin.IAccessorMinecraft;
 import myau.module.Module;
