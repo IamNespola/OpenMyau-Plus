@@ -50,7 +50,7 @@ public class ClickGui extends GuiScreen {
         combatModules.add(Myau.moduleManager.getModule(HitSelect.class));
         combatModules.add(Myau.moduleManager.getModule(BackTrack.class));
         combatModules.add(Myau.moduleManager.getModule(Hitflick.class));
-        combatModules.add(Myau.moduleManager.getModule(TimerRangev999.class));
+        combatModules.add(Myau.moduleManager.getModule(TimerRange.class));
         combatModules.add(Myau.moduleManager.getModule(ClickAssits.class));
         combatModules.add(Myau.moduleManager.getModule(Criticals.class));
         combatModules.add(Myau.moduleManager.getModule(BlockHit.class));
@@ -62,7 +62,6 @@ public class ClickGui extends GuiScreen {
         movementModules.add(Myau.moduleManager.getModule(Fly.class));
         movementModules.add(Myau.moduleManager.getModule(FastBow.class));
         movementModules.add(Myau.moduleManager.getModule(Timer.class));
-        movementModules.add(Myau.moduleManager.getModule(Speed.class));
         movementModules.add(Myau.moduleManager.getModule(LongJump.class));
         movementModules.add(Myau.moduleManager.getModule(Sprint.class));
         movementModules.add(Myau.moduleManager.getModule(SafeWalk.class));
@@ -86,6 +85,7 @@ public class ClickGui extends GuiScreen {
         renderModules.add(Myau.moduleManager.getModule(TargetHUD.class));
         renderModules.add(Myau.moduleManager.getModule(Indicators.class));
         renderModules.add(Myau.moduleManager.getModule(BedESP.class));
+        renderModules.add(Myau.moduleManager.getModule(BreakProgress.class));
         renderModules.add(Myau.moduleManager.getModule(ItemESP.class));
         renderModules.add(Myau.moduleManager.getModule(ViewClip.class));
         renderModules.add(Myau.moduleManager.getModule(NoHurtCam.class));
@@ -140,6 +140,7 @@ public class ClickGui extends GuiScreen {
         miscModules.add(Myau.moduleManager.getModule(ClientSpoofer.class));
         miscModules.add(Myau.moduleManager.getModule(MurderDetector.class));
         miscModules.add(Myau.moduleManager.getModule(AutoHypixel.class));
+        miscModules.add(Myau.moduleManager.getModule(Panic.class));
 
         Comparator<Module> comparator = Comparator.comparing(m -> m.getName().toLowerCase());
         combatModules.sort(comparator);

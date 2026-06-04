@@ -12,9 +12,13 @@ import myau.property.properties.BooleanProperty;
 import myau.property.properties.ColorProperty;
 import myau.property.properties.FloatProperty;
 import myau.property.properties.IntProperty;
+import myau.property.properties.ModeProperty;
 import myau.util.PacketUtil;
+import myau.util.TeamUtil;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.entity.AbstractClientPlayer;
 import net.minecraft.client.gui.inventory.GuiContainer;
+import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.network.Packet;
 import net.minecraft.network.handshake.client.C00Handshake;
@@ -43,15 +47,26 @@ import java.util.LinkedList;
 public class FakeLag extends Module {
     private static final Minecraft mc = Minecraft.getMinecraft();
 
-    public final IntProperty delay = new IntProperty("delay", 550, 0, 1000);
-    public final IntProperty recoilTime = new IntProperty("recoil-time", 750, 0, 2000);
-    public final FloatProperty minAllowedDistToEnemy = new FloatProperty("min-allowed-dist", 1.5F, 0.0F, 6.0F);
-    public final FloatProperty maxAllowedDistToEnemy = new FloatProperty("max-allowed-dist", 3.5F, 0.0F, 6.0F);
-    public final BooleanProperty blinkOnAction = new BooleanProperty("blink-on-action", true);
-    public final BooleanProperty pauseOnNoMove = new BooleanProperty("pause-on-no-move", true);
-    public final BooleanProperty pauseOnChest = new BooleanProperty("pause-on-chest", false);
-    public final BooleanProperty line = new BooleanProperty("line", true);
-    public final ColorProperty lineColor = new ColorProperty("line-color", Color.GREEN.getRGB(), () -> line.getValue());
+    public final ModeProperty mode = new ModeProperty("mode", 0, new String[]{"Latency", "Dynamic"});
+
+    public final IntProperty delay = new IntProperty("delay", 550, 0, 1000, () -> mode.getValue() == 0);
+    public final IntProperty recoilTime = new IntProperty("recoil-time", 750, 0, 2000, () -> mode.getValue() == 0);
+    public final FloatProperty minAllowedDistToEnemy = new FloatProperty("min-allowed-dist", 1.5F, 0.0F, 6.0F, () -> mode.getValue() == 0);
+    public final FloatProperty maxAllowedDistToEnemy = new FloatProperty("max-allowed-dist", 3.5F, 0.0F, 6.0F, () -> mode.getValue() == 0);
+    public final BooleanProperty blinkOnAction = new BooleanProperty("blink-on-action", true, () -> mode.getValue() == 0);
+    public final BooleanProperty pauseOnNoMove = new BooleanProperty("pause-on-no-move", true, () -> mode.getValue() == 0);
+    public final BooleanProperty pauseOnChest = new BooleanProperty("pause-on-chest", false, () -> mode.getValue() == 0);
+    public final BooleanProperty line = new BooleanProperty("line", true, () -> mode.getValue() == 0);
+    public final ColorProperty lineColor = new ColorProperty("line-color", Color.GREEN.getRGB(), () -> mode.getValue() == 0 && line.getValue());
+
+    public final IntProperty dynamicDelay = new IntProperty("dynamic-delay", 200, 25, 1000, () -> mode.getValue() == 1);
+    public final BooleanProperty dynamicDebug = new BooleanProperty("dynamic-debug", false, () -> mode.getValue() == 1);
+    public final BooleanProperty dynamicIgnoreTeammates = new BooleanProperty("dynamic-ignore-teammates", true, () -> mode.getValue() == 1);
+    public final BooleanProperty dynamicStopOnHurt = new BooleanProperty("dynamic-stop-on-hurt", true, () -> mode.getValue() == 1);
+    public final IntProperty dynamicStopOnHurtTime = new IntProperty("dynamic-stop-on-hurt-time", 500, 0, 1000, () -> mode.getValue() == 1);
+    public final FloatProperty dynamicStartRange = new FloatProperty("dynamic-start-range", 6.0F, 3.0F, 10.0F, () -> mode.getValue() == 1);
+    public final FloatProperty dynamicStopRange = new FloatProperty("dynamic-stop-range", 3.5F, 1.0F, 6.0F, () -> mode.getValue() == 1);
+    public final FloatProperty dynamicMaxTargetRange = new FloatProperty("dynamic-max-target-range", 15.0F, 6.0F, 20.0F, () -> mode.getValue() == 1);
 
     private final LinkedList<QueueData> packetQueue = new LinkedList<>();
     private final LinkedList<PositionData> positions = new LinkedList<>();
@@ -60,6 +75,11 @@ public class FakeLag extends Module {
     private long resetTimer;
     private boolean wasNearEnemy;
     private boolean ignoreWholeTick;
+
+    private AbstractClientPlayer dynamicTarget;
+    private long dynamicLastDisableTime = -1L;
+    private boolean dynamicLastHurt;
+    private long dynamicLastStartBlinkTime = -1L;
 
     public FakeLag() {
         super("FakeLag", false);
@@ -71,6 +91,10 @@ public class FakeLag extends Module {
         this.resetTimer = System.currentTimeMillis();
         this.wasNearEnemy = false;
         this.ignoreWholeTick = false;
+        this.dynamicTarget = null;
+        this.dynamicLastDisableTime = -1L;
+        this.dynamicLastHurt = false;
+        this.dynamicLastStartBlinkTime = -1L;
     }
 
     @Override
@@ -86,6 +110,10 @@ public class FakeLag extends Module {
     public void onPacket(PacketEvent event) {
         if (!this.isEnabled() || mc.thePlayer == null || mc.theWorld == null || event.isCancelled()) return;
         if (event.getType() != EventType.SEND) return;
+        if (this.mode.getValue() == 1) {
+            handleDynamicAttackTarget(event.getPacket());
+            return;
+        }
         if (this.ignoreWholeTick || this.wasNearEnemy) return;
 
         Packet<?> packet = event.getPacket();
@@ -144,6 +172,11 @@ public class FakeLag extends Module {
     public void onUpdate(UpdateEvent event) {
         if (!this.isEnabled() || event.getType() != EventType.PRE || mc.thePlayer == null || mc.theWorld == null) return;
 
+        if (this.mode.getValue() == 1) {
+            handleDynamic();
+            return;
+        }
+
         this.checkEnemyDistance();
 
         if (mc.thePlayer.isDead || mc.thePlayer.isUsingItem()) {
@@ -160,7 +193,7 @@ public class FakeLag extends Module {
     @EventTarget
     public void onRender3D(Render3DEvent event) {
         pruneRenderPositions();
-        if (!this.isEnabled() || !this.line.getValue() || this.renderPositions.isEmpty() || mc.thePlayer == null) return;
+        if (!this.isEnabled() || this.mode.getValue() != 0 || !this.line.getValue() || this.renderPositions.isEmpty() || mc.thePlayer == null) return;
 
         Color color = new Color(this.lineColor.getValue(), true);
         double renderX = mc.getRenderManager().viewerPosX;
@@ -187,6 +220,67 @@ public class FakeLag extends Module {
         GL11.glDisable(GL11.GL_BLEND);
         GL11.glEnable(GL11.GL_TEXTURE_2D);
         GL11.glPopMatrix();
+    }
+
+    private void handleDynamicAttackTarget(Packet<?> packet) {
+        if (!(packet instanceof C02PacketUseEntity)) return;
+        C02PacketUseEntity useEntity = (C02PacketUseEntity) packet;
+        if (useEntity.getAction() != C02PacketUseEntity.Action.ATTACK) return;
+        Entity entity = useEntity.getEntityFromWorld(mc.theWorld);
+        if (entity instanceof AbstractClientPlayer) {
+            if (dynamicIgnoreTeammates.getValue() && TeamUtil.isSameTeam((EntityPlayer) entity)) return;
+            dynamicTarget = (AbstractClientPlayer) entity;
+        }
+    }
+
+    private void handleDynamic() {
+        Blink blink = (Blink) Myau.moduleManager.modules.get(Blink.class);
+        if (blink == null) return;
+
+        if (dynamicLastDisableTime > 0 && System.currentTimeMillis() - dynamicLastDisableTime <= dynamicStopOnHurtTime.getValue()) {
+            blink.setEnabled(false);
+        }
+
+        if (blink.isEnabled()) {
+            if (System.currentTimeMillis() - dynamicLastStartBlinkTime > dynamicDelay.getValue()) {
+                dynamicMessage("stop lag: time out.");
+                dynamicLastStartBlinkTime = System.currentTimeMillis();
+                blink.setEnabled(false);
+            } else if (!dynamicLastHurt && mc.thePlayer.hurtTime > 0 && dynamicStopOnHurt.getValue()) {
+                dynamicMessage("stop lag: hurt.");
+                dynamicLastDisableTime = System.currentTimeMillis();
+                blink.setEnabled(false);
+            }
+        }
+
+        if (dynamicTarget != null && !dynamicTarget.isDead) {
+            double distance = mc.thePlayer.getDistanceToEntity(dynamicTarget);
+            if (blink.isEnabled() && distance < dynamicStopRange.getValue()) {
+                dynamicMessage("stop lag: too low range.");
+                blink.setEnabled(false);
+            } else if (!blink.isEnabled() && distance > dynamicStopRange.getValue() && distance < dynamicStartRange.getValue()) {
+                dynamicMessage("start lag: in range.");
+                dynamicLastStartBlinkTime = System.currentTimeMillis();
+                blink.setEnabled(true);
+            } else if (blink.isEnabled() && distance > dynamicStartRange.getValue()) {
+                dynamicMessage("stop lag: out of range.");
+                blink.setEnabled(false);
+            } else if (distance > dynamicMaxTargetRange.getValue()) {
+                dynamicMessage("release target: " + dynamicTarget.getName());
+                dynamicTarget = null;
+                blink.setEnabled(false);
+            }
+        } else {
+            blink.setEnabled(false);
+        }
+
+        dynamicLastHurt = mc.thePlayer.hurtTime > 0;
+    }
+
+    private void dynamicMessage(String message) {
+        if (dynamicDebug.getValue()) {
+            myau.util.ChatUtil.sendFormatted(Myau.clientName + this.getName() + ": &7" + message);
+        }
     }
 
     private boolean shouldFlush(Packet<?> packet) {
@@ -292,7 +386,7 @@ public class FakeLag extends Module {
 
     @Override
     public String[] getSuffix() {
-        return new String[]{String.valueOf(this.packetQueue.size())};
+        return new String[]{this.mode.getModeString() + " " + this.packetQueue.size()};
     }
 
     private static class QueueData {

@@ -33,10 +33,10 @@ public class TargetStrafe extends Module {
 
     private boolean canStrafe() {
         if (this.speedOnly.getValue()) {
-            Speed speed = (Speed) Myau.moduleManager.modules.get(Speed.class);
+            BHop bHop = (BHop) Myau.moduleManager.modules.get(BHop.class);
             Fly fly = (Fly) Myau.moduleManager.modules.get(Fly.class);
             LongJump longJump = (LongJump) Myau.moduleManager.modules.get(LongJump.class);
-            if (!speed.isEnabled() && !fly.isEnabled() && (!longJump.isEnabled() || !longJump.isJumping())) {
+            if (!bHop.isEnabled() && !fly.isEnabled() && (!longJump.isEnabled() || !longJump.isJumping())) {
                 return false;
             }
         }

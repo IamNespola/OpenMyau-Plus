@@ -89,6 +89,7 @@ public class Myau {
         moduleManager.modules.put(BedESP.class, new BedESP());
         moduleManager.modules.put(BedTracker.class, new BedTracker());
         moduleManager.modules.put(Blink.class, new Blink());
+        moduleManager.modules.put(BreakProgress.class, new BreakProgress());
         moduleManager.modules.put(BHop.class, new BHop());
         moduleManager.modules.put(BackTrack.class, new BackTrack());
         moduleManager.modules.put(Hitflick.class, new Hitflick());
@@ -146,6 +147,7 @@ public class Myau {
         moduleManager.modules.put(NoJumpDelay.class, new NoJumpDelay());
         moduleManager.modules.put(NoRotate.class, new NoRotate());
         moduleManager.modules.put(NoSlow.class, new NoSlow());
+        moduleManager.modules.put(Panic.class, new Panic());
         moduleManager.modules.put(ClickAssits.class, new ClickAssits());
         moduleManager.modules.put(Timer.class, new Timer());
         moduleManager.modules.put(SprintReset.class, new SprintReset());
@@ -159,14 +161,13 @@ public class Myau {
         moduleManager.modules.put(AutoBlockIn.class, new AutoBlockIn());
         moduleManager.modules.put(SeasonDisplay.class, new SeasonDisplay());
         moduleManager.modules.put(Spammer.class, new Spammer());
-        moduleManager.modules.put(Speed.class, new Speed());
         moduleManager.modules.put(SpeedMine.class, new SpeedMine());
         moduleManager.modules.put(Sprint.class, new Sprint());
         moduleManager.modules.put(TargetHUD.class, new TargetHUD());
         moduleManager.modules.put(TargetStrafe.class, new TargetStrafe());
         moduleManager.modules.put(Tracers.class, new Tracers());
         moduleManager.modules.put(WaterMark2.class, new WaterMark2());
-        moduleManager.modules.put(TimerRangev999.class, new TimerRangev999());
+        moduleManager.modules.put(TimerRange.class, new TimerRange());
         moduleManager.modules.put(Trajectories.class, new Trajectories());
         moduleManager.modules.put(Velocity.class, new Velocity());
         moduleManager.modules.put(ViewClip.class, new ViewClip());

@@ -69,12 +69,15 @@ public class RiseClickGUI extends GuiScreen {
                 "AutoBedDef", "AutoBlockIn", "AutoSwap", "SpeedMine", "MCF", "AntiDebuff", "FlagDetector",
                 "AutoGapple", "Gapple", "ThrowAura", "InventoryClicker", "PacketConsume");
         map(Tab.RENDER, "ESP", "Chams", "FullBright", "Fullbright", "Tracers", "NameTags", "Xray",
-                "TargetESP", "TargetHUD", "Indicators", "BedESP", "ItemESP", "ViewClip", "NoHurtCam",
+                "TargetESP", "TargetHUD", "Indicators", "BedESP", "BreakProgress", "ItemESP", "ViewClip", "NoHurtCam",
                 "HUD", "ChestESP", "Trajectories", "Radar", "FPScounter", "Fpscounter", "WaterMark",
                 "HitParticleEffects", "DynamicIsland", "ESP2D", "SeasonDisplay",
                 "Animations", "RenderFixes", "ClickGUI", "ClickGui");
+        map(Tab.MISC, "Spammer", "BedNuker", "BedTracker", "TeamDisplay", "LightningTracker", "NoRotate",
+                "NickHider", "AntiObbyTrap", "AntiObfuscate", "AutoAnduril", "InventoryClicker", "Disabler",
+                "ClientSpoofer", "MurderDetector", "AutoHypixel", "Panic");
         map(Tab.EXPLOIT, "Disabler", "ClientSpoofer", "NoRotate", "AntiObfuscate", "Blink", "Timer",
-                "TimerRangev999", "AntiVoid", "FakeLag", "GhostHand", "BedNuker", "BedTracker", "TeamDisplay");
+                "TimerRange", "AntiVoid", "FakeLag", "GhostHand", "BedNuker", "BedTracker", "TeamDisplay");
     }
 
     private float windowX = -1f;

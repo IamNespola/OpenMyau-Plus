@@ -62,7 +62,7 @@ public class CleanClickGuiScreen extends GuiScreen {
                 Myau.moduleManager.getModule(HitSelect.class),
                 Myau.moduleManager.getModule(BackTrack.class),
                 Myau.moduleManager.getModule(Hitflick.class),
-                Myau.moduleManager.getModule(TimerRangev999.class),
+                Myau.moduleManager.getModule(TimerRange.class),
                 Myau.moduleManager.getModule(ClickAssits.class),
                 Myau.moduleManager.getModule(Criticals.class),
                 Myau.moduleManager.getModule(SprintReset.class),
@@ -75,7 +75,6 @@ public class CleanClickGuiScreen extends GuiScreen {
                 Myau.moduleManager.getModule(Fly.class),
                 Myau.moduleManager.getModule(FastBow.class),
                 Myau.moduleManager.getModule(Timer.class),
-                Myau.moduleManager.getModule(Speed.class),
                 Myau.moduleManager.getModule(LongJump.class),
                 Myau.moduleManager.getModule(Sprint.class),
                 Myau.moduleManager.getModule(SafeWalk.class),
@@ -100,6 +99,7 @@ public class CleanClickGuiScreen extends GuiScreen {
                 Myau.moduleManager.getModule(TargetHUD.class),
                 Myau.moduleManager.getModule(Indicators.class),
                 Myau.moduleManager.getModule(BedESP.class),
+                Myau.moduleManager.getModule(BreakProgress.class),
                 Myau.moduleManager.getModule(ItemESP.class),
                 Myau.moduleManager.getModule(ViewClip.class),
                 Myau.moduleManager.getModule(NoHurtCam.class),
@@ -155,7 +155,8 @@ public class CleanClickGuiScreen extends GuiScreen {
                 Myau.moduleManager.getModule(Disabler.class),
                 Myau.moduleManager.getModule(ClientSpoofer.class),
                 Myau.moduleManager.getModule(MurderDetector.class),
-                Myau.moduleManager.getModule(AutoHypixel.class)
+                Myau.moduleManager.getModule(AutoHypixel.class),
+                Myau.moduleManager.getModule(Panic.class)
         );
 
         List<Module> ghostModules = Arrays.asList(

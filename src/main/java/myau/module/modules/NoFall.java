@@ -16,10 +16,17 @@ import myau.property.properties.FloatProperty;
 import myau.property.properties.ModeProperty;
 import myau.property.properties.IntProperty;
 import net.minecraft.client.Minecraft;
+import net.minecraft.init.Blocks;
+import net.minecraft.init.Items;
+import net.minecraft.item.Item;
+import net.minecraft.item.ItemBlock;
+import net.minecraft.item.ItemStack;
 import net.minecraft.network.Packet;
 import net.minecraft.network.play.client.C03PacketPlayer;
 import net.minecraft.network.play.server.S08PacketPlayerPosLook;
 import net.minecraft.util.AxisAlignedBB;
+import net.minecraft.util.MathHelper;
+import net.minecraft.util.MovingObjectPosition;
 
 public class NoFall extends Module {
     private static final Minecraft mc = Minecraft.getMinecraft();
@@ -27,9 +34,13 @@ public class NoFall extends Module {
     private final TimerUtil scoreboardResetTimer = new TimerUtil();
     private boolean slowFalling = false;
     private boolean lastOnGround = false;
-    public final ModeProperty mode = new ModeProperty("mode", 0, new String[]{"PACKET", "BLINK", "NO_GROUND", "SPOOF"});
+    public final ModeProperty mode = new ModeProperty("mode", 0, new String[]{"PACKET", "BLINK", "NO_GROUND", "SPOOF", "LEGIT"});
     public final FloatProperty distance = new FloatProperty("distance", 3.0F, 0.0F, 20.0F);
     public final IntProperty delay = new IntProperty("delay", 0, 0, 10000);
+    public final FloatProperty legitAimSpeed = new FloatProperty("legit-aim-speed", 5.0F, 5.0F, 10.0F, () -> this.mode.getValue() == 4);
+    public final myau.property.properties.BooleanProperty legitSilentAim = new myau.property.properties.BooleanProperty("legit-silent-aim", true, () -> this.mode.getValue() == 4);
+    public final myau.property.properties.BooleanProperty legitSwitchToItem = new myau.property.properties.BooleanProperty("legit-switch-to-item", true, () -> this.mode.getValue() == 4);
+    private float legitLastPitch = -1.0F;
 
     private boolean canTrigger() {
         return this.scoreboardResetTimer.hasTimeElapsed(3000) && this.packetDelayTimer.hasTimeElapsed(this.delay.getValue().longValue());
@@ -37,6 +48,12 @@ public class NoFall extends Module {
 
     public NoFall() {
         super("NoFall", false);
+    }
+
+    @EventTarget(Priority.HIGH)
+    public void onUpdate(UpdateEvent event) {
+        if (!this.isEnabled() || event.getType() != EventType.PRE || this.mode.getValue() != 4) return;
+        handleLegit(event);
     }
 
     @EventTarget(Priority.HIGH)
@@ -122,9 +139,72 @@ public class NoFall extends Module {
         }
     }
 
+    private void handleLegit(UpdateEvent event) {
+        if (!inLegitPosition()) {
+            legitLastPitch = -1.0F;
+            return;
+        }
+
+        if (legitLastPitch == -1.0F) {
+            legitLastPitch = event.getPitch();
+        }
+        legitLastPitch = movePitch(90.0F, legitLastPitch, legitAimSpeed.getValue());
+        if (legitSilentAim.getValue()) {
+            event.setRotation(event.getNewYaw(), legitLastPitch, 3);
+        } else {
+            mc.thePlayer.rotationPitch = legitLastPitch;
+        }
+
+        float rayPitch = legitSilentAim.getValue() ? legitLastPitch : mc.thePlayer.rotationPitch;
+        MovingObjectPosition rayCast = RotationUtil.rayTrace(mc.thePlayer.rotationYaw, rayPitch, mc.playerController.getBlockReachDistance(), 1.0F);
+        if (rayCast != null && rayCast.typeOfHit == MovingObjectPosition.MovingObjectType.BLOCK && holdLegitItem(legitSwitchToItem.getValue())) {
+            mc.playerController.sendUseItem(mc.thePlayer, mc.theWorld, mc.thePlayer.getHeldItem());
+        }
+    }
+
+    private boolean inLegitPosition() {
+        return mc.thePlayer != null
+                && mc.theWorld != null
+                && !mc.thePlayer.capabilities.isFlying
+                && !mc.thePlayer.capabilities.isCreativeMode
+                && !mc.thePlayer.onGround
+                && !mc.thePlayer.isInWater()
+                && !mc.thePlayer.isInLava()
+                && mc.thePlayer.fallDistance >= distance.getValue();
+    }
+
+    private boolean holdLegitItem(boolean setSlot) {
+        if (containsLegitItem(mc.thePlayer.getHeldItem())) {
+            return true;
+        }
+        for (int i = 0; i < 9; ++i) {
+            if (containsLegitItem(mc.thePlayer.inventory.mainInventory[i])) {
+                if (setSlot) {
+                    mc.thePlayer.inventory.currentItem = i;
+                    return true;
+                }
+                return false;
+            }
+        }
+        return false;
+    }
+
+    private boolean containsLegitItem(ItemStack itemStack) {
+        if (itemStack == null) return false;
+        Item item = itemStack.getItem();
+        return item == Items.water_bucket || (item instanceof ItemBlock && (((ItemBlock) item).getBlock() == Blocks.web || ((ItemBlock) item).getBlock() == Blocks.ladder));
+    }
+
+    private float movePitch(float target, float current, float speed) {
+        float diff = MathHelper.wrapAngleTo180_float(target - current);
+        float step = Math.min(Math.abs(diff), speed);
+        return current + Math.signum(diff) * step;
+    }
+
     @Override
     public void onDisabled() {
         this.lastOnGround = false;
+        this.legitLastPitch = -1.0F;
         Myau.blinkManager.setBlinkState(false, BlinkModules.NO_FALL);
         if (this.slowFalling) {
             this.slowFalling = false;

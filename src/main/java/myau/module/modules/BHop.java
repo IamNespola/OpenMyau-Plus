@@ -4,6 +4,7 @@ import myau.event.EventTarget;
 import myau.event.types.EventType;
 import myau.events.LivingUpdateEvent;
 import myau.events.PacketEvent;
+import myau.events.UpdateEvent;
 import myau.mixin.IAccessorC03PacketPlayer;
 import myau.mixin.IAccessorEntity;
 import myau.mixin.IAccessorEntityPlayer;
@@ -21,13 +22,20 @@ import net.minecraft.network.play.client.C03PacketPlayer;
 public class BHop extends Module {
     private static final Minecraft mc = Minecraft.getMinecraft();
 
-    public final ModeProperty mode = new ModeProperty("mode", 0, new String[]{"Legit", "Intave14", "Matrix", "NCP", "Vulcan"});
+    public final ModeProperty mode = new ModeProperty("mode", 0, new String[]{"Legit", "Intave14", "Matrix", "NCP", "Vulcan", "Custom"});
+    public final BooleanProperty legitRotation = new BooleanProperty("rotation", false, () -> mode.getValue() == 0);
+    public final BooleanProperty legitCpuSpeedUpExploit = new BooleanProperty("cpu-speedup-exploit", false, () -> mode.getValue() == 0);
+
     public final BooleanProperty boost = new BooleanProperty("boost", true, () -> mode.getValue() == 1);
     public final FloatProperty initialBoostMultiplier = new FloatProperty("initial-boost-multiplier", 1.0F, 0.01F, 10.0F, () -> mode.getValue() == 1);
     public final BooleanProperty lowHop = new BooleanProperty("low-hop", true, () -> mode.getValue() == 1 || mode.getValue() == 3);
     public final FloatProperty strafeStrength = new FloatProperty("strafe-strength", 0.29F, 0.1F, 0.29F, () -> mode.getValue() == 1);
     public final FloatProperty groundTimer = new FloatProperty("ground-timer", 0.5F, 0.1F, 5.0F, () -> mode.getValue() == 1);
     public final FloatProperty airTimer = new FloatProperty("air-timer", 1.09F, 0.1F, 5.0F, () -> mode.getValue() == 1);
+
+    public final FloatProperty customMultiplier = new FloatProperty("custom-multiplier", 1.0F, 0.0F, 10.0F, () -> mode.getValue() == 5);
+    public final FloatProperty customFriction = new FloatProperty("custom-friction", 1.0F, 0.0F, 10.0F, () -> mode.getValue() == 5);
+    public final IntProperty customStrafe = new IntProperty("custom-strafe", 0, 0, 100, () -> mode.getValue() == 5);
 
     public final BooleanProperty ncpPullDown = new BooleanProperty("ncp-pull-down", true, () -> mode.getValue() == 3);
     public final FloatProperty ncpPullMotionMultiplier = new FloatProperty("ncp-pull-motion", 1.0F, 0.01F, 10.0F, () -> mode.getValue() == 3 && ncpPullDown.getValue());
@@ -77,6 +85,10 @@ public class BHop extends Module {
                 mc.thePlayer.setSprinting(true);
                 handleVulcan();
                 break;
+            case 5:
+                mc.thePlayer.setSprinting(true);
+                handleCustom();
+                break;
         }
     }
 
@@ -101,9 +113,18 @@ public class BHop extends Module {
     }
 
     private void handleLegit() {
-        resetTimer();
         if (mc.thePlayer.onGround) {
             mc.thePlayer.jump();
+        }
+        if (!mc.thePlayer.onGround && legitRotation.getValue()) {
+            mc.thePlayer.rotationYaw = mc.thePlayer.moveStrafing > 0.0F
+                    ? mc.thePlayer.rotationYaw + 45.0F
+                    : mc.thePlayer.rotationYaw - 45.0F;
+        }
+        if (legitCpuSpeedUpExploit.getValue()) {
+            setTimer(1.004F);
+        } else {
+            resetTimer();
         }
     }
 
@@ -221,6 +242,29 @@ public class BHop extends Module {
         if (Math.abs(player.fallDistance) > 0.0F && hasSpeed) {
             player.motionX *= 1.055D;
             player.motionZ *= 1.055D;
+        }
+    }
+
+    private void handleCustom() {
+        if (mc.thePlayer.onGround) {
+            mc.thePlayer.motionY = 0.42F;
+            MoveUtil.setSpeed(MoveUtil.getJumpMotion() * customMultiplier.getValue(), MoveUtil.getMoveYaw());
+        }
+    }
+
+    @EventTarget
+    public void onCustomStrafe(myau.events.StrafeEvent event) {
+        if (!this.isEnabled() || mode.getValue() != 5 || mc.thePlayer == null || !canHop()) return;
+        if (!mc.thePlayer.onGround) {
+            if (customFriction.getValue() != 1.0F) {
+                event.setFriction(event.getFriction() * customFriction.getValue());
+            }
+            if (customStrafe.getValue() > 0) {
+                double speed = MoveUtil.getSpeed();
+                MoveUtil.setSpeed(speed * (100.0F - customStrafe.getValue()) / 100.0F, MoveUtil.getDirectionYaw());
+                MoveUtil.addSpeed(speed * customStrafe.getValue() / 100.0F, MoveUtil.getMoveYaw());
+                MoveUtil.setSpeed(speed);
+            }
         }
     }
 
