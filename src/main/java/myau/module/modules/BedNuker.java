@@ -9,7 +9,6 @@ import myau.event.types.EventType;
 import myau.event.types.Priority;
 import myau.events.*;
 import myau.management.RotationState;
-import myau.mixin.IAccessorC03PacketPlayer;
 import myau.mixin.IAccessorPlayerControllerMP;
 import myau.module.Module;
 import myau.property.properties.BooleanProperty;
@@ -21,21 +20,17 @@ import net.minecraft.block.Block;
 import net.minecraft.block.BlockBed;
 import net.minecraft.block.BlockBed.EnumPartType;
 import net.minecraft.block.material.Material;
-import net.minecraft.block.properties.IProperty;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.ScaledResolution;
 import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.enchantment.Enchantment;
 import net.minecraft.enchantment.EnchantmentHelper;
-import net.minecraft.init.Blocks;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemPickaxe;
 import net.minecraft.item.ItemStack;
-import net.minecraft.network.play.client.C03PacketPlayer;
 import net.minecraft.network.play.client.C07PacketPlayerDigging;
 import net.minecraft.network.play.client.C07PacketPlayerDigging.Action;
-import net.minecraft.network.play.client.C09PacketHeldItemChange;
 import net.minecraft.network.play.client.C0APacketAnimation;
 import net.minecraft.network.play.server.S02PacketChat;
 import net.minecraft.network.play.server.S08PacketPlayerPosLook;
@@ -53,38 +48,26 @@ import java.awt.*;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 
 public class BedNuker extends Module {
     private static final Minecraft mc = Minecraft.getMinecraft();
     private static final long WHITELIST_SCAN_DELAY_MS = 1000L;
-
     private final TimerUtil timer = new TimerUtil();
     private final ArrayList<BlockPos> bedWhitelist = new ArrayList<BlockPos>();
-    private final Map<BlockPos, Float> breakProgressMap = new HashMap<>();
     private final Color colorRed = new Color(ChatColors.RED.toAwtColor());
     private final Color colorYellow = new Color(ChatColors.YELLOW.toAwtColor());
     private final Color colorGreen = new Color(ChatColors.GREEN.toAwtColor());
-
     private BlockPos targetBed = null;
-    private BlockPos[] bedPos = null;
-    private BlockPos nearestBlock = null;
-    private int savedSlot = -1;
-    private int packetSlot = -1;
-    private int ticksAfterBreak = 0;
+    private int breakStage = 0;
+    private int tickCounter = 0;
     private float breakProgress = 0.0F;
-    private float lastProgress = 0.0F;
     private boolean isBed = false;
+    private int savedSlot = -1;
     private boolean readyToBreak = false;
     private boolean breaking = false;
-    private boolean rotate = false;
     private boolean waitingForStart = false;
-    private boolean delayStart = false;
     private long whitelistScanAt = -1L;
-
-    public final ModeProperty mode = new ModeProperty("mode", 0, new String[]{"NORMAL", "INSTANT", "SWAP"});
+    public final ModeProperty mode = new ModeProperty("mode", 0, new String[]{"NORMAL", "SWAP"});
     public final FloatProperty range = new FloatProperty("range", 4.5F, 3.0F, 6.0F);
     public final PercentProperty speed = new PercentProperty("speed", 0);
     public final BooleanProperty groundSpeed = new BooleanProperty("ground-spoof", false);
@@ -97,26 +80,17 @@ public class BedNuker extends Module {
     public final ModeProperty showTarget = new ModeProperty("show-target", 1, new String[]{"NONE", "DEFAULT", "HUD"});
     public final ModeProperty showProgress = new ModeProperty("show-progress", 1, new String[]{"NONE", "DEFAULT", "HUD"});
 
-    public BedNuker() {
-        super("BedNuker", false);
-    }
-
     private void resetBreaking() {
         if (this.targetBed != null && mc.theWorld != null && mc.thePlayer != null) {
             mc.theWorld.sendBlockBreakProgress(mc.thePlayer.getEntityId(), this.targetBed, -1);
         }
         this.targetBed = null;
-        this.bedPos = null;
-        this.nearestBlock = null;
+        this.breakStage = 0;
+        this.tickCounter = 0;
         this.breakProgress = 0.0F;
-        this.lastProgress = 0.0F;
         this.isBed = false;
         this.readyToBreak = false;
         this.breaking = false;
-        this.rotate = false;
-        this.ticksAfterBreak = 0;
-        this.delayStart = false;
-        this.breakProgressMap.clear();
     }
 
     private void scheduleWhitelistScan() {
@@ -150,7 +124,16 @@ public class BedNuker extends Module {
     }
 
     private float calcProgress() {
-        return Math.min(1.0F, this.breakProgress);
+        if (this.targetBed == null) {
+            return 0.0F;
+        } else {
+            float progress = this.breakProgress;
+            if (this.groundSpeed.getValue()) {
+                int slot = ItemUtil.findInventorySlot(mc.thePlayer.inventory.currentItem, mc.theWorld.getBlockState(this.targetBed).getBlock());
+                progress = (float) this.tickCounter * this.getBreakDelta(mc.theWorld.getBlockState(this.targetBed), this.targetBed, slot, true);
+            }
+            return Math.min(1.0F, progress / (1.0F - 0.3F * ((float) this.speed.getValue().intValue() / 100.0F)));
+        }
     }
 
     private void restoreSlot() {
@@ -159,7 +142,6 @@ public class BedNuker extends Module {
             this.syncHeldItem();
             this.savedSlot = -1;
         }
-        this.packetSlot = -1;
     }
 
     private void syncHeldItem() {
@@ -168,25 +150,6 @@ public class BedNuker extends Module {
             mc.thePlayer.stopUsingItem();
         }
         ((IAccessorPlayerControllerMP) mc.playerController).callSyncCurrentPlayItem();
-    }
-
-    private void setSlot(int slot) {
-        if (slot == -1 || slot == mc.thePlayer.inventory.currentItem) {
-            return;
-        }
-        if (this.savedSlot == -1) {
-            this.savedSlot = mc.thePlayer.inventory.currentItem;
-        }
-        mc.thePlayer.inventory.currentItem = slot;
-        this.syncHeldItem();
-    }
-
-    private void setPacketSlot(int slot) {
-        if (slot == -1 || slot == this.packetSlot) {
-            return;
-        }
-        PacketUtil.sendPacket(new C09PacketHeldItemChange(slot));
-        this.packetSlot = slot;
     }
 
     private boolean hasProperTool(Block block) {
@@ -216,7 +179,7 @@ public class BedNuker extends Module {
         return mop == null ? EnumFacing.UP : mop.sideHit;
     }
 
-    private float getDigSpeed(IBlockState iBlockState, int slot, boolean onGround) {
+    private float getDigSpeed(IBlockState iBlockState, int slot, boolean boolean5) {
         ItemStack item = mc.thePlayer.inventory.getStackInSlot(slot);
         float digSpeed = item == null ? 1.0F : item.getItem().getDigSpeed(item, iBlockState);
         if (digSpeed > 1.0F) {
@@ -246,7 +209,7 @@ public class BedNuker extends Module {
         if (mc.thePlayer.isInsideOfMaterial(Material.water) && !EnchantmentHelper.getAquaAffinityModifier(mc.thePlayer)) {
             digSpeed /= 5.0F;
         }
-        if (!onGround) {
+        if (!boolean5) {
             digSpeed /= 5.0F;
         }
         return digSpeed;
@@ -261,109 +224,100 @@ public class BedNuker extends Module {
         }
     }
 
-    private float getBreakDelta(IBlockState iBlockState, BlockPos blockPos, int slot, boolean onGround) {
+    private float getBreakDelta(IBlockState iBlockState, BlockPos blockPos, int slot, boolean boolean5) {
         Block block = iBlockState.getBlock();
         float hardness = block.getBlockHardness(mc.theWorld, blockPos);
         float boost = this.canHarvest(block, slot) ? 30.0F : 100.0F;
-        float multiplier = 1.0F + 0.7F * ((float) this.speed.getValue().intValue() / 100.0F);
-        return hardness < 0.0F ? 0.0F : this.getDigSpeed(iBlockState, slot, onGround) / hardness / boost * multiplier;
+        return hardness < 0.0F ? 0.0F : this.getDigSpeed(iBlockState, slot, boolean5) / hardness / boost;
     }
 
     private float calcBlockStrength(BlockPos blockPos) {
         IBlockState blockState = mc.theWorld.getBlockState(blockPos);
         int slot = ItemUtil.findInventorySlot(mc.thePlayer.inventory.currentItem, blockState.getBlock());
-        return this.getBreakDelta(blockState, blockPos, slot, mc.thePlayer.onGround || this.groundSpeed.getValue());
+        return this.getBreakDelta(blockState, blockPos, slot, mc.thePlayer.onGround);
     }
 
-    private BlockPos[] getBedPos() {
-        int scanRange = Math.round(this.range.getValue());
-        List<BlockPos> targets = new ArrayList<>();
-        BlockPos player = mc.thePlayer.getPosition();
-        for (int x = player.getX() - scanRange; x <= player.getX() + scanRange; x++) {
-            for (int y = player.getY() - scanRange; y <= player.getY() + scanRange; y++) {
-                for (int z = player.getZ() - scanRange; z <= player.getZ() + scanRange; z++) {
-                    BlockPos pos = new BlockPos(x, y, z);
-                    if (this.whiteList.getValue() && this.bedWhitelist.contains(pos)) {
-                        continue;
+    private BlockPos validateBedPlacement(BlockPos bedPosition) {
+        IBlockState blockState = mc.theWorld.getBlockState(bedPosition);
+        if (blockState.getBlock() instanceof BlockBed) {
+            ArrayList<BlockPos> pos = new ArrayList<>();
+            EnumPartType partType = blockState.getValue(BlockBed.PART);
+            EnumFacing facing = blockState.getValue(BlockBed.FACING);
+            for (BlockPos blockPos : Arrays.asList(bedPosition, bedPosition.offset(partType == EnumPartType.HEAD ? facing.getOpposite() : facing))) {
+                for (EnumFacing enumFacing : Arrays.asList(EnumFacing.UP, EnumFacing.NORTH, EnumFacing.EAST, EnumFacing.SOUTH, EnumFacing.WEST)) {
+                    Block block = mc.theWorld.getBlockState(blockPos.offset(enumFacing)).getBlock();
+                    if (BlockUtil.isReplaceable(block)) {
+                        return null;
                     }
-                    IBlockState state = mc.theWorld.getBlockState(pos);
-                    if (state.getBlock() == Blocks.bed && state.getValue((IProperty<?>) BlockBed.PART) == EnumPartType.FOOT
-                            && PlayerUtil.canReach(pos, this.range.getValue().doubleValue())) {
-                        targets.add(pos);
+                    if (!(block instanceof BlockBed)) {
+                        pos.add(blockPos.offset(enumFacing));
+                    }
+                }
+            }
+            if (!pos.isEmpty()) {
+                pos.sort(
+                        (blockPos, blockPos2) -> {
+                            int o = Float.compare(this.calcBlockStrength(blockPos2), this.calcBlockStrength(blockPos));
+                            return o != 0
+                                    ? o
+                                    : Double.compare(
+                                    blockPos.distanceSqToCenter(mc.thePlayer.posX, mc.thePlayer.posY + (double) mc.thePlayer.getEyeHeight(), mc.thePlayer.posZ),
+                                    blockPos2.distanceSqToCenter(mc.thePlayer.posX, mc.thePlayer.posY + (double) mc.thePlayer.getEyeHeight(), mc.thePlayer.posZ)
+                            );
+                        }
+                );
+                return pos.get(0);
+            }
+        }
+        return null;
+    }
+
+    private BlockPos findNearestBed() {
+        return this.findTargetBed(mc.thePlayer.posX, mc.thePlayer.posY + (double) mc.thePlayer.getEyeHeight(), mc.thePlayer.posZ);
+    }
+
+    private BlockPos findTargetBed(double x, double y, double z) {
+        ArrayList<BlockPos> targets = new ArrayList<>();
+        int sX = MathHelper.floor_double(x);
+        int sY = MathHelper.floor_double(y);
+        int sZ = MathHelper.floor_double(z);
+        for (int i = sX - 6; i <= sX + 6; i++) {
+            for (int j = sY - 6; j <= sY + 6; j++) {
+                for (int k = sZ - 6; k <= sZ + 6; k++) {
+                    BlockPos newPos = new BlockPos(i, j, k);
+                    if (!(Boolean) this.whiteList.getValue() || !this.bedWhitelist.contains(newPos)) {
+                        Block block = mc.theWorld.getBlockState(newPos).getBlock();
+                        if (block instanceof BlockBed
+                                && PlayerUtil.isBlockWithinReach(newPos, x, y, z, this.range.getValue().doubleValue())) {
+                            targets.add(newPos);
+                        }
                     }
                 }
             }
         }
         if (targets.isEmpty()) {
             return null;
-        }
-        targets.sort(Comparator.comparingDouble(pos -> pos.distanceSqToCenter(mc.thePlayer.posX, mc.thePlayer.posY + mc.thePlayer.getEyeHeight(), mc.thePlayer.posZ)));
-        BlockPos foot = targets.get(0);
-        IBlockState state = mc.theWorld.getBlockState(foot);
-        return new BlockPos[]{foot, foot.offset((EnumFacing) state.getValue((IProperty<?>) BlockBed.FACING))};
-    }
-
-    private boolean isCovered(BlockPos blockPos) {
-        for (EnumFacing facing : EnumFacing.values()) {
-            BlockPos offset = blockPos.offset(facing);
-            Block block = mc.theWorld.getBlockState(offset).getBlock();
-            if (BlockUtil.isReplaceable(block) || !block.isFullBlock()) {
-                return false;
+        } else {
+            targets.sort(
+                    Comparator.comparingDouble(
+                            blockPos -> blockPos.distanceSqToCenter(mc.thePlayer.posX, mc.thePlayer.posY + (double) mc.thePlayer.getEyeHeight(), mc.thePlayer.posZ)
+                    )
+            );
+            for (BlockPos blockPos : targets) {
+                if (this.surroundings.getValue()) {
+                    BlockPos pos = this.validateBedPlacement(blockPos);
+                    if (pos != null) {
+                        Block block = mc.theWorld.getBlockState(pos).getBlock();
+                        if (this.toolCheck.getValue() && !this.hasProperTool(block)) {
+                            continue;
+                        }
+                        return pos;
+                    }
+                }
+                return blockPos;
             }
-        }
-        return true;
-    }
-
-    private BlockPos getBestBlock(BlockPos[] positions, boolean getSurrounding) {
-        if (positions == null) {
             return null;
         }
-        double maxRangeSquared = this.range.getValue() * this.range.getValue();
-        float bestEfficiency = 0.0F;
-        BlockPos closestBlock = null;
-        for (BlockPos pos : positions) {
-            if (pos == null) {
-                continue;
-            }
-            if (getSurrounding) {
-                for (EnumFacing facing : EnumFacing.values()) {
-                    if (facing == EnumFacing.DOWN) {
-                        continue;
-                    }
-                    BlockPos offset = pos.offset(facing);
-                    if (Arrays.asList(positions).contains(offset) || !PlayerUtil.canReach(offset, this.range.getValue().doubleValue())) {
-                        continue;
-                    }
-                    Block block = mc.theWorld.getBlockState(offset).getBlock();
-                    if (BlockUtil.isReplaceable(block) || block instanceof BlockBed) {
-                        continue;
-                    }
-                    if (this.toolCheck.getValue() && !this.hasProperTool(block)) {
-                        continue;
-                    }
-                    float efficiency = this.breakProgressMap.containsKey(offset) ? this.breakProgressMap.get(offset) : this.calcBlockStrength(offset);
-                    double distance = mc.thePlayer.getDistanceSqToCenter(offset);
-                    if (this.betterBlock(distance, efficiency, maxRangeSquared, bestEfficiency)) {
-                        maxRangeSquared = distance;
-                        bestEfficiency = efficiency;
-                        closestBlock = offset;
-                    }
-                }
-            } else if (PlayerUtil.canReach(pos, this.range.getValue().doubleValue())) {
-                float efficiency = this.breakProgressMap.containsKey(pos) ? this.breakProgressMap.get(pos) : this.calcBlockStrength(pos);
-                double distance = mc.thePlayer.getDistanceSqToCenter(pos);
-                if (this.betterBlock(distance, efficiency, maxRangeSquared, bestEfficiency)) {
-                    maxRangeSquared = distance;
-                    bestEfficiency = efficiency;
-                    closestBlock = pos;
-                }
-            }
-        }
-        return closestBlock;
-    }
-
-    private boolean betterBlock(double distance, float efficiency, double maxRangeSquared, float bestEfficiency) {
-        return distance < maxRangeSquared || efficiency > bestEfficiency;
     }
 
     private void doSwing() {
@@ -371,77 +325,6 @@ public class BedNuker extends Module {
             mc.thePlayer.swingItem();
         } else {
             PacketUtil.sendPacket(new C0APacketAnimation());
-        }
-    }
-
-    private void startBreak(BlockPos blockPos) {
-        PacketUtil.sendPacket(new C07PacketPlayerDigging(Action.START_DESTROY_BLOCK, blockPos, this.getHitFacing(blockPos)));
-    }
-
-    private void stopBreak(BlockPos blockPos) {
-        PacketUtil.sendPacket(new C07PacketPlayerDigging(Action.STOP_DESTROY_BLOCK, blockPos, this.getHitFacing(blockPos)));
-    }
-
-    private void breakBlock(BlockPos blockPos) {
-        if (blockPos == null || !PlayerUtil.canReach(blockPos, this.range.getValue().doubleValue()) || mc.theWorld.isAirBlock(blockPos)) {
-            return;
-        }
-        this.targetBed = blockPos;
-        this.isBed = mc.theWorld.getBlockState(blockPos).getBlock() instanceof BlockBed;
-        this.readyToBreak = true;
-        Block block = mc.theWorld.getBlockState(blockPos).getBlock();
-        int slot = ItemUtil.findInventorySlot(mc.thePlayer.inventory.currentItem, block);
-        if (this.mode.getValue() == 1) {
-            this.rotate = true;
-            this.doSwing();
-            this.startBreak(blockPos);
-            this.setSlot(slot);
-            this.stopBreak(blockPos);
-            this.restoreSlot();
-            this.timer.reset();
-            this.resetBreaking();
-            return;
-        }
-        if (this.breakProgress == 0.0F) {
-            this.restoreSlot();
-            this.rotate = true;
-            this.breaking = true;
-            if (this.mode.getValue() == 0) {
-                this.setSlot(slot);
-            }
-            this.doSwing();
-            this.startBreak(blockPos);
-        } else if (this.breakProgress >= 1.0F) {
-            if (this.mode.getValue() == 2) {
-                this.setPacketSlot(slot);
-            }
-            this.stopBreak(blockPos);
-            this.doSwing();
-            IBlockState blockState = mc.theWorld.getBlockState(blockPos);
-            if (blockState.getBlock().getMaterial() != Material.air) {
-                mc.theWorld.playAuxSFX(2001, blockPos, Block.getStateId(blockState));
-                mc.theWorld.setBlockToAir(blockPos);
-            }
-            this.delayStart = true;
-            this.breakProgressMap.remove(blockPos);
-            this.timer.reset();
-            this.resetBreaking();
-            return;
-        } else if (this.mode.getValue() == 0) {
-            this.rotate = true;
-        }
-        float progress = this.getBreakDelta(mc.theWorld.getBlockState(blockPos), blockPos,
-                this.mode.getValue() == 2 && slot != -1 ? slot : mc.thePlayer.inventory.currentItem,
-                mc.thePlayer.onGround || this.groundSpeed.getValue());
-        if (this.lastProgress != 0.0F && this.breakProgress >= this.lastProgress) {
-            this.breaking = true;
-        }
-        this.breakProgress += progress;
-        this.breakProgressMap.put(blockPos, this.breakProgress);
-        mc.theWorld.sendBlockBreakProgress(mc.thePlayer.getEntityId(), blockPos, (int) (this.breakProgress * 10.0F) - 1);
-        this.lastProgress = 0.0F;
-        while (this.lastProgress + progress < 1.0F) {
-            this.lastProgress += progress;
         }
     }
 
@@ -460,6 +343,10 @@ public class BedNuker extends Module {
         }
     }
 
+    public BedNuker() {
+        super("BedNuker", false);
+    }
+
     public boolean isReady() {
         return this.targetBed != null && this.readyToBreak;
     }
@@ -470,57 +357,109 @@ public class BedNuker extends Module {
 
     @EventTarget(Priority.HIGH)
     public void onTick(TickEvent event) {
-        if (event.getType() != EventType.PRE) {
-            return;
-        }
-        this.runPendingWhitelistScan();
-        if (!this.isEnabled()) {
-            return;
-        }
-        AutoBlockIn autoBlockIn = (AutoBlockIn) Myau.moduleManager.modules.get(AutoBlockIn.class);
-        if (autoBlockIn.isEnabled()) {
-            return;
-        }
-        if (!mc.thePlayer.capabilities.allowEdit || mc.thePlayer.isSpectator()) {
-            this.restoreSlot();
-            this.resetBreaking();
-            return;
-        }
-        if (this.delayStart) {
-            if (this.ticksAfterBreak++ <= 0) {
+        if (event.getType() == EventType.PRE) {
+            this.runPendingWhitelistScan();
+            if (!this.isEnabled()) {
                 return;
             }
-            this.restoreSlot();
-            this.delayStart = false;
-            this.ticksAfterBreak = 0;
-        }
-        if (this.bedPos == null) {
-            if (this.timer.hasTimeElapsed(200)) {
-                this.bedPos = this.getBedPos();
-                this.timer.reset();
+            AutoBlockIn autoBlockIn = (AutoBlockIn) Myau.moduleManager.modules.get(AutoBlockIn.class);
+            if(autoBlockIn.isEnabled()) return;
+            if (this.targetBed != null) {
+                if (mc.theWorld.isAirBlock(this.targetBed) || !PlayerUtil.canReach(this.targetBed, this.range.getValue().doubleValue())) {
+                    this.restoreSlot();
+                    this.resetBreaking();
+                } else if (!this.isBed) {
+                    BlockPos nearestBed = this.findNearestBed();
+                    if (nearestBed != null && mc.theWorld.getBlockState(nearestBed).getBlock() instanceof BlockBed) {
+                        this.resetBreaking();
+                    }
+                }
             }
-            if (this.bedPos == null) {
+            if (this.targetBed != null) {
+                int slot = ItemUtil.findInventorySlot(mc.thePlayer.inventory.currentItem, mc.theWorld.getBlockState(this.targetBed).getBlock());
+                if (this.mode.getValue() == 0 && this.savedSlot == -1) {
+                    this.savedSlot = mc.thePlayer.inventory.currentItem;
+                    mc.thePlayer.inventory.currentItem = slot;
+                    this.syncHeldItem();
+                }
+                switch (this.breakStage) {
+                    case 0:
+                        if (!mc.thePlayer.isUsingItem()) {
+                            this.doSwing();
+                            PacketUtil.sendPacket(
+                                    new C07PacketPlayerDigging(Action.START_DESTROY_BLOCK, this.targetBed, this.getHitFacing(this.targetBed))
+                            );
+                            this.doSwing();
+                            mc.effectRenderer.addBlockHitEffects(this.targetBed, this.getHitFacing(this.targetBed));
+                            this.breakStage = 1;
+                        }
+                        break;
+                    case 1:
+                        if (this.mode.getValue() == 1) {
+                            this.readyToBreak = false;
+                        }
+                        this.breaking = true;
+                        this.tickCounter++;
+                        this.breakProgress = this.breakProgress
+                                + this.getBreakDelta(mc.theWorld.getBlockState(this.targetBed), this.targetBed, slot, mc.thePlayer.onGround);
+                        float tick = (float) this.tickCounter;
+                        IBlockState blockState = mc.theWorld.getBlockState(this.targetBed);
+                        boolean canBreak = mc.thePlayer.onGround && this.groundSpeed.getValue();
+                        BlockPos target = this.targetBed;
+                        float delta = tick * this.getBreakDelta(blockState, target, slot, canBreak);
+                        mc.effectRenderer.addBlockHitEffects(this.targetBed, this.getHitFacing(this.targetBed));
+                        if (this.breakProgress >= 1.0F - 0.3F * ((float) this.speed.getValue().intValue() / 100.0F)
+                                || delta >= 1.0F - 0.3F * ((float) this.speed.getValue().intValue() / 100.0F)) {
+                            if (this.mode.getValue() == 1) {
+                                this.readyToBreak = true;
+                                this.savedSlot = mc.thePlayer.inventory.currentItem;
+                                mc.thePlayer.inventory.currentItem = slot;
+                                this.syncHeldItem();
+                                if (mc.thePlayer.isUsingItem()) {
+                                    this.savedSlot = mc.thePlayer.inventory.currentItem;
+                                    mc.thePlayer.inventory.currentItem = (mc.thePlayer.inventory.currentItem + 1) % 9;
+                                    this.syncHeldItem();
+                                }
+                            }
+                            this.breaking = false;
+                            PacketUtil.sendPacket(
+                                    new C07PacketPlayerDigging(Action.STOP_DESTROY_BLOCK, this.targetBed, this.getHitFacing(this.targetBed))
+                            );
+                            this.doSwing();
+                            IBlockState blockState_ = mc.theWorld.getBlockState(this.targetBed);
+                            Block block = blockState_.getBlock();
+                            if (block.getMaterial() != Material.air) {
+                                mc.theWorld.playAuxSFX(2001, this.targetBed, Block.getStateId(blockState_));
+                                mc.theWorld.setBlockToAir(this.targetBed);
+                            }
+                            if (block instanceof BlockBed) {
+                                this.timer.reset();
+                            }
+                            this.breakStage = 2;
+                        }
+                        break;
+                    case 2:
+                        this.restoreSlot();
+                        this.resetBreaking();
+                }
+                if (this.targetBed != null) {
+                    return;
+                }
+            }
+            if (mc.thePlayer.capabilities.allowEdit && this.timer.hasTimeElapsed(500)) {
+                this.targetBed = this.findNearestBed();
+                this.breakStage = 0;
+                this.tickCounter = 0;
+                this.breakProgress = 0.0F;
+                this.isBed = this.targetBed != null && mc.theWorld.getBlockState(this.targetBed).getBlock() instanceof BlockBed;
                 this.restoreSlot();
-                this.resetBreaking();
+                if (this.targetBed != null) {
+                    this.readyToBreak = true;
+                }
+            }
+            if (this.targetBed == null) {
                 Myau.delayManager.setDelayState(false, DelayModules.BED_NUKER);
-                return;
             }
-        } else if (!(mc.theWorld.getBlockState(this.bedPos[0]).getBlock() instanceof BlockBed)
-                || this.targetBed != null && mc.theWorld.isAirBlock(this.targetBed)) {
-            this.restoreSlot();
-            this.resetBreaking();
-            return;
-        }
-        if (this.surroundings.getValue() && this.isCovered(this.bedPos[0]) && this.isCovered(this.bedPos[1])) {
-            if (this.nearestBlock == null) {
-                this.nearestBlock = this.getBestBlock(this.bedPos, true);
-            }
-            this.breakBlock(this.nearestBlock);
-        } else {
-            this.nearestBlock = null;
-            this.restoreSlot();
-            BlockPos bestBlock = this.getBestBlock(this.bedPos, false);
-            this.breakBlock(bestBlock != null ? bestBlock : this.bedPos[0]);
         }
     }
 
@@ -528,17 +467,27 @@ public class BedNuker extends Module {
     public void onUpdate(UpdateEvent event) {
         if (this.isEnabled() && event.getType() == EventType.PRE) {
             AutoBlockIn autoBlockIn = (AutoBlockIn) Myau.moduleManager.modules.get(AutoBlockIn.class);
-            if (autoBlockIn.isEnabled()) {
-                return;
-            }
-            if ((this.rotate || this.breakProgress >= 1.0F || this.breakProgress == 0.0F) && this.targetBed != null) {
+            if(autoBlockIn.isEnabled()) return;
+            if (this.isReady()) {
                 double x = (double) this.targetBed.getX() + 0.5 - mc.thePlayer.posX;
                 double y = (double) this.targetBed.getY() + 0.5 - mc.thePlayer.posY - (double) mc.thePlayer.getEyeHeight();
                 double z = (double) this.targetBed.getZ() + 0.5 - mc.thePlayer.posZ;
                 float[] rotations = RotationUtil.getRotationsTo(x, y, z, event.getYaw(), event.getPitch());
                 event.setRotation(rotations[0], rotations[1], 5);
                 event.setPervRotation(this.moveFix.getValue() != 0 ? rotations[0] : mc.thePlayer.rotationYaw, 5);
-                this.rotate = false;
+            }
+        }
+    }
+
+    @EventTarget
+    public void onPlayerUpdate(PlayerUpdateEvent event) {
+        if (this.isEnabled()) {
+            if (this.isBreaking()
+                    && !Myau.playerStateManager.attacking
+                    && !Myau.playerStateManager.digging
+                    && !Myau.playerStateManager.placing
+                    && !Myau.playerStateManager.swinging) {
+                this.doSwing();
             }
         }
     }
@@ -569,27 +518,30 @@ public class BedNuker extends Module {
 
     @EventTarget
     public void onRender2D(Render2DEvent event) {
-        if (this.isEnabled() && this.targetBed != null && (!this.isBed || !this.surroundings.getValue())) {
-            if (this.showProgress.getValue() != 0) {
-                HUD hud = (HUD) Myau.moduleManager.modules.get(HUD.class);
-                float scale = hud.scale.getValue();
-                String text = String.format("%d%%", (int) (this.calcProgress() * 100.0F));
-                GlStateManager.pushMatrix();
-                GlStateManager.scale(scale, scale, 0.0F);
-                GlStateManager.disableDepth();
-                GlStateManager.enableBlend();
-                GlStateManager.blendFunc(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA);
-                int width = mc.fontRendererObj.getStringWidth(text);
-                mc.fontRendererObj.drawString(
-                        text,
-                        (float) new ScaledResolution(mc).getScaledWidth() / 2.0F / scale - (float) width / 2.0F,
-                        (float) new ScaledResolution(mc).getScaledHeight() / 5.0F * 2.0F / scale,
-                        this.getProgressColor(this.showProgress.getValue()).getRGB() & 16777215 | -1090519040,
-                        hud.shadow.getValue()
-                );
-                GlStateManager.disableBlend();
-                GlStateManager.enableDepth();
-                GlStateManager.popMatrix();
+        if (this.isEnabled()) {
+            if (this.targetBed != null && (!this.isBed || !this.surroundings.getValue())) {
+                if (this.showProgress.getValue() != 0) {
+                    HUD hud = (HUD) Myau.moduleManager.modules.get(HUD.class);
+                    float scale = hud.scale.getValue();
+                    String text = String.format("%d%%", (int) (this.calcProgress() * 100.0F));
+                    GlStateManager.pushMatrix();
+                    GlStateManager.scale(scale, scale, 0.0F);
+                    GlStateManager.disableDepth();
+                    GlStateManager.enableBlend();
+                    GlStateManager.blendFunc(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA);
+                    int width = mc.fontRendererObj.getStringWidth(text);
+                    mc.fontRendererObj
+                            .drawString(
+                                    text,
+                                    (float) new ScaledResolution(mc).getScaledWidth() / 2.0F / scale - (float) width / 2.0F,
+                                    (float) new ScaledResolution(mc).getScaledHeight() / 5.0F * 2.0F / scale,
+                                    this.getProgressColor(this.showProgress.getValue()).getRGB() & 16777215 | -1090519040,
+                                    hud.shadow.getValue()
+                            );
+                    GlStateManager.disableBlend();
+                    GlStateManager.enableDepth();
+                    GlStateManager.popMatrix();
+                }
             }
         }
     }
@@ -602,11 +554,12 @@ public class BedNuker extends Module {
                 BedESP bedESP = (BedESP) Myau.moduleManager.modules.get(BedESP.class);
                 Color color = this.getProgressColor(this.showTarget.getValue());
                 RenderUtil.enableRenderState();
+                BlockPos target = this.targetBed;
                 double newHeight = this.isBed ? bedESP.getHeight() : 1.0;
                 int r = color.getRed();
-                int g = color.getGreen();
-                int b = color.getBlue();
-                RenderUtil.drawBlockBox(this.targetBed, newHeight, r, b, g);
+                int g = color.getBlue();
+                int b = color.getGreen();
+                RenderUtil.drawBlockBox(target, newHeight, r, b, g);
                 RenderUtil.disableRenderState();
             }
         }
@@ -617,7 +570,6 @@ public class BedNuker extends Module {
         this.waitingForStart = false;
         this.whitelistScanAt = -1L;
         this.bedWhitelist.clear();
-        this.restoreSlot();
         this.resetBreaking();
     }
 
@@ -634,10 +586,6 @@ public class BedNuker extends Module {
                 this.waitingForStart = false;
                 this.bedWhitelist.clear();
                 this.scheduleWhitelistScan();
-            }
-            if (this.isEnabled() && this.targetBed != null && this.groundSpeed.getValue() && !mc.thePlayer.isInWater()
-                    && event.getPacket() instanceof C03PacketPlayer) {
-                ((IAccessorC03PacketPlayer) event.getPacket()).setOnGround(true);
             }
             if (this.isEnabled() && this.targetBed != null && this.ignoreVelocity.getValue() == 2 && Myau.delayManager.getDelayModule() != DelayModules.BED_NUKER) {
                 if (event.getPacket() instanceof S12PacketEntityVelocity) {
@@ -671,8 +619,10 @@ public class BedNuker extends Module {
 
     @EventTarget
     public void onRightClick(RightClickMouseEvent event) {
-        if (this.isEnabled() && this.isReady()) {
-            event.setCancelled(true);
+        if (this.isEnabled()) {
+            if (this.isReady()) {
+                event.setCancelled(true);
+            }
         }
     }
 
@@ -687,15 +637,17 @@ public class BedNuker extends Module {
 
     @EventTarget
     public void onSwap(SwapItemEvent event) {
-        if (this.isEnabled() && this.savedSlot != -1) {
-            event.setCancelled(true);
+        if (this.isEnabled()) {
+            if (this.savedSlot != -1) {
+                event.setCancelled(true);
+            }
         }
     }
 
     @Override
     public void onDisabled() {
-        this.restoreSlot();
         this.resetBreaking();
+        this.savedSlot = -1;
         this.waitingForStart = false;
         this.whitelistScanAt = -1L;
         this.bedWhitelist.clear();
