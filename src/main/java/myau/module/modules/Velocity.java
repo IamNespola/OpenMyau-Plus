@@ -15,7 +15,6 @@ import myau.property.properties.ModeProperty;
 import myau.util.MoveUtil;
 import myau.util.PacketUtil;
 import myau.util.RandomUtil;
-import myau.util.TeamUtil;
 import myau.util.TimerUtil;
 import myau.util.rotation.Rotation;
 import net.minecraft.client.Minecraft;
@@ -23,7 +22,6 @@ import net.minecraft.client.entity.EntityPlayerSP;
 import net.minecraft.client.settings.GameSettings;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityLivingBase;
-import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.network.play.client.C02PacketUseEntity;
 import net.minecraft.network.play.client.C0APacketAnimation;
 import net.minecraft.network.play.client.C0BPacketEntityAction;
@@ -39,15 +37,15 @@ public class Velocity extends Module {
 
     public final ModeProperty mode = new ModeProperty("Mode", 0, new String[]{
             "Simple", "AAC", "AACPush", "AACZero", "AACv4",
-            "Reverse", "SmoothReverse", "Jump", "Glitch", "Legit",
+            "Reverse", "SmoothReverse", "Jump", "Glitch", "LegitSmart",
             "Vulcan", "MatrixReduce", "Matrix", "Intave",
             "GrimC03", "Hypixel", "HypixelAir", "BlockSMC", "GrimCombat",
             "Polar", "MatrixNoXZ", "Intave13", "JumpReset", "Intave14",
-            "HypixelPrediction", "GrimReduce", "IntaveReduce"
+            "HypixelPrediction", "GrimReduce", "IntaveReduce", "Reduce"
     });
 
-    public final FloatProperty horizontal = new FloatProperty("Horizontal", 0.0f, -2.0f, 2.0f, () -> mode.getValue() == 0 || mode.getValue() == 9);
-    public final FloatProperty vertical = new FloatProperty("Vertical", 0.0f, -2.0f, 2.0f, () -> mode.getValue() == 0 || mode.getValue() == 9);
+    public final FloatProperty horizontal = new FloatProperty("Horizontal", 0.0f, -2.0f, 2.0f, () -> mode.getValue() == 0);
+    public final FloatProperty vertical = new FloatProperty("Vertical", 0.0f, -2.0f, 2.0f, () -> mode.getValue() == 0);
 
     public final IntProperty predictionChance = new IntProperty("PredChance", 100, 0, 100, () -> mode.getValue() == 24);
     public final FloatProperty predictionHorizontal = new FloatProperty("PredHorizontal", 0.0f, 0.0f, 1.0f, () -> mode.getValue() == 24);
@@ -67,15 +65,7 @@ public class Velocity extends Module {
     public final IntProperty chance = new IntProperty("Chance", 100, 0, 100, () -> mode.getValue() == 7);
     public final IntProperty ticksUntilJump = new IntProperty("JumpTicks", 4, 0, 20, () -> mode.getValue() == 7);
 
-    public final BooleanProperty legitDisableInAir = new BooleanProperty("DisableInAir", true, () -> mode.getValue() == 9);
-    public final BooleanProperty legitJumpInInv = new BooleanProperty("Jump in inv", false, () -> mode.getValue() == 9);
-    public final ModeProperty legitJumpDelayMode = new ModeProperty("Jump delay mode", 1, new String[]{"Delay", "Chance"}, () -> false);
-    public final IntProperty legitMinDelay = new IntProperty("Min delay", 0, 0, 150, () -> false);
-    public final IntProperty legitMaxDelay = new IntProperty("Max delay", 0, 0, 150, () -> false);
-    public final IntProperty legitChance = new IntProperty("Chance", 80, 0, 100, () -> mode.getValue() == 9);
-    public final BooleanProperty legitTargetNearbyCheck = new BooleanProperty("Target nearby check", false, () -> false);
-    public final BooleanProperty legitIgnoreLiquid = new BooleanProperty("Ignore liquid", true, () -> false);
-    public final BooleanProperty legitSkipJumpWithBoost = new BooleanProperty("Skip jump if Jump Boost", true, () -> false);
+    public final IntProperty legitSmartJumpLimit = new IntProperty("LegitSmartJumpLimit", 2, 1, 5, () -> mode.getValue() == 9);
 
     public final BooleanProperty matrixDebug = new BooleanProperty("Debug", false, () -> mode.getValue() == 12);
 
@@ -93,17 +83,21 @@ public class Velocity extends Module {
     public final IntProperty intaveReduceHurtTime = new IntProperty("HurtTime", 9, 1, 10, () -> mode.getValue() == 26);
 
     public final IntProperty jumpResetChance = new IntProperty("JRChance", 100, 0, 100, () -> mode.getValue() == 22);
-    public final BooleanProperty jumpByReceivedHits = new BooleanProperty("JumpByHits", false, () -> mode.getValue() == 22);
-    public final IntProperty hitsUntilJump = new IntProperty("HitsUntilJump", 2, 0, 10, () -> mode.getValue() == 22 && jumpByReceivedHits.getValue());
-    public final BooleanProperty jumpByDelay = new BooleanProperty("JumpByDelay", true, () -> mode.getValue() == 22);
-    public final IntProperty jumpResetTicks = new IntProperty("UntilJump", 2, 0, 20, () -> mode.getValue() == 22 && jumpByDelay.getValue());
 
     public final FloatProperty grimRange = new FloatProperty("GrimRange", 3.5f, 0.0f, 6.0f, () -> mode.getValue() == 18);
     public final IntProperty grimAttacks = new IntProperty("GrimAttacks", 12, 1, 16, () -> mode.getValue() == 18);
 
     public final FloatProperty intave14Timer1 = new FloatProperty("Intave14-T1", 0.3f, 0.1f, 2.0f, () -> mode.getValue() == 23);
     public final FloatProperty intave14Timer2 = new FloatProperty("Intave14-T2", 5.0f, 1.0f, 10.0f, () -> mode.getValue() == 23);
-    public final BooleanProperty grimReduceRequireSwing = new BooleanProperty("GrimReqSwing", false, () -> mode.getValue() == 25);
+    public final IntProperty reduceMinHurtTime = new IntProperty("ReduceMinHurtTime", 5, 0, 10, () -> mode.getValue() == 25);
+    public final IntProperty reduceMaxHurtTime = new IntProperty("ReduceMaxHurtTime", 10, 0, 20, () -> mode.getValue() == 25);
+    public final FloatProperty reduceFactor = new FloatProperty("ReduceFactor", 0.6f, 0.0f, 1.0f, () -> mode.getValue() == 25);
+    public final BooleanProperty reduceOnlyGround = new BooleanProperty("OnlyGround", false, () -> mode.getValue() == 25);
+
+    public final IntProperty reduceAttackCount = new IntProperty("ReduceAttackCount", 3, 0, 20, () -> mode.getValue() == 27);
+    public final BooleanProperty reduceRequireKillAura = new BooleanProperty("ReduceRequireKillAura", false, () -> mode.getValue() == 27);
+    public final FloatProperty reduceAttackHorizontal = new FloatProperty("ReduceAttackHorizontal", 0.6f, 0.0f, 1.0f, () -> mode.getValue() == 27);
+    public final FloatProperty reduceAttackVertical = new FloatProperty("ReduceAttackVertical", 1.0f, 0.0f, 1.0f, () -> mode.getValue() == 27);
 
     private final TimerUtil velocityTimer = new TimerUtil();
     private boolean hasReceivedVelocity = false;
@@ -127,8 +121,8 @@ public class Velocity extends Module {
     private int attackTimer = -1;
     private int lastHurtTime = 0;
     private boolean jumpFlag = false;
-    private boolean jumpResetFallDamage = false;
-    private int grimReduceTicks = 0;
+    private int legitSmartJumpCount = 0;
+    private int reduceRemainingAttackCount = 0;
 
     public Velocity() {
         super("Velocity", false, false, "We Use Ur Dih to Remove KnockBack :D");
@@ -152,8 +146,8 @@ public class Velocity extends Module {
         attackTimer = -1;
         lastHurtTime = 0;
         jumpFlag = false;
-        jumpResetFallDamage = false;
-        grimReduceTicks = 0;
+        legitSmartJumpCount = 0;
+        reduceRemainingAttackCount = 0;
     }
 
     private void reset() {
@@ -353,23 +347,31 @@ public class Velocity extends Module {
                     }
                     break;
                 case 25:
-                    if (grimReduceTicks > 0) {
-                        grimReduceTicks--;
-                        if (player.ticksExisted > 20
-                                && (!grimReduceRequireSwing.getValue() || player.isSwingInProgress)
-                                && !hasBadPacketState()) {
-                            EntityLivingBase target = findGrimReduceTarget();
-                            if (target != null) {
-                                PacketUtil.sendPacket(new C0APacketAnimation());
-                                mc.playerController.attackEntity(player, target);
-                            }
+                    if (hasReceivedVelocity && player.hurtTime >= reduceMinHurtTime.getValue() && player.hurtTime <= reduceMaxHurtTime.getValue()) {
+                        player.motionX *= reduceFactor.getValue();
+                        player.motionY *= reduceFactor.getValue();
+                        player.motionZ *= reduceFactor.getValue();
+
+                        if (reduceOnlyGround.getValue() && !player.onGround) {
+                            hasReceivedVelocity = false;
                         }
                     }
                     break;
                 case 9:
                     if (hasReceivedVelocity) {
-                        handleLegitVelocity();
-                        hasReceivedVelocity = false;
+                        if (player.onGround && player.hurtTime == 9 && player.isSprinting() && mc.currentScreen == null) {
+                            if (legitSmartJumpCount > legitSmartJumpLimit.getValue()) {
+                                legitSmartJumpCount = 0;
+                            } else {
+                                legitSmartJumpCount++;
+                                if (player.ticksExisted % 5 != 0) {
+                                    player.jump();
+                                }
+                            }
+                        } else if (player.hurtTime == 8) {
+                            hasReceivedVelocity = false;
+                            legitSmartJumpCount = 0;
+                        }
                     }
                     break;
                 case 12:
@@ -391,11 +393,16 @@ public class Velocity extends Module {
                     }
                     break;
                 case 22:
-                    if (this.shouldJumpReset(player)) {
-                        player.jump();
-                        limitUntilJump = 0;
-                    } else {
-                        this.updateJumpResetLimit(player);
+                    if (hasReceivedVelocity) {
+                        if (!((IAccessorEntityLivingBase) player).isJumping()
+                                && player.isSprinting()
+                                && player.onGround
+                                && player.hurtTime == 9
+                                && (jumpResetChance.getValue() >= 100 || RandomUtil.nextInt(0, 100) < jumpResetChance.getValue())) {
+                            player.jump();
+                            limitUntilJump = 0;
+                        }
+                        hasReceivedVelocity = false;
                     }
                     break;
                 case 23:
@@ -405,6 +412,21 @@ public class Velocity extends Module {
                         timer.setTimerSpeed(intave14Timer2.getValue());
                     else if (player.hurtTime == 2) timer.setTimerSpeed(1.0f);
                     else timer.setTimerSpeed(1.0f);
+                    break;
+                case 27:
+                    if (reduceRemainingAttackCount > 0) {
+                        KillAura aura = (KillAura) Myau.moduleManager.modules.get(KillAura.class);
+                        EntityLivingBase target = aura != null ? aura.getTarget() : null;
+                        if (target != null && (!reduceRequireKillAura.getValue() || aura.isEnabled())) {
+                            mc.playerController.attackEntity(player, target);
+                            player.motionX *= reduceAttackHorizontal.getValue();
+                            player.motionY *= reduceAttackVertical.getValue();
+                            player.motionZ *= reduceAttackHorizontal.getValue();
+                            reduceRemainingAttackCount--;
+                        } else {
+                            reduceRemainingAttackCount = 0;
+                        }
+                    }
                     break;
             }
         }
@@ -447,9 +469,6 @@ public class Velocity extends Module {
 
             velocityTimer.reset();
             IAccessorS12PacketEntityVelocity accessor = (IAccessorS12PacketEntityVelocity) packet;
-            if (mode.getValue() == 22) {
-                jumpResetFallDamage = packet.getMotionX() == 0 && packet.getMotionZ() == 0 && packet.getMotionY() < 0;
-            }
 
             switch (mode.getValue()) {
                 case 24:
@@ -557,8 +576,10 @@ public class Velocity extends Module {
                 case 23:
                 case 25:
                 case 26:
-                    grimReduceTicks = 14;
                     hasReceivedVelocity = true;
+                    break;
+                case 27:
+                    reduceRemainingAttackCount = reduceAttackCount.getValue();
                     break;
                 case 2:
                     if (jump && player.onGround) jump = false;
@@ -750,131 +771,15 @@ public class Velocity extends Module {
         if (mc.thePlayer.hurtTime == 9) limitUntilJump++;
     }
 
-    private boolean hasBadPacketState() {
-        return Myau.playerStateManager != null
-                && (Myau.playerStateManager.attacking
-                || Myau.playerStateManager.digging
-                || Myau.playerStateManager.placing
-                || Myau.playerStateManager.swapping
-                || Myau.playerStateManager.swinging);
-    }
-
     private boolean intaveNoAction() {
         return mc.thePlayer != null && mc.thePlayer.getActivePotionEffects().parallelStream()
                 .anyMatch(effect -> (intaveNotWhileSpeed.getValue() && effect.getPotionID() == Potion.moveSpeed.getId())
                         || (intaveNotWhileJumpBoost.getValue() && effect.getPotionID() == Potion.jump.getId()));
     }
 
-    private void handleLegitVelocity() {
-        if (mc.thePlayer == null) return;
-        if (legitDisableInAir.getValue() && !mc.thePlayer.onGround) return;
-        if (mc.thePlayer.maxHurtResistantTime != mc.thePlayer.hurtResistantTime || mc.thePlayer.maxHurtResistantTime == 0) return;
-
-        if (legitChance.getValue() >= 100 || RandomUtil.nextInt(0, 100) < legitChance.getValue()) {
-            mc.thePlayer.motionX *= horizontal.getValue() / 100.0D;
-            mc.thePlayer.motionZ *= horizontal.getValue() / 100.0D;
-            mc.thePlayer.motionY *= vertical.getValue() / 100.0D;
-        }
-    }
-
-    private boolean canLegitJump() {
-        if (mc.thePlayer == null || !mc.thePlayer.onGround) return false;
-        if (legitSkipJumpWithBoost.getValue() && mc.thePlayer.isPotionActive(Potion.jump)) {
-            net.minecraft.potion.PotionEffect effect = mc.thePlayer.getActivePotionEffect(Potion.jump);
-            return effect == null || effect.getAmplifier() < 1;
-        }
-        return legitJumpInInv.getValue() || mc.currentScreen == null;
-    }
-
-    private boolean isTargetNearby() {
-        KillAura aura = (KillAura) Myau.moduleManager.modules.get(KillAura.class);
-        if (aura != null && aura.isEnabled() && aura.getTarget() != null && mc.thePlayer.getDistanceToEntity(aura.getTarget()) <= 4.5F) {
-            return true;
-        }
-        return mc.objectMouseOver != null && mc.objectMouseOver.entityHit instanceof EntityLivingBase
-                && mc.thePlayer.getDistanceToEntity(mc.objectMouseOver.entityHit) <= 4.5F;
-    }
-
-    private boolean isValidGrimReduceTarget(EntityLivingBase target) {
-        if (target == null || target == mc.thePlayer || target.isDead || target.deathTime > 0) {
-            return false;
-        }
-        if (target instanceof EntityPlayer) {
-            EntityPlayer player = (EntityPlayer) target;
-            if (TeamUtil.isFriend(player) || TeamUtil.isBot(player) || TeamUtil.isSameTeam(player)) {
-                return false;
-            }
-        }
-        return mc.thePlayer.getDistanceToEntity(target) <= 7.0F;
-    }
-
-    private EntityLivingBase findGrimReduceTarget() {
-        KillAura killAura = (KillAura) Myau.moduleManager.modules.get(KillAura.class);
-        if (killAura != null) {
-            EntityLivingBase killAuraTarget = killAura.getTarget();
-            if (this.isValidGrimReduceTarget(killAuraTarget)) {
-                return killAuraTarget;
-            }
-        }
-
-        if (mc.objectMouseOver != null && mc.objectMouseOver.entityHit instanceof EntityLivingBase) {
-            EntityLivingBase target = (EntityLivingBase) mc.objectMouseOver.entityHit;
-            if (this.isValidGrimReduceTarget(target)) {
-                return target;
-            }
-        }
-
-        EntityLivingBase nearest = null;
-        double nearestDistance = 7.0D;
-        for (Entity entity : mc.theWorld.loadedEntityList) {
-            if (entity instanceof EntityLivingBase) {
-                EntityLivingBase target = (EntityLivingBase) entity;
-                if (this.isValidGrimReduceTarget(target)) {
-                    double distance = mc.thePlayer.getDistanceToEntity(target);
-                    if (distance <= nearestDistance) {
-                        nearestDistance = distance;
-                        nearest = target;
-                    }
-                }
-            }
-        }
-
-        return nearest;
-    }
-
     @Override
     public String[] getSuffix() {
         return new String[]{CaseFormat.UPPER_UNDERSCORE.to(CaseFormat.UPPER_CAMEL, this.mode.getModeString())};
-    }
-
-    private boolean shouldJumpReset(EntityPlayerSP player) {
-        if (player.hurtTime != 9 || !player.onGround || !player.isSprinting() || jumpResetFallDamage) {
-            return false;
-        }
-        if (!this.isJumpResetCooldownOver()) {
-            return false;
-        }
-        return jumpResetChance.getValue() >= 100 || RandomUtil.nextInt(0, 100) < jumpResetChance.getValue();
-    }
-
-    private boolean isJumpResetCooldownOver() {
-        if (jumpByReceivedHits.getValue()) {
-            return limitUntilJump >= hitsUntilJump.getValue();
-        }
-        if (jumpByDelay.getValue()) {
-            return limitUntilJump >= jumpResetTicks.getValue();
-        }
-        return true;
-    }
-
-    private void updateJumpResetLimit(EntityPlayerSP player) {
-        if (jumpByReceivedHits.getValue()) {
-            if (player.hurtTime == 9) {
-                limitUntilJump++;
-            }
-            return;
-        }
-        limitUntilJump++;
     }
 
     private Rotation getRotations(Entity entity) {

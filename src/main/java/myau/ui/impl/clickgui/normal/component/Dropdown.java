@@ -41,11 +41,21 @@ public class Dropdown extends Component {
         this.expandAnim = AnimationUtil.animateSmooth(targetAnim, this.expandAnim, 16.0f, deltaTime);
 
         if (isMouseOver(mouseX, mouseY, scrollOffset)) Gui.drawRect(x, scrolledY, x + width, scrolledY + headerHeight, withAlpha(CleanTheme.ROW_HOVER, alpha));
-        String name = trimToWidth(modeProperty.getName(), Math.max(12, width - 34));
-        String value = trimToWidth(modeProperty.getModeString(), Math.max(12, width - 22 - mc.fontRendererObj.getStringWidth(name)));
-        int valueX = x + width - 11 - mc.fontRendererObj.getStringWidth(value);
-        mc.fontRendererObj.drawStringWithShadow(name, x + 5, scrolledY + 3, withAlpha(CleanTheme.TEXT, alpha));
-        mc.fontRendererObj.drawStringWithShadow(value, Math.max(x + 5 + mc.fontRendererObj.getStringWidth(name) + 4, valueX), scrolledY + 3, withAlpha(CleanTheme.MUTED, alpha));
+        String name = modeProperty.getName();
+        if (mc.fontRendererObj.getStringWidth(name) > width - 16) {
+            name = trimToWidth(name, Math.max(12, width - 16));
+        }
+        String value = modeProperty.getModeString();
+        if (headerHeight >= 22) {
+            value = trimToWidth(value, Math.max(12, width - 16));
+            mc.fontRendererObj.drawStringWithShadow(name, x + 5, scrolledY + 2, withAlpha(CleanTheme.TEXT, alpha));
+            mc.fontRendererObj.drawStringWithShadow(value, x + 7, scrolledY + 12, withAlpha(CleanTheme.MUTED, alpha));
+        } else {
+            value = trimToWidth(value, Math.max(12, width - 22 - mc.fontRendererObj.getStringWidth(name)));
+            int valueX = x + width - 11 - mc.fontRendererObj.getStringWidth(value);
+            mc.fontRendererObj.drawStringWithShadow(name, x + 5, scrolledY + 3, withAlpha(CleanTheme.TEXT, alpha));
+            mc.fontRendererObj.drawStringWithShadow(value, Math.max(x + 5 + mc.fontRendererObj.getStringWidth(name) + 4, valueX), scrolledY + 3, withAlpha(CleanTheme.MUTED, alpha));
+        }
         mc.fontRendererObj.drawStringWithShadow(expanded ? "<" : ">", x + width - 8, scrolledY + 3, withAlpha(CleanTheme.MUTED, alpha));
 
         if (expandAnim > 0.5f) {

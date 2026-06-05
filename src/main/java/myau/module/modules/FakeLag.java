@@ -22,7 +22,6 @@ import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.network.Packet;
 import net.minecraft.network.handshake.client.C00Handshake;
-import net.minecraft.network.play.client.C00PacketKeepAlive;
 import net.minecraft.network.play.client.C01PacketChatMessage;
 import net.minecraft.network.play.client.C02PacketUseEntity;
 import net.minecraft.network.play.client.C03PacketPlayer;
@@ -47,7 +46,7 @@ import java.util.LinkedList;
 public class FakeLag extends Module {
     private static final Minecraft mc = Minecraft.getMinecraft();
 
-    public final ModeProperty mode = new ModeProperty("mode", 0, new String[]{"Latency", "Dynamic"});
+    public final ModeProperty mode = new ModeProperty("mode", 0, new String[]{"Latence", "Dynamic"});
 
     public final IntProperty delay = new IntProperty("delay", 550, 0, 1000, () -> mode.getValue() == 0);
     public final IntProperty recoilTime = new IntProperty("recoil-time", 750, 0, 2000, () -> mode.getValue() == 0);
@@ -109,14 +108,17 @@ public class FakeLag extends Module {
     @EventTarget
     public void onPacket(PacketEvent event) {
         if (!this.isEnabled() || mc.thePlayer == null || mc.theWorld == null || event.isCancelled()) return;
-        if (event.getType() != EventType.SEND) return;
-        if (this.mode.getValue() == 1) {
-            handleDynamicAttackTarget(event.getPacket());
-            return;
-        }
-        if (this.ignoreWholeTick || this.wasNearEnemy) return;
 
         Packet<?> packet = event.getPacket();
+
+        if (this.mode.getValue() == 1) {
+            if (event.getType() == EventType.SEND) {
+                handleDynamicAttackTarget(packet);
+            }
+            return;
+        }
+
+        if (this.ignoreWholeTick || this.wasNearEnemy) return;
         if (this.isIgnoredPacket(packet)) return;
 
         if (this.pauseOnNoMove.getValue() && !this.isMoving()) {
@@ -149,6 +151,8 @@ public class FakeLag extends Module {
             this.blink(true);
             return;
         }
+
+        if (event.getType() != EventType.SEND) return;
 
         event.setCancelled(true);
         this.packetQueue.add(new QueueData(packet, System.currentTimeMillis()));
@@ -295,7 +299,6 @@ public class FakeLag extends Module {
                 || packet instanceof C00PacketServerQuery
                 || packet instanceof C01PacketPing
                 || packet instanceof C01PacketChatMessage
-                || packet instanceof C00PacketKeepAlive
                 || packet instanceof S01PacketPong;
     }
 

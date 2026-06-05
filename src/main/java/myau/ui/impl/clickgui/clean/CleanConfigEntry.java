@@ -2,6 +2,7 @@ package myau.ui.impl.clickgui.clean;
 
 import myau.config.Config;
 import myau.ui.impl.clickgui.normal.component.Component;
+import myau.util.RenderUtil;
 import net.minecraft.client.gui.Gui;
 
 public class CleanConfigEntry extends Component {
@@ -17,10 +18,10 @@ public class CleanConfigEntry extends Component {
         int scrolledY = y - scrollOffset;
         int alpha = (int) (255 * animationProgress);
         boolean active = configName.equalsIgnoreCase(Config.lastConfig);
-        if (isMouseOver(mouseX, mouseY, scrollOffset)) Gui.drawRect(x, scrolledY, x + width, scrolledY + height, withAlpha(CleanTheme.ROW_HOVER, alpha));
-        if (active) Gui.drawRect(x, scrolledY + 1, x + 2, scrolledY + height - 1, withAlpha(CleanTheme.ACCENT, alpha));
-        String displayName = trimToWidth(configName, width - 8);
-        mc.fontRendererObj.drawStringWithShadow(displayName, x + 5, scrolledY + 3, active ? withAlpha(0xFFFFFFFF, alpha) : withAlpha(0xFFBDBDBD, alpha));
+        if (isMouseOver(mouseX, mouseY, scrollOffset)) RenderUtil.drawRoundedRect(x + 1, scrolledY, width - 2, height, 3.0F, CleanTheme.withAlpha(CleanTheme.ROW_HOVER, alpha), true, true, true, true);
+        if (active) Gui.drawRect(x + 1, scrolledY + 2, x + 3, scrolledY + height - 2, CleanTheme.withAlpha(CleanTheme.ACCENT, alpha));
+        String displayName = trimToWidth(configName, width - 9);
+        mc.fontRendererObj.drawStringWithShadow(displayName, x + 6, scrolledY + 3, CleanTheme.withAlpha(active ? CleanTheme.TEXT_ACTIVE : 0xFFBDBDBD, alpha));
     }
 
     public float getCurrentHeight() {
@@ -29,10 +30,6 @@ public class CleanConfigEntry extends Component {
 
     public boolean matches(String searchQuery) {
         return searchQuery == null || searchQuery.trim().isEmpty() || configName.toLowerCase().contains(searchQuery.trim().toLowerCase());
-    }
-
-    private int withAlpha(int color, int alpha) {
-        return (color & 0x00FFFFFF) | (Math.max(0, Math.min(255, alpha)) << 24);
     }
 
     private String trimToWidth(String text, int maxWidth) {

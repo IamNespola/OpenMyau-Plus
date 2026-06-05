@@ -297,11 +297,11 @@ public class CleanClickGuiScreen extends GuiScreen {
             int scaledMouseY = scaleMouse(mouseY, cleanScale);
             GlStateManager.pushMatrix();
             GlStateManager.scale(cleanScale, cleanScale, 1.0F);
-            drawSearchBox(screenAlpha);
+            drawSearchBox(screenAlpha, cleanScale);
             for (CleanFrame frame : frames) {
                 frame.render(scaledMouseX, scaledMouseY, partialTicks, screenAlpha, false, scrollY, deltaTime, searchQuery);
             }
-            drawKeybinds(screenAlpha);
+            drawKeybinds(screenAlpha, cleanScale);
             GlStateManager.popMatrix();
         }
         try {
@@ -312,27 +312,27 @@ public class CleanClickGuiScreen extends GuiScreen {
         super.drawScreen(mouseX, mouseY, partialTicks);
     }
 
-    private void drawSearchBox(float animationProgress) {
+    private void drawSearchBox(float animationProgress, float scale) {
         int alpha = (int) (255 * animationProgress);
-        int x = getSearchX();
+        int x = getSearchX(scale);
         int y = 6;
-        Gui.drawRect(x, y, x + SEARCH_WIDTH, y + SEARCH_HEIGHT, withAlpha(CleanTheme.PANEL_DARK, alpha));
-        Gui.drawRect(x, y + SEARCH_HEIGHT - 1, x + SEARCH_WIDTH, y + SEARCH_HEIGHT, withAlpha(searchFocused ? CleanTheme.ACCENT : 0xFF3A3A3A, alpha));
+        Gui.drawRect(x, y, x + SEARCH_WIDTH, y + SEARCH_HEIGHT, CleanTheme.withAlpha(CleanTheme.PANEL_DARK, alpha));
+        Gui.drawRect(x, y + SEARCH_HEIGHT - 1, x + SEARCH_WIDTH, y + SEARCH_HEIGHT, CleanTheme.withAlpha(searchFocused ? CleanTheme.ACCENT : 0xFF3A3A3A, alpha));
         String text = searchQuery.isEmpty() ? "Search modules..." : searchQuery;
         int color = searchQuery.isEmpty() ? CleanTheme.MUTED : CleanTheme.TEXT;
-        this.fontRendererObj.drawStringWithShadow(text, x + 4, y + 2, withAlpha(color, alpha));
+        this.fontRendererObj.drawStringWithShadow(text, x + 4, y + 2, CleanTheme.withAlpha(color, alpha));
         if (searchFocused && (System.currentTimeMillis() / 450L) % 2L == 0L) {
             int cursorX = x + 4 + this.fontRendererObj.getStringWidth(searchQuery);
-            Gui.drawRect(cursorX, y + 2, cursorX + 1, y + SEARCH_HEIGHT - 2, withAlpha(CleanTheme.ACCENT, alpha));
+            Gui.drawRect(cursorX, y + 2, cursorX + 1, y + SEARCH_HEIGHT - 2, CleanTheme.withAlpha(CleanTheme.ACCENT, alpha));
         }
     }
 
-    private int getSearchX() {
-        return this.width / 2 - SEARCH_WIDTH / 2;
+    private int getSearchX(float scale) {
+        return getLogicalWidth(scale) / 2 - SEARCH_WIDTH / 2;
     }
 
     private boolean isMouseOverSearch(int mouseX, int mouseY) {
-        int x = getSearchX();
+        int x = getSearchX(getCleanScale());
         int y = 6;
         return mouseX >= x && mouseX <= x + SEARCH_WIDTH && mouseY >= y && mouseY <= y + SEARCH_HEIGHT;
     }
@@ -342,29 +342,29 @@ public class CleanClickGuiScreen extends GuiScreen {
         for (KeyBinding key : keys) KeyBinding.setKeyBindState(key.getKeyCode(), Keyboard.isKeyDown(key.getKeyCode()));
     }
 
-    private void drawKeybinds(float animationProgress) {
+    private void drawKeybinds(float animationProgress, float scale) {
         List<Module> bound = new ArrayList<>();
         for (Module module : Myau.moduleManager.modules.values()) if (module.getKey() != 0) bound.add(module);
         int alpha = (int) (255 * animationProgress);
         int boxWidth = 78;
         int boxHeight = 12 + bound.size() * 12;
-        int x = this.width - boxWidth - 4;
-        int y = this.height - boxHeight - 4;
-        Gui.drawRect(x, y, x + boxWidth, y + boxHeight, withAlpha(CleanTheme.PANEL, alpha));
-        Gui.drawRect(x, y, x + 2, y + 12, withAlpha(CleanTheme.ACCENT, alpha));
-        Gui.drawRect(x, y, x + boxWidth, y + 12, withAlpha(CleanTheme.PANEL_DARK, alpha));
-        this.fontRendererObj.drawStringWithShadow("Keybinds", x + 5, y + 3, withAlpha(CleanTheme.TEXT, alpha));
+        int x = getLogicalWidth(scale) - boxWidth - 4;
+        int y = getLogicalHeight(scale) - boxHeight - 4;
+        Gui.drawRect(x, y, x + boxWidth, y + boxHeight, CleanTheme.withAlpha(CleanTheme.PANEL, alpha));
+        Gui.drawRect(x, y, x + 2, y + 12, CleanTheme.withAlpha(CleanTheme.ACCENT, alpha));
+        Gui.drawRect(x, y, x + boxWidth, y + 12, CleanTheme.withAlpha(CleanTheme.PANEL_DARK, alpha));
+        this.fontRendererObj.drawStringWithShadow("Keybinds", x + 5, y + 3, CleanTheme.withAlpha(CleanTheme.TEXT, alpha));
         int rowY = y + 12;
         for (Module module : bound) {
-            this.fontRendererObj.drawStringWithShadow(module.getName(), x + 5, rowY + 3, withAlpha(0xFFBDBDBD, alpha));
+            this.fontRendererObj.drawStringWithShadow(module.getName(), x + 5, rowY + 3, CleanTheme.withAlpha(0xFFBDBDBD, alpha));
             String key = KeyBindUtil.getKeyName(module.getKey());
-            this.fontRendererObj.drawStringWithShadow(key, x + boxWidth - 5 - this.fontRendererObj.getStringWidth(key), rowY + 3, withAlpha(CleanTheme.MUTED, alpha));
+            this.fontRendererObj.drawStringWithShadow(key, x + boxWidth - 5 - this.fontRendererObj.getStringWidth(key), rowY + 3, CleanTheme.withAlpha(CleanTheme.MUTED, alpha));
             rowY += 12;
         }
     }
 
     private int withAlpha(int color, int alpha) {
-        return (color & 0x00FFFFFF) | (Math.max(0, Math.min(255, alpha)) << 24);
+        return CleanTheme.withAlpha(color, alpha);
     }
 
     private float getCleanScale() {
@@ -374,6 +374,14 @@ public class CleanClickGuiScreen extends GuiScreen {
             return Math.max(0.6F, Math.min(1.4F, scale));
         }
         return 1.0F;
+    }
+
+    private int getLogicalWidth(float scale) {
+        return Math.max(1, (int) (this.width / scale));
+    }
+
+    private int getLogicalHeight(float scale) {
+        return Math.max(1, (int) (this.height / scale));
     }
 
     private int scaleMouse(int coordinate, float scale) {
@@ -402,9 +410,11 @@ public class CleanClickGuiScreen extends GuiScreen {
         for (int i = frames.size() - 1; i >= 0; i--) {
             CleanFrame frame = frames.get(i);
             if (frame.mouseClicked(scaledMouseX, scaledMouseY, mouseButton, scrollY, searchQuery)) {
-                draggingComponent = frame;
-                frames.remove(i);
-                frames.add(frame);
+                if (frame.wasHeaderClicked()) {
+                    draggingComponent = frame;
+                    frames.remove(i);
+                    frames.add(frame);
+                }
                 return;
             }
         }
@@ -489,13 +499,14 @@ public class CleanClickGuiScreen extends GuiScreen {
     private int getMaxScroll() {
         int max = 0;
         for (CleanFrame frame : frames) max = Math.max(max, frame.getY() + (int) frame.getCurrentHeight());
-        ScaledResolution sr = new ScaledResolution(mc);
-        return Math.max(0, max - sr.getScaledHeight() + 20);
+        return Math.max(0, max - getLogicalHeight(getCleanScale()) + 20);
     }
 
     @Override
     public void onGuiClosed() {
         super.onGuiClosed();
+        for (CleanFrame frame : frames) frame.saveState();
+        CleanGuiState.save();
         Module guiModule = Myau.moduleManager.getModule("ClickGUI");
         if (guiModule != null) guiModule.setEnabled(false);
     }

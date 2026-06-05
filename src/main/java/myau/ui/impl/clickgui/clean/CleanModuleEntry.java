@@ -13,6 +13,7 @@ import myau.ui.impl.clickgui.normal.component.Slider;
 import myau.ui.impl.clickgui.normal.component.Switch;
 import myau.ui.impl.clickgui.normal.component.TextField;
 import myau.util.AnimationUtil;
+import myau.util.RenderUtil;
 import net.minecraft.client.gui.Gui;
 
 import java.util.ArrayList;
@@ -32,26 +33,31 @@ public class CleanModuleEntry extends Component {
 
     private void initializePropertyComponents() {
         int currentY = y + height;
-        propertyComponents.add(new KeybindComponent(module, x, currentY, width, 20));
+        KeybindComponent keybind = new KeybindComponent(module, x, currentY, width, 22);
+        propertyComponents.add(keybind);
+        currentY += keybind.getHeight();
         if (Myau.propertyManager == null) return;
         ArrayList<Property<?>> properties = Myau.propertyManager.properties.get(module.getClass());
         if (properties == null) return;
         for (Property<?> property : properties) {
             Component component = null;
             if (property instanceof BooleanProperty) {
-                component = new Switch((BooleanProperty) property, x, currentY, width, 20);
+                component = new Switch((BooleanProperty) property, x, currentY, width, 22);
             } else if (property instanceof IntProperty || property instanceof FloatProperty || property instanceof PercentProperty) {
-                component = new Slider(property, x, currentY, width, 20);
+                component = new Slider(property, x, currentY, width, 26);
             } else if (property instanceof ModeProperty) {
-                component = new Dropdown((ModeProperty) property, x, currentY, width, 20);
+                component = new Dropdown((ModeProperty) property, x, currentY, width, 22);
             } else if (property instanceof MultiModeProperty) {
-                component = new MultiDropdown((MultiModeProperty) property, x, currentY, width, 20);
+                component = new MultiDropdown((MultiModeProperty) property, x, currentY, width, 22);
             } else if (property instanceof ColorProperty) {
                 component = new ColorPicker((ColorProperty) property, x, currentY, width, 60);
             } else if (property instanceof TextProperty) {
-                component = new TextField((TextProperty) property, x, currentY, width, 20);
+                component = new TextField((TextProperty) property, x, currentY, width, 22);
             }
-            if (component != null) propertyComponents.add(component);
+            if (component != null) {
+                propertyComponents.add(component);
+                currentY += component.getHeight();
+            }
         }
     }
 
@@ -69,11 +75,13 @@ public class CleanModuleEntry extends Component {
     public void render(int mouseX, int mouseY, float partialTicks, float animationProgress, boolean isLast, int scrollOffset, float deltaTime) {
         int scrolledY = y - scrollOffset;
         int alpha = (int) (255 * animationProgress);
-        if (isMouseOverHeader(mouseX, mouseY, scrollOffset)) Gui.drawRect(x, scrolledY, x + width, scrolledY + height, withAlpha(CleanTheme.ROW_HOVER, alpha));
-        if (module.isEnabled()) Gui.drawRect(x, scrolledY + 1, x + 2, scrolledY + height - 1, withAlpha(CleanTheme.ACCENT, alpha));
-        String moduleName = trimToWidth(module.getName(), width - (!propertyComponents.isEmpty() ? 17 : 8));
-        mc.fontRendererObj.drawStringWithShadow(moduleName, x + 5, scrolledY + 3, module.isEnabled() ? withAlpha(0xFFFFFFFF, alpha) : withAlpha(0xFFBDBDBD, alpha));
-        if (!propertyComponents.isEmpty()) mc.fontRendererObj.drawStringWithShadow(expanded ? "<" : ">", x + width - 9, scrolledY + 3, withAlpha(CleanTheme.MUTED, alpha));
+        boolean hovered = isMouseOverHeader(mouseX, mouseY, scrollOffset);
+        if (hovered) RenderUtil.drawRoundedRect(x + 1, scrolledY, width - 2, height, 3.0F, CleanTheme.withAlpha(CleanTheme.ROW_HOVER, alpha), true, true, true, true);
+        if (module.isEnabled()) Gui.drawRect(x + 1, scrolledY + 2, x + 3, scrolledY + height - 2, CleanTheme.withAlpha(CleanTheme.ACCENT, alpha));
+        String moduleName = trimToWidth(module.getName(), width - (!propertyComponents.isEmpty() ? 18 : 9));
+        int textColor = module.isEnabled() ? CleanTheme.TEXT_ACTIVE : 0xFFBDBDBD;
+        mc.fontRendererObj.drawStringWithShadow(moduleName, x + 6, scrolledY + 3, CleanTheme.withAlpha(textColor, alpha));
+        if (!propertyComponents.isEmpty()) mc.fontRendererObj.drawStringWithShadow(expanded ? "<" : ">", x + width - 10, scrolledY + 3, CleanTheme.withAlpha(CleanTheme.MUTED, alpha));
 
         float targetSettingsHeight = 0.0F;
         if (expanded) {
@@ -82,23 +90,19 @@ public class CleanModuleEntry extends Component {
         currentSettingsHeight = AnimationUtil.animateSmooth(targetSettingsHeight, currentSettingsHeight, 12.0F, deltaTime);
 
         if (currentSettingsHeight > 1.0F) {
-            Gui.drawRect(x + 2, scrolledY + height, x + width, scrolledY + height + (int) currentSettingsHeight, withAlpha(0xAA0A0A0A, alpha));
+            RenderUtil.drawRoundedRect(x + 3, scrolledY + height, width - 5, currentSettingsHeight, 3.0F, CleanTheme.withAlpha(CleanTheme.PANEL_ELEVATED, alpha), false, false, true, true);
             float componentY = y + height;
             for (Component component : propertyComponents) {
                 if (!isComponentVisible(component)) continue;
                 if (componentY - (y + height) < currentSettingsHeight) {
-                    component.setX(x + 2);
+                    component.setX(x + 4);
                     component.setY((int) componentY);
-                    component.setWidth(width - 4);
+                    component.setWidth(width - 8);
                     component.render(mouseX, mouseY, partialTicks, animationProgress, false, scrollOffset, deltaTime);
                 }
                 componentY += component.getHeight();
             }
         }
-    }
-
-    private int withAlpha(int color, int alpha) {
-        return (color & 0x00FFFFFF) | (Math.max(0, Math.min(255, alpha)) << 24);
     }
 
     private String trimToWidth(String text, int maxWidth) {
@@ -119,7 +123,17 @@ public class CleanModuleEntry extends Component {
     }
 
     public boolean matches(String searchQuery) {
-        return searchQuery == null || searchQuery.trim().isEmpty() || module.getName().toLowerCase().contains(searchQuery.trim().toLowerCase());
+        if (searchQuery == null || searchQuery.trim().isEmpty()) return true;
+        String query = searchQuery.trim().toLowerCase();
+        if (module.getName().toLowerCase().contains(query)) return true;
+        if (module.getDescription() != null && module.getDescription().toLowerCase().contains(query)) return true;
+        if (Myau.propertyManager == null) return false;
+        ArrayList<Property<?>> properties = Myau.propertyManager.properties.get(module.getClass());
+        if (properties == null) return false;
+        for (Property<?> property : properties) {
+            if (property.getName().toLowerCase().contains(query)) return true;
+        }
+        return false;
     }
 
     private boolean isMouseOverHeader(int mouseX, int mouseY, int scrollOffset) {
@@ -183,4 +197,3 @@ public class CleanModuleEntry extends Component {
         }
     }
 }
-

@@ -2,6 +2,7 @@ package myau.ui.impl.clickgui.clean;
 
 import myau.module.Module;
 import myau.ui.impl.clickgui.normal.component.Component;
+import myau.util.RenderUtil;
 import net.minecraft.client.gui.Gui;
 
 import java.util.ArrayList;
@@ -15,6 +16,7 @@ public class CleanFrame extends Component {
     private int dragY;
     private boolean dragging;
     private boolean expanded = true;
+    private boolean headerClicked;
     private float currentHeight;
 
     public CleanFrame(String categoryName, List<Module> modules, int x, int y, int width, int height) {
@@ -22,6 +24,7 @@ public class CleanFrame extends Component {
         this.categoryName = categoryName;
         this.currentHeight = height;
         for (Module module : modules) moduleEntries.add(new CleanModuleEntry(module, x, 0, width, 12));
+        applySavedState();
     }
 
     public CleanFrame(String categoryName, List<String> configs, int x, int y, int width, int height, boolean configFrame) {
@@ -29,6 +32,36 @@ public class CleanFrame extends Component {
         this.categoryName = categoryName;
         this.currentHeight = height;
         for (String config : configs) configEntries.add(new CleanConfigEntry(config, x, 0, width, 12));
+        applySavedState();
+    }
+
+    private void applySavedState() {
+        CleanGuiState.FrameState state = CleanGuiState.get(categoryName);
+        if (state != null) {
+            this.x = state.x;
+            this.y = state.y;
+            this.expanded = state.expanded;
+        }
+    }
+
+    public void saveState() {
+        CleanGuiState.put(categoryName, x, y, expanded);
+    }
+
+    public String getCategoryName() {
+        return categoryName;
+    }
+
+    public boolean isExpanded() {
+        return expanded;
+    }
+
+    public boolean isDragging() {
+        return dragging;
+    }
+
+    public boolean wasHeaderClicked() {
+        return headerClicked;
     }
 
     public boolean isAnyComponentBinding() {
@@ -55,26 +88,28 @@ public class CleanFrame extends Component {
             for (CleanConfigEntry entry : configEntries) if (entry.matches(searchQuery)) currentHeight += entry.getCurrentHeight();
         }
         int alpha = (int) (255 * animationProgress);
-        Gui.drawRect(x, scrolledY, x + width, scrolledY + (int) currentHeight, withAlpha(CleanTheme.PANEL, alpha));
-        Gui.drawRect(x, scrolledY, x + 2, scrolledY + height, withAlpha(CleanTheme.ACCENT, alpha));
-        Gui.drawRect(x, scrolledY, x + width, scrolledY + height, withAlpha(CleanTheme.PANEL_DARK, alpha));
-        mc.fontRendererObj.drawStringWithShadow(categoryName, x + 6, scrolledY + 3, withAlpha(CleanTheme.TEXT, alpha));
-        mc.fontRendererObj.drawStringWithShadow(expanded ? "-" : "+", x + width - 9, scrolledY + 3, withAlpha(CleanTheme.MUTED, alpha));
+        int panel = CleanTheme.withAlpha(CleanTheme.PANEL, alpha);
+        int header = CleanTheme.withAlpha(CleanTheme.PANEL_DARK, alpha);
+        RenderUtil.drawRoundedRect(x, scrolledY, width, Math.max(height, currentHeight), 4.0F, panel, true, true, true, true);
+        RenderUtil.drawRoundedRect(x, scrolledY, width, height, 4.0F, header, true, true, !expanded, !expanded);
+        Gui.drawRect(x, scrolledY + 2, x + 2, scrolledY + height - 2, CleanTheme.withAlpha(CleanTheme.ACCENT, alpha));
+        mc.fontRendererObj.drawStringWithShadow(categoryName, x + 7, scrolledY + 3, CleanTheme.withAlpha(CleanTheme.TEXT, alpha));
+        mc.fontRendererObj.drawStringWithShadow(expanded ? "-" : "+", x + width - 10, scrolledY + 3, CleanTheme.withAlpha(CleanTheme.MUTED, alpha));
         if (!expanded) return;
         int currentY = y + height;
         for (CleanModuleEntry entry : moduleEntries) {
             if (!entry.matches(searchQuery)) continue;
-            entry.setX(x);
+            entry.setX(x + 2);
             entry.setY(currentY);
-            entry.setWidth(width);
+            entry.setWidth(width - 4);
             entry.render(mouseX, mouseY, partialTicks, animationProgress, false, scrollOffset, deltaTime);
             currentY += (int) entry.getCurrentHeight();
         }
         for (CleanConfigEntry entry : configEntries) {
             if (!entry.matches(searchQuery)) continue;
-            entry.setX(x);
+            entry.setX(x + 2);
             entry.setY(currentY);
-            entry.setWidth(width);
+            entry.setWidth(width - 4);
             entry.render(mouseX, mouseY, partialTicks, animationProgress, false, scrollOffset, deltaTime);
             currentY += (int) entry.getCurrentHeight();
         }
@@ -84,10 +119,6 @@ public class CleanFrame extends Component {
         for (CleanModuleEntry entry : moduleEntries) if (entry.matches(searchQuery)) return true;
         for (CleanConfigEntry entry : configEntries) if (entry.matches(searchQuery)) return true;
         return false;
-    }
-
-    private int withAlpha(int color, int alpha) {
-        return (color & 0x00FFFFFF) | (Math.max(0, Math.min(255, alpha)) << 24);
     }
 
     @Override
@@ -101,8 +132,10 @@ public class CleanFrame extends Component {
     }
 
     public boolean mouseClicked(int mouseX, int mouseY, int mouseButton, int scrollOffset, String searchQuery) {
+        headerClicked = false;
         if (searchQuery != null && !searchQuery.trim().isEmpty() && !hasMatches(searchQuery)) return false;
         if (isMouseOverHeader(mouseX, mouseY, scrollOffset)) {
+            headerClicked = true;
             if (mouseButton == 0) {
                 dragging = true;
                 dragX = mouseX - x;
@@ -110,6 +143,8 @@ public class CleanFrame extends Component {
                 return true;
             } else if (mouseButton == 1) {
                 expanded = !expanded;
+                saveState();
+                CleanGuiState.save();
                 return true;
             }
         }
@@ -131,7 +166,11 @@ public class CleanFrame extends Component {
 
     @Override
     public void mouseReleased(int mouseX, int mouseY, int mouseButton, int scrollOffset) {
-        dragging = false;
+        if (dragging) {
+            dragging = false;
+            saveState();
+            CleanGuiState.save();
+        }
         if (expanded) {
             for (CleanModuleEntry entry : moduleEntries) entry.mouseReleased(mouseX, mouseY, mouseButton, scrollOffset);
             for (CleanConfigEntry entry : configEntries) entry.mouseReleased(mouseX, mouseY, mouseButton, scrollOffset);
@@ -157,5 +196,3 @@ public class CleanFrame extends Component {
         return currentHeight;
     }
 }
-
-
