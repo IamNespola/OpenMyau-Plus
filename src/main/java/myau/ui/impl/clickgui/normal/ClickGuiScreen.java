@@ -134,6 +134,7 @@ public class ClickGuiScreen extends GuiScreen {
         List<Module> miscModules = Arrays.asList(
                 Myau.moduleManager.getModule(Spammer.class),
                 Myau.moduleManager.getModule(BedNuker.class),
+                Myau.moduleManager.getModule(AntiBot.class),
                 Myau.moduleManager.getModule(BedTracker.class),
                 Myau.moduleManager.getModule(LightningTracker.class),
                 Myau.moduleManager.getModule(NoRotate.class),

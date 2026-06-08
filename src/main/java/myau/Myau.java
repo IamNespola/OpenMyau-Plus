@@ -149,6 +149,7 @@ public class Myau {
         moduleManager.modules.put(DynamicIsland.class, new DynamicIsland());
         moduleManager.modules.put(Scaffold.class, new Scaffold());
         moduleManager.modules.put(AutoBlockIn.class, new AutoBlockIn());
+        moduleManager.modules.put(AntiBot.class, new AntiBot());
         moduleManager.modules.put(SeasonDisplay.class, new SeasonDisplay());
         moduleManager.modules.put(Spammer.class, new Spammer());
         moduleManager.modules.put(Speed.class, new Speed());
