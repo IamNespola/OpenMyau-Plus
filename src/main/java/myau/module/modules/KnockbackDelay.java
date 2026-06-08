@@ -27,7 +27,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
  * KnockbackDelay — delays incoming velocity + transaction packets
  * to manipulate when knockback is applied to the player.
  *
- * Queues server-bound packets while the player is hurt and releases
+ * Queues inbound packets while the player is hurt and releases
  * them after a configurable delay, keeping packet order intact.
  */
 public class KnockbackDelay extends Module {
@@ -99,26 +99,9 @@ public class KnockbackDelay extends Module {
 
         Packet<?> packet = event.getPacket();
 
-        // Always let these critical/cosmetic packets through immediately
-        if (packet instanceof S07PacketRespawn) return;
-        if (packet instanceof S03PacketTimeUpdate) return;
-        if (packet instanceof S06PacketUpdateHealth) return;
-        if (packet instanceof S13PacketDestroyEntities) return;
-        if (packet instanceof S02PacketChat) return;
-        if (packet instanceof S25PacketBlockBreakAnim) return;
-        if (packet instanceof S2FPacketSetSlot) return;
-
-        if (packet instanceof S2BPacketChangeGameState) {
-            int state = ((S2BPacketChangeGameState) packet).getGameState();
-            if (state == 1 || state == 2 || state == 7 || state == 8) return;
-        }
-
-        if (packet instanceof S2CPacketSpawnGlobalEntity) {
-            if (((S2CPacketSpawnGlobalEntity) packet).func_149053_g() == 1) return;
-        }
-
-        if (packet instanceof S29PacketSoundEffect) {
-            if ("ambient.weather.thunder".equalsIgnoreCase(((S29PacketSoundEffect) packet).getSoundName())) return;
+        if (packet instanceof S07PacketRespawn) {
+            reset();
+            return;
         }
 
         // Let damage status through in realtime so hurt animation plays immediately
@@ -129,10 +112,27 @@ public class KnockbackDelay extends Module {
             }
         }
 
+        if (!blink && isPlayerKnockbackPacket(packet) && shouldActivate()) {
+            blink = true;
+        }
+
         if (blink) {
             event.setCancelled(true);
             packets.add(new TimedPacket(packet, System.currentTimeMillis()));
         }
+    }
+
+    private boolean isPlayerKnockbackPacket(Packet<?> packet) {
+        if (packet instanceof S12PacketEntityVelocity) {
+            return ((S12PacketEntityVelocity) packet).getEntityID() == mc.thePlayer.getEntityId();
+        }
+
+        if (packet instanceof S27PacketExplosion) {
+            S27PacketExplosion explosion = (S27PacketExplosion) packet;
+            return explosion.func_149149_c() != 0.0F || explosion.func_149144_d() != 0.0F || explosion.func_149147_e() != 0.0F;
+        }
+
+        return false;
     }
 
     private boolean shouldActivate() {
