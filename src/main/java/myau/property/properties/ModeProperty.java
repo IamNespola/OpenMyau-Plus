@@ -35,6 +35,12 @@ public class ModeProperty extends Property<Integer> {
 
     @Override
     public boolean parseString(String string) {
+        for (int i = 0; i < this.modes.length; i++) {
+            if (string.equals(this.modes[i])) {
+                return this.setValue(i);
+            }
+        }
+
         String valueStr = string.replace("_", "");
         for (int i = 0; i < this.modes.length; i++) {
             if (valueStr.equalsIgnoreCase(this.modes[i].replace("_", ""))) {

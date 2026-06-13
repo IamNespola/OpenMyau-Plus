@@ -83,6 +83,14 @@ public class HUD extends Module {
     public final FloatProperty scale = new FloatProperty("scale", 1.0F, 0.5F, 1.5F);
     public final ModeProperty interfaceMode = new ModeProperty("interface", 0, new String[]{"MYAU", "CREIDA"});
     public final PercentProperty background = new PercentProperty("background", 25);
+    public final IntProperty bgAlpha = new IntProperty("bg-alpha", 120, 0, 255);
+    public final BooleanProperty blur = new BooleanProperty("blur", false);
+    public final FloatProperty blurRadius = new FloatProperty("blur-radius", 10.0F, 1.0F, 30.0F, this.blur::getValue);
+    public final BooleanProperty glow = new BooleanProperty("glow", false);
+    public final ModeProperty glowColorMode = new ModeProperty("glow-color", 0, new String[]{"SYNC", "CUSTOM"}, this.glow::getValue);
+    public final ColorProperty glowCustomColor = new ColorProperty("glow-custom-color", Color.WHITE.getRGB() & 0xFFFFFF, () -> this.glow.getValue() && this.glowColorMode.getValue() == 1);
+    public final IntProperty glowAlpha = new IntProperty("glow-alpha", 100, 0, 255, this.glow::getValue);
+    public final FloatProperty glowRadius = new FloatProperty("glow-radius", 3.0F, 1.0F, 15.0F, this.glow::getValue);
     public final BooleanProperty showBar = new BooleanProperty("bar", true);
     public final ModeProperty sidebarMode = new ModeProperty("sidebar-mode", 0, new String[]{"RIGHT", "LEFT", "TOP", "OUTLINE", "NONE"}, this.showBar::getValue);
     public final BooleanProperty shadow = new BooleanProperty("shadow", true);
