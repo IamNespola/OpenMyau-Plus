@@ -1,9 +1,9 @@
 package myau.events;
 
-import myau.event.events.Event;
+import myau.event.events.callables.EventCancellable;
 import myau.event.types.EventType;
 
-public class TickEvent implements Event {
+public class TickEvent extends EventCancellable {
     private final EventType type;
 
     public TickEvent(EventType type) {

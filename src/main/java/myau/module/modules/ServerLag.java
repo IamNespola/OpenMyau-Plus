@@ -9,6 +9,7 @@ import myau.events.LoadWorldEvent;
 import myau.events.PacketEvent;
 import myau.module.Module;
 import myau.property.properties.IntProperty;
+import myau.util.PacketUtil;
 import net.minecraft.client.Minecraft;
 import net.minecraft.network.Packet;
 import net.minecraft.network.play.INetHandlerPlayClient;
@@ -40,6 +41,7 @@ public class ServerLag extends Module {
         if (mc.thePlayer == null || mc.theWorld == null) return;
         if (currentLatency == 0) return;
         Packet<?> packet = event.getPacket();
+        if (PacketUtil.isWorldRenderPacket(packet)) return;
         if (packet instanceof S19PacketEntityStatus || packet instanceof S02PacketChat || packet instanceof S0BPacketAnimation || packet instanceof S06PacketUpdateHealth) return;
         if (packet instanceof S08PacketPlayerPosLook || packet instanceof S40PacketDisconnect) {
             this.releaseAllPackets();

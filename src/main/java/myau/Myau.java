@@ -15,6 +15,7 @@ import myau.property.Property;
 import myau.property.PropertyManager;
 import myau.ui.impl.clickgui.normal.ClickGuiScreen;
 import myau.util.font.FontManager;
+import org.lwjgl.opengl.Display;
 
 import java.io.InputStreamReader;
 import java.lang.reflect.Field;
@@ -25,6 +26,7 @@ import java.util.Objects;
 public class Myau {
     public static String clientName = "&7[&cM&6y&ea&au&7z+]&r ";
     public static String version;
+    private static final String MC_VERSION = "1.8.9";
     public static RotationManager rotationManager;
     public static FloatManager floatManager;
     public static BlinkManager blinkManager;
@@ -152,6 +154,7 @@ public class Myau {
         moduleManager.modules.put(AutoBlockIn.class, new AutoBlockIn());
         moduleManager.modules.put(AntiBot.class, new AntiBot());
         moduleManager.modules.put(AutoBedDef.class, new AutoBedDef());
+        moduleManager.modules.put(TickBase.class, new TickBase());
         moduleManager.modules.put(SeasonDisplay.class, new SeasonDisplay());
         moduleManager.modules.put(Spammer.class, new Spammer());
         moduleManager.modules.put(Speed.class, new Speed());
@@ -228,7 +231,19 @@ public class Myau {
         } catch (Exception e) {
             version = "dev";
         }
+        updateDisplayTitle();
 
+    }
+
+    public static String getDisplayTitle() {
+        String versionText = version == null || version.isEmpty() ? "dev" : version;
+        return "OpenMyau+ (Main) - " + versionText + " | MC " + MC_VERSION;
+    }
+
+    public static void updateDisplayTitle() {
+        if (Display.isCreated()) {
+            Display.setTitle(getDisplayTitle());
+        }
     }
 
     private void registerClientAnticheat() {

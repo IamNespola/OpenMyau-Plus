@@ -6,6 +6,7 @@ import myau.event.types.EventType;
 import myau.events.LoadWorldEvent;
 import myau.events.PacketEvent;
 import myau.events.TickEvent;
+import myau.util.PacketUtil;
 import net.minecraft.client.Minecraft;
 import net.minecraft.entity.Entity;
 import net.minecraft.network.Packet;
@@ -33,6 +34,8 @@ public class DelayManager {
         if (this.delayModule == DelayModules.NONE) {
             return false;
         } else if (packet instanceof S00PacketKeepAlive) {
+            return false;
+        } else if (PacketUtil.isWorldRenderPacket(packet)) {
             return false;
         } else if (!(packet instanceof S01PacketJoinGame) && !(packet instanceof S07PacketRespawn)) {
             if (packet instanceof S19PacketEntityStatus) {

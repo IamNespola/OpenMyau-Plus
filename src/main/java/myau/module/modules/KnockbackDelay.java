@@ -11,6 +11,7 @@ import myau.module.Module;
 import myau.property.properties.BooleanProperty;
 import myau.property.properties.IntProperty;
 import myau.util.ItemUtil;
+import myau.util.PacketUtil;
 import myau.util.RandomUtil;
 import net.minecraft.client.Minecraft;
 import net.minecraft.entity.Entity;
@@ -98,6 +99,7 @@ public class KnockbackDelay extends Module {
         if (mc.isSingleplayer() || mc.thePlayer.ticksExisted < 20 || event.isCancelled()) return;
 
         Packet<?> packet = event.getPacket();
+        if (PacketUtil.isWorldRenderPacket(packet)) return;
 
         if (packet instanceof S07PacketRespawn) {
             reset();

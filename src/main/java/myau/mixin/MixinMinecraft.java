@@ -63,6 +63,7 @@ public abstract class MixinMinecraft {
     )
     private void postStartGame(CallbackInfo callbackInfo) {
         new Myau();
+        Myau.updateDisplayTitle();
     }
 
     @Inject(

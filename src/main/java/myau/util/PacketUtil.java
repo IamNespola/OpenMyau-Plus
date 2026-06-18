@@ -8,6 +8,16 @@ import net.minecraft.network.play.server.*;
 public class PacketUtil {
     private static final Minecraft mc = Minecraft.getMinecraft();
 
+    public static boolean isWorldRenderPacket(Packet<?> packet) {
+        return packet instanceof S21PacketChunkData
+                || packet instanceof S22PacketMultiBlockChange
+                || packet instanceof S23PacketBlockChange
+                || packet instanceof S24PacketBlockAction
+                || packet instanceof S25PacketBlockBreakAnim
+                || packet instanceof S26PacketMapChunkBulk
+                || packet instanceof S28PacketEffect;
+    }
+
     public static void sendPacket(Packet<?> packet) {
         mc.getNetHandler().getNetworkManager().sendPacket(packet);
     }

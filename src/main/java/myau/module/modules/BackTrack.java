@@ -177,7 +177,6 @@ public class BackTrack extends Module {
             S14PacketEntity s14 = (S14PacketEntity) packet;
             Entity e = s14.getEntity(mc.theWorld);
             if (e == null || e.getEntityId() != target.getEntityId()) return;
-            if (packetQueue.size() >= 50) return;
             vec3 = vec3.addVector(s14.func_149062_c() / 32.0D, s14.func_149061_d() / 32.0D, s14.func_149064_e() / 32.0D);
             packetQueue.add(new TimedPacket(packet, currentLatency));
             event.setCancelled(true);

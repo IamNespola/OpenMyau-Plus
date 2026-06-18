@@ -39,7 +39,7 @@ public class Velocity extends Module {
             "Simple", "AAC", "AACPush", "AACZero", "AACv4",
             "Reverse", "SmoothReverse", "Jump", "Glitch", "LegitSmart",
             "Vulcan", "MatrixReduce", "Matrix", "Intave",
-            "GrimC03", "Hypixel", "HypixelAir", "BlockSMC", "GrimCombat",
+            "Hypixel Morden", "Hypixel", "HypixelAir", "BlockSMC", "GrimCombat",
             "Polar", "MatrixNoXZ", "Intave13", "JumpReset", "Intave14",
             "HypixelPrediction", "GrimReduce", "IntaveReduce", "Reduce"
     });
