@@ -65,6 +65,8 @@ public class AccountManager {
             }
         } catch (FileNotFoundException e) {
             System.err.print("Couldn't find openmyau.accounts.json!");
+        } catch (IOException e) {
+            System.err.print("Couldn't read openmyau.accounts.json!");
         }
     }
 
