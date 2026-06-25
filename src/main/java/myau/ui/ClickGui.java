@@ -34,6 +34,7 @@ public class ClickGui extends GuiScreen {
 
         List<Module> combatModules = new ArrayList<>();
         combatModules.add(Myau.moduleManager.getModule(AimAssist.class));
+        combatModules.add(Myau.moduleManager.getModule(MoveFix.class));
         combatModules.add(Myau.moduleManager.getModule(AutoClicker.class));
         combatModules.add(Myau.moduleManager.getModule(KillAura.class));
         combatModules.add(Myau.moduleManager.getModule(Wtap.class));
@@ -51,13 +52,14 @@ public class ClickGui extends GuiScreen {
         combatModules.add(Myau.moduleManager.getModule(HitSelect.class));
         combatModules.add(Myau.moduleManager.getModule(BackTrack.class));
         combatModules.add(Myau.moduleManager.getModule(Hitflick.class));
-        combatModules.add(Myau.moduleManager.getModule(TimerRangev999.class));
+        combatModules.add(Myau.moduleManager.getModule(TimerRange.class));
         combatModules.add(Myau.moduleManager.getModule(ClickAssits.class));
         combatModules.add(Myau.moduleManager.getModule(Criticals.class));
         combatModules.add(Myau.moduleManager.getModule(BlockHit.class));
         combatModules.add(Myau.moduleManager.getModule(SprintReset.class));
         combatModules.add(Myau.moduleManager.getModule(Displace.class));
         combatModules.add(Myau.moduleManager.getModule(TickBase.class));
+        combatModules.add(Myau.moduleManager.getModule(Piercing.class));
 
         List<Module> movementModules = new ArrayList<>();
         movementModules.add(Myau.moduleManager.getModule(AntiAFK.class));
@@ -88,6 +90,7 @@ public class ClickGui extends GuiScreen {
         renderModules.add(Myau.moduleManager.getModule(TargetHUD.class));
         renderModules.add(Myau.moduleManager.getModule(Indicators.class));
         renderModules.add(Myau.moduleManager.getModule(BedESP.class));
+        renderModules.add(Myau.moduleManager.getModule(BlockOverlay.class));
         renderModules.add(Myau.moduleManager.getModule(ItemESP.class));
         renderModules.add(Myau.moduleManager.getModule(BreakProgress.class));
         renderModules.add(Myau.moduleManager.getModule(ViewClip.class));
@@ -146,6 +149,7 @@ public class ClickGui extends GuiScreen {
         miscModules.add(Myau.moduleManager.getModule(Disabler.class));
         miscModules.add(Myau.moduleManager.getModule(ClientSpoofer.class));
         miscModules.add(Myau.moduleManager.getModule(AutoHypixel.class));
+        miscModules.add(Myau.moduleManager.getModule(BedwarUtils.class));
 
         Comparator<Module> comparator = Comparator.comparing(m -> m.getName().toLowerCase());
         combatModules.sort(comparator);

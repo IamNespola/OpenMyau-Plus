@@ -86,6 +86,9 @@ public class KillAura extends Module {
     public final BooleanProperty smoothBack;
     public final ModeProperty moveFix;
     public final PercentProperty smoothing;
+    public final IntProperty ravenSmoothing;
+    public final IntProperty ravenPredictTicks;
+    public final IntProperty ravenYawRandom;
     public final IntProperty angleStep;
     public final BooleanProperty throughWalls;
     public final BooleanProperty requirePress;
@@ -130,6 +133,7 @@ public class KillAura extends Module {
     private boolean blockingState = false;
     private boolean isBlocking = false;
     private boolean fakeBlockState = false;
+    private int hypixel3Asw = 0;
     private boolean blinkReset = false;
     private long attackDelayMS = 0L;
     private int blockTick = 0;
@@ -145,7 +149,7 @@ public class KillAura extends Module {
 
         this.mode = new ModeProperty("Mode", 1, new String[]{"Single", "Switch"});
         this.sort = new ModeProperty("Sort", 1, new String[]{"Distance", "Health", "HurtTime", "FOV"});
-        this.autoBlock = new ModeProperty("auto-block", 3, new String[]{"NONE", "VANILLA", "SPOOF", "HYPIXEL", "BLINK", "INTERACT", "SWAP", "LEGIT", "FAKE"});
+        this.autoBlock = new ModeProperty("auto-block", 3, new String[]{"NONE", "VANILLA", "SPOOF", "HYPIXEL", "BLINK", "INTERACT", "SWAP", "LEGIT", "FAKE", "Morden"});
         this.autoBlockCPS = new FloatProperty("AutoBlockCPS", 8.0F, 1.0F, 10.0F);
         this.autoBlockRequirePress = new BooleanProperty("AutoBlockRequirePress", false);
         this.autoBlockRange = new FloatProperty("AutoBlockRange", 6.0F, 3.0F, 8.0F);
@@ -155,7 +159,7 @@ public class KillAura extends Module {
         this.minCPS = new IntProperty("MinCPS", 14, 1, 20);
         this.maxCPS = new IntProperty("MaxCPS", 14, 1, 20);
         this.switchDelay = new IntProperty("SwitchDelay", 150, 0, 1000);
-        this.rotations = new ModeProperty("Rotations", 2, new String[]{"NONE", "Legit", "Silent", "LockView", "LiquidBounce"});
+        this.rotations = new ModeProperty("Rotations", 2, new String[]{"NONE", "Legit", "Silent", "LockView", "LiquidBounce", "Hypixel"});
         this.deadZoneSize = new FloatProperty("DeadZone", 0.5F, 0.0F, 2.0F, () -> rotations.getValue() == 4);
         this.maxTurnSpeed = new FloatProperty("MaxSpeed", 25.0F, 5.0F, 180.0F, () -> rotations.getValue() == 4);
         this.minTurnSpeed = new FloatProperty("MinSpeed", 5.0F, 1.0F, 90.0F, () -> rotations.getValue() == 4);
@@ -172,6 +176,9 @@ public class KillAura extends Module {
         this.smoothBack = new BooleanProperty("SmoothBack", true, () -> rotations.getValue() == 4);
         this.moveFix = new ModeProperty("MoveFix", 1, new String[]{"NONE", "Silent", "Strict"});
         this.smoothing = new PercentProperty("Smoothing", 0);
+        this.ravenSmoothing = new IntProperty("HypixelSmoothing", 0, 0, 10, () -> this.rotations.getValue() == 5);
+        this.ravenPredictTicks = new IntProperty("HypixelPredict", 0, 0, 5, () -> this.rotations.getValue() == 5);
+        this.ravenYawRandom = new IntProperty("HypixelYawRandom", 0, 0, 5, () -> this.rotations.getValue() == 5);
         this.angleStep = new IntProperty("AngleStep", 90, 30, 180);
         this.throughWalls = new BooleanProperty("ThroughWalls", true);
         this.requirePress = new BooleanProperty("RequirePress", false);
@@ -530,6 +537,7 @@ public class KillAura extends Module {
                     this.isBlocking = false;
                     this.fakeBlockState = false;
                     this.blockTick = 0;
+                    this.hypixel3Asw = 0;
                 }
                 if (attack) {
                     boolean swap = false;
@@ -766,6 +774,48 @@ public class KillAura extends Module {
                                     this.fakeBlockState = false;
                                 }
                                 break;
+                            case 9:
+                                // Hypixel3 (ported from Cryptix KillAura): 3-tick blink-batched block -> attack -> block cycle
+                                if (this.hasValidTarget()) {
+                                    Myau.blinkManager.setBlinkState(true, BlinkModules.AUTO_BLOCK);
+                                    if (!Myau.playerStateManager.digging && !Myau.playerStateManager.placing) {
+                                        switch (this.hypixel3Asw) {
+                                            case 0:
+                                                if (this.isPlayerBlocking()) {
+                                                    this.stopBlock();
+                                                }
+                                                attack = false;
+                                                this.hypixel3Asw = 1;
+                                                break;
+                                            case 1:
+                                                if (this.isPlayerBlocking()) {
+                                                    this.stopBlock();
+                                                }
+                                                attack = false;
+                                                this.hypixel3Asw = 2;
+                                                break;
+                                            case 2:
+                                                if (!this.isPlayerBlocking()) {
+                                                    swap = true;
+                                                }
+                                                blocked = true;
+                                                this.hypixel3Asw = 0;
+                                                break;
+                                            default:
+                                                this.hypixel3Asw = 0;
+                                        }
+                                    } else {
+                                        attack = false;
+                                    }
+                                    this.isBlocking = true;
+                                    this.fakeBlockState = true;
+                                } else {
+                                    Myau.blinkManager.setBlinkState(false, BlinkModules.AUTO_BLOCK);
+                                    this.isBlocking = false;
+                                    this.fakeBlockState = false;
+                                    this.hypixel3Asw = 0;
+                                }
+                                break;
                             case 8:
                                 Myau.blinkManager.setBlinkState(false, BlinkModules.AUTO_BLOCK);
                                 this.isBlocking = false;
@@ -818,6 +868,29 @@ public class KillAura extends Module {
                             mc.thePlayer.renderYawOffset = nextRot.yaw;
                             if (attack) {
                                 attacked = this.performAttack(nextRot.yaw, nextRot.pitch);
+                            }
+                        } else if (this.rotations.getValue() == 5) {
+                            // Raven BS rotations (ported 1:1 from Raven BS KillAura: getRotations -> fixRotation -> getRotationsSmoothed)
+                            Rotation currentRot = this.serverRotation;
+                            if (Float.isNaN(currentRot.yaw) || Float.isNaN(currentRot.pitch)) {
+                                currentRot = new Rotation(mc.thePlayer.rotationYaw, mc.thePlayer.rotationPitch);
+                            }
+                            float[] raw = this.getRavenRotations(this.target.getEntity());
+                            float[] fixedRot = this.ravenFixRotation(raw[0], raw[1], currentRot.yaw, currentRot.pitch);
+                            float[] smoothed = this.getRavenRotationsSmoothed(fixedRot, currentRot.yaw, currentRot.pitch);
+                            float finalYaw = smoothed[0];
+                            float finalPitch = smoothed[1];
+                            if (finalPitch > 90) finalPitch = 90;
+                            if (finalPitch < -90) finalPitch = -90;
+                            this.serverRotation = new Rotation(finalYaw, finalPitch);
+                            event.setRotation(finalYaw, finalPitch, 1);
+                            mc.thePlayer.rotationYawHead = finalYaw;
+                            mc.thePlayer.renderYawOffset = finalYaw;
+                            if (this.moveFix.getValue() != 0) {
+                                event.setPervRotation(finalYaw, 1);
+                            }
+                            if (attack) {
+                                attacked = this.performAttack(event.getNewYaw(), event.getNewPitch());
                             }
                         } else if (this.rotations.getValue() >= 1) {
                             float randomYaw = RandomUtil.nextFloat(-2.5F, 2.5F);
@@ -872,6 +945,84 @@ public class KillAura extends Module {
                 }
             }
         }
+    }
+
+    // ── Raven BS rotation port (RotationUtils.getRotations(Entity, NONE) + getRotationsPredicated) ─────
+    private float[] getRavenRotations(EntityLivingBase entity) {
+        double posX = entity.posX;
+        double posZ = entity.posZ;
+        int ticks = this.ravenPredictTicks.getValue();
+        if (ticks > 0) {
+            double dX = entity.posX - entity.lastTickPosX;
+            double dZ = entity.posZ - entity.lastTickPosZ;
+            for (int i = 0; i < ticks; i++) {
+                posX += dX;
+                posZ += dZ;
+            }
+        }
+        double deltaX = posX - mc.thePlayer.posX;
+        double deltaZ = posZ - mc.thePlayer.posZ;
+        double deltaY = entity.posY + entity.getEyeHeight() * 0.9 - (mc.thePlayer.posY + mc.thePlayer.getEyeHeight());
+        float yaw = mc.thePlayer.rotationYaw + MathHelper.wrapAngleTo180_float(
+                (float) (Math.atan2(deltaZ, deltaX) * 57.295780181884766) - 90.0f - mc.thePlayer.rotationYaw);
+        float pitch = MathHelper.clamp_float(mc.thePlayer.rotationPitch + MathHelper.wrapAngleTo180_float(
+                (float) (-(Math.atan2(deltaY, MathHelper.sqrt_double(deltaX * deltaX + deltaZ * deltaZ)) * 57.295780181884766)) - mc.thePlayer.rotationPitch) + 3.0f, -90.0f, 90.0f);
+        return new float[]{yaw, pitch};
+    }
+
+    private int ravenRandInt(int min, int max) {
+        if (max <= min) {
+            return min;
+        }
+        return min + this.random.nextInt(max - min + 1);
+    }
+
+    // ── Raven BS RotationUtils.fixRotation (sensitivity GCD, randomYawFactor=0) ─
+    private float[] ravenFixRotation(float targetYaw, float targetPitch, float yaw, float pitch) {
+        float n5 = targetYaw - yaw;
+        float abs = Math.abs(n5);
+        float n7 = targetPitch - pitch;
+        float n8 = mc.gameSettings.mouseSensitivity * 0.6f + 0.2f;
+        double n9 = n8 * n8 * n8 * 1.2;
+        float n10 = (float) (Math.round((double) n5 / n9) * n9);
+        float n11 = (float) (Math.round((double) n7 / n9) * n9);
+        targetYaw = yaw + n10;
+        targetPitch = pitch + n11;
+        if (abs >= 1.0f) {
+            int factor = this.ravenYawRandom.getValue();
+            if (factor != 0) {
+                int n13 = factor * 100 + ravenRandInt(-30, 30);
+                targetYaw += ravenRandInt(-n13, n13) / 100.0f;
+            }
+        } else if (abs <= 0.04f) {
+            targetYaw += (abs > 0.0f) ? 0.01f : -0.01f;
+        }
+        return new float[]{targetYaw, MathHelper.clamp_float(targetPitch, -90.0f, 90.0f)};
+    }
+
+    // ── Raven BS KillAura.getRotationsSmoothed (+ inlined unwrapYaw) ──────────
+    private float[] getRavenRotationsSmoothed(float[] rotations, float serverYaw, float serverPitch) {
+        float unwrappedYaw = serverYaw + ((((rotations[0] - serverYaw + 180f) % 360f) + 360f) % 360f - 180f);
+        float deltaYaw = unwrappedYaw - serverYaw;
+        float deltaPitch = rotations[1] - serverPitch;
+
+        float yawSmoothing = (float) this.ravenSmoothing.getValue();
+        float pitchSmoothing = yawSmoothing;
+
+        float strafe = mc.thePlayer.moveStrafing;
+        if (strafe < 0 && deltaYaw < 0 || strafe > 0 && deltaYaw > 0) {
+            yawSmoothing = Math.max(1f, yawSmoothing / 2f);
+        }
+
+        float motionY = (float) mc.thePlayer.motionY;
+        if (motionY > 0 && deltaPitch > 0 || motionY < 0 && deltaPitch < 0) {
+            pitchSmoothing = Math.max(1f, pitchSmoothing / 2f);
+        }
+
+        serverYaw += deltaYaw / Math.max(1f, yawSmoothing);
+        serverPitch += deltaPitch / Math.max(1f, pitchSmoothing);
+
+        return new float[]{serverYaw, serverPitch};
     }
 
     private Rotation updateLiquidBounceRotation(Rotation current) {
@@ -1186,7 +1337,8 @@ public class KillAura extends Module {
         if (this.isEnabled() || this.wantsToDisable) {
             boolean isSilent = this.rotations.getValue() == 2;
             boolean isLiquidBounce = this.rotations.getValue() == 4;
-            if (this.moveFix.getValue() != 0 && (isSilent || isLiquidBounce)) {
+            boolean isRavenBS = this.rotations.getValue() == 5;
+            if (this.moveFix.getValue() != 0 && (isSilent || isLiquidBounce || isRavenBS)) {
                 if (RotationState.isActived() && RotationState.getPriority() == 1.0F && MoveUtil.isForwardPressed()) {
                     MoveUtil.fixStrafe(RotationState.getSmoothedYaw());
                 }

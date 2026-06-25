@@ -35,6 +35,7 @@ public class ClickGuiScreen extends GuiScreen {
 
         List<Module> combatModules = Arrays.asList(
                 Myau.moduleManager.getModule(AimAssist.class),
+                Myau.moduleManager.getModule(MoveFix.class),
                 Myau.moduleManager.getModule(AutoClicker.class),
                 Myau.moduleManager.getModule(KillAura.class),
                 Myau.moduleManager.getModule(Wtap.class),
@@ -52,12 +53,13 @@ public class ClickGuiScreen extends GuiScreen {
                 Myau.moduleManager.getModule(HitSelect.class),
                 Myau.moduleManager.getModule(BackTrack.class),
                 Myau.moduleManager.getModule(Hitflick.class),
-                Myau.moduleManager.getModule(TimerRangev999.class),
+                Myau.moduleManager.getModule(TimerRange.class),
                 Myau.moduleManager.getModule(ClickAssits.class),
                 Myau.moduleManager.getModule(Criticals.class),
                 Myau.moduleManager.getModule(BlockHit.class),
                 Myau.moduleManager.getModule(SprintReset.class),
                 Myau.moduleManager.getModule(Displace.class),
+                Myau.moduleManager.getModule(Piercing.class),
                 Myau.moduleManager.getModule(TickBase.class)
         );
 
@@ -84,6 +86,7 @@ public class ClickGuiScreen extends GuiScreen {
                 Myau.moduleManager.getModule(ESP.class),
                 Myau.moduleManager.getModule(Chams.class),
                 Myau.moduleManager.getModule(FullBright.class),
+                Myau.moduleManager.getModule(BlockOverlay.class),
                 Myau.moduleManager.getModule(Tracers.class),
                 Myau.moduleManager.getModule(NameTags.class),
                 Myau.moduleManager.getModule(Xray.class),
@@ -148,6 +151,8 @@ public class ClickGuiScreen extends GuiScreen {
                 Myau.moduleManager.getModule(InventoryClicker.class),
                 Myau.moduleManager.getModule(Disabler.class),
                 Myau.moduleManager.getModule(ClientSpoofer.class),
+                Myau.moduleManager.getModule(MouseRawInput.class),
+                Myau.moduleManager.getModule(BedwarUtils.class),
                 Myau.moduleManager.getModule(AutoHypixel.class)
         );
 

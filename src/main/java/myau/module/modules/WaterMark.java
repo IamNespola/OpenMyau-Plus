@@ -178,7 +178,7 @@ public class WaterMark extends Module {
         }
 
         final float targetHeight = 18.0f;
-        final float gap = 1.0f;
+        final float gap = 0.1f;
 
         float cursorX = x;
         cursorX = drawVapeImage(vapeTexture, vapeWidth, vapeHeight, cursorX, y, targetHeight);
@@ -261,8 +261,8 @@ public class WaterMark extends Module {
             }
         }
 
-        String exhibitionText = "E";
-        String restText = "xhibition ";
+        String exhibitionText = "O";
+        String restText = "PenMyau+ ";
         String fpsValue = fps + "FPS";
         String pingValue = ping + "ms";
 

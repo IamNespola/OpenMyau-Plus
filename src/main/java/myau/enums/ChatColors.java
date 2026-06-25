@@ -41,7 +41,35 @@ public enum ChatColors {
         return this.rgb;
     }
 
+    public static ChatColors getClosestColor(java.awt.Color target) {
+        ChatColors closest = ChatColors.WHITE;
+        double minDistance = Double.MAX_VALUE;
+        for (ChatColors color : ChatColors.values()) {
+            if (color == ChatColors.MAGIC || color == ChatColors.BOLD || color == ChatColors.STRIKETHROUGH ||
+                    color == ChatColors.UNDERLINE || color == ChatColors.ITALIC || color == ChatColors.RESET) {
+                continue;
+            }
+            java.awt.Color c = new java.awt.Color(color.toAwtColor());
+            double dist = Math.pow(c.getRed() - target.getRed(), 2) +
+                    Math.pow(c.getGreen() - target.getGreen(), 2) +
+                    Math.pow(c.getBlue() - target.getBlue(), 2);
+            if (dist < minDistance) {
+                minDistance = dist;
+                closest = color;
+            }
+        }
+        return closest;
+    }
+
+    public static final String PREFIX_CLEAN = "Miau \u00bb ";
+
+    public static String getDynamicPrefix() {
+        return PREFIX_CLEAN;
+    }
+
     public static String formatColor(String string) {
+        if (string == null) return null;
+
         char[] cArray = string.toCharArray();
         for (int i = 0; i < cArray.length - 1; ++i) {
             if (cArray[i] != '&' || "0123456789AaBbCcDdEeFfKkLlMmNnOoRr".indexOf(cArray[i + 1]) <= -1) continue;
