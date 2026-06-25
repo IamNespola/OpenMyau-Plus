@@ -426,8 +426,6 @@ public class BedwarUtils extends Module {
         }
         mc.thePlayer.addChatMessage(
                 new ChatComponentText(this.getMyauPrefix() + " §f" + formattedPlayer + " §fhas §a" + item));
-
-        Myau.notificationManager.add("§eItem Alerts§f: " + EnumChatFormatting.getTextWithoutFormattingCodes(formattedPlayer) + " has " + item, 2000);
     }
 
     private String getMyauPrefix() {
