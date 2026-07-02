@@ -262,7 +262,7 @@ public class WaterMark extends Module {
         }
 
         String exhibitionText = "O";
-        String restText = "PenMyau+ ";
+        String restText = "penMyau+ ";
         String fpsValue = fps + "FPS";
         String pingValue = ping + "ms";
 

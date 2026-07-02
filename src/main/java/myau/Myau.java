@@ -24,7 +24,7 @@ import java.util.ArrayList;
 import java.util.Objects;
 
 public class Myau {
-    public static String clientName = "&7[&cM&6y&ea&au&7z+]&r ";
+    public static String clientName = "&7[&cM&6y&ea&au&7+]&r ";
     public static String version;
     private static final String MC_VERSION = "1.8.9";
     public static RotationManager rotationManager;
@@ -132,6 +132,7 @@ public class Myau {
         moduleManager.modules.put(LightningTracker.class, new LightningTracker());
         moduleManager.modules.put(LongJump.class, new LongJump());
         moduleManager.modules.put(MCF.class, new MCF());
+        moduleManager.modules.put(Ambience.class, new Ambience());
         moduleManager.modules.put(NameTags.class, new NameTags());
         moduleManager.modules.put(NickHider.class, new NickHider());
         moduleManager.modules.put(NoFall.class, new NoFall());

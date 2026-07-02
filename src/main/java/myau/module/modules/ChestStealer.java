@@ -34,6 +34,7 @@ public class ChestStealer extends Module {
     public final IntProperty openDelay = new IntProperty("open-delay", 1, 0, 20);
     public final BooleanProperty autoClose = new BooleanProperty("auto-close", false);
     public final BooleanProperty nameCheck = new BooleanProperty("name-check", true);
+    public final BooleanProperty HypixelMode = new BooleanProperty("hypixel-mode", false);
     public final BooleanProperty skipTrash = new BooleanProperty("skip-trash", true);
     public final BooleanProperty moreArmor = new BooleanProperty("more-armor", false);
     public final BooleanProperty moreSword = new BooleanProperty("more-sword", false);
@@ -112,7 +113,15 @@ public class ChestStealer extends Module {
                     if (this.oDelay <= 0 && this.clickDelay <= 0) {
                         if (this.isEnabled() && this.isValidGameMode()) {
                             IInventory inventory = ((ContainerChest) container).getLowerChestInventory();
-                            if (this.nameCheck.getValue()) {
+                            if (this.HypixelMode.getValue()) {
+                                String inventoryName = inventory.getName();
+                                String stripped = inventoryName == null
+                                        ? ""
+                                        : net.minecraft.util.EnumChatFormatting.getTextWithoutFormattingCodes(inventoryName).trim();
+                                if (!stripped.isEmpty()) {
+                                    return;
+                                }
+                            } else if (this.nameCheck.getValue()) {
                                 String inventoryName = inventory.getName();
                                 if (!inventoryName.equals(I18n.format("container.chest")) && !inventoryName.equals(I18n.format("container.chestDouble"))) {
                                     return;

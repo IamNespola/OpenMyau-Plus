@@ -73,7 +73,7 @@ public class RavenClickGui extends GuiScreen {
                 NoHurtCam.class, HUD.class, GuiModule.class, RiseClickGUIModule.class, ClickGUIModule.class,
                 ChestESP.class, Trajectories.class, Radar.class, RenderFixes.class, FPScounter.class, WaterMark.class,
                 WaterMark2.class, HitParticleEffects.class, DynamicIsland.class, ESP2D.class, TeamHealthDisplay.class,
-                SeasonDisplay.class, Animations.class, BlockOverlay.class);
+                SeasonDisplay.class, Animations.class, BlockOverlay.class, Ambience.class);
         List<Module> playerModules = collect(
                 AutoHeal.class, FakeLag.class, AutoTool.class, ChestStealer.class, AutoBedDef.class, InvManager.class,
                 InvWalk.class, Scaffold.class, AutoBlockIn.class, AutoSwap.class, SpeedMine.class, FastPlace.class,

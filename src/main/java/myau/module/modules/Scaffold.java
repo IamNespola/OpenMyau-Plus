@@ -35,6 +35,8 @@ import java.util.Comparator;
 
 public class Scaffold extends Module {
     private static final Minecraft mc = Minecraft.getMinecraft();
+    private static final int ROTATION_SNAP = 7;
+    private static final int ROTATION_THREE_FMC = 8;
     private static final double[] placeOffsets = new double[]{
             0.03125,
             0.09375,
@@ -75,9 +77,12 @@ public class Scaffold extends Module {
     private boolean safeStuckActive = false;
     private boolean snapRotating = false;
     private boolean placedThisTick = false;
+    private int threeFmcAirTicks = 0;
+    private int threeFmcGroundTicks = 0;
+    private int threeFmcPlaceCooldown = 0;
     private float lastSnapPlaceYaw = Float.NaN;
     private float lastSnapPlacePitch = Float.NaN;
-    public final ModeProperty rotationMode = new ModeProperty("rotations", 2, new String[]{"NONE", "DEFAULT", "BACKWARDS", "SIDEWAYS", "GODBIRGDE", "SMOOTH", "Hypixel", "SNAP"});
+    public final ModeProperty rotationMode = new ModeProperty("rotations", 2, new String[]{"NONE", "DEFAULT", "BACKWARDS", "SIDEWAYS", "GODBIRGDE", "SMOOTH", "Hypixel", "SNAP", "3FMC"});
     public final FloatProperty tellystartrotationminspeed = new FloatProperty("telly-start-rotation-min-speed", 90.0F, 1.0F, 180.0F, () -> this.keepY.getValue() == 3 || this.keepY.getValue() == 4);
     public final FloatProperty tellystartrotationmaxspeed = new FloatProperty("telly-start-rotation-max-speed", 95.0F, 1.0F, 180.0F, () -> this.keepY.getValue() == 3 || this.keepY.getValue() == 4);
     public final FloatProperty tellynormalrotationminspeed = new FloatProperty("telly-normal-rotation-min-speed", 30.0F, 1.0F, 180.0F, () -> this.keepY.getValue() == 3 || this.keepY.getValue() == 4);
@@ -109,6 +114,9 @@ public class Scaffold extends Module {
     private int eagleBlocksPlaced = 0;
 
     private boolean shouldStopSprint() {
+        if (this.isThreeFmcMode() && !this.isThreeFmcTellyMode()) {
+            return true;
+        }
         if (this.isTowering()) {
             return false;
         } else {
@@ -125,6 +133,62 @@ public class Scaffold extends Module {
             LongJump longJump = (LongJump) Myau.moduleManager.modules.get(LongJump.class);
             return !longJump.isEnabled() || !longJump.isAutoMode() || longJump.isJumping();
         }
+    }
+
+    private boolean isThreeFmcMode() {
+        return this.rotationMode.getValue() == ROTATION_THREE_FMC;
+    }
+
+    private boolean isThreeFmcTellyMode() {
+        return this.isThreeFmcMode() && (this.keepY.getValue() == 3 || this.keepY.getValue() == 4);
+    }
+
+    private void updateThreeFmcState() {
+        if (!this.isThreeFmcMode() || mc.thePlayer == null) {
+            this.threeFmcAirTicks = 0;
+            this.threeFmcGroundTicks = 0;
+            this.threeFmcPlaceCooldown = 0;
+            return;
+        }
+
+        if (mc.thePlayer.onGround) {
+            this.threeFmcGroundTicks++;
+            this.threeFmcAirTicks = 0;
+        } else {
+            this.threeFmcAirTicks++;
+            this.threeFmcGroundTicks = 0;
+        }
+
+        if (this.threeFmcPlaceCooldown > 0) {
+            this.threeFmcPlaceCooldown--;
+        }
+    }
+
+    private void quietThreeFmcMovement() {
+        if (!this.isThreeFmcMode() || this.isThreeFmcTellyMode() || mc.thePlayer == null) {
+            return;
+        }
+
+        mc.thePlayer.setSprinting(false);
+        if (mc.gameSettings != null) {
+            KeyBindUtil.setKeyBindState(mc.gameSettings.keyBindSprint.getKeyCode(), false);
+        }
+    }
+
+    private boolean canThreeFmcPlaceNow() {
+        if (!this.isThreeFmcMode()) {
+            return true;
+        }
+        if (mc.thePlayer == null || this.placedThisTick || this.threeFmcPlaceCooldown > 0) {
+            return false;
+        }
+        if ((!this.isThreeFmcTellyMode() && mc.thePlayer.isSprinting()) || mc.thePlayer.isCollidedHorizontally || mc.thePlayer.hurtTime > 0) {
+            return false;
+        }
+        if (mc.thePlayer.onGround) {
+            return Math.abs(mc.thePlayer.motionY) < 1.0E-4 && this.threeFmcGroundTicks > 0;
+        }
+        return this.threeFmcAirTicks > 1;
     }
 
     private EnumFacing getBestFacing(BlockPos blockPos1, BlockPos blockPos3) {
@@ -195,12 +259,18 @@ public class Scaffold extends Module {
     }
 
     private void place(BlockPos blockPos, EnumFacing enumFacing, Vec3 vec3) {
+        if (!this.canThreeFmcPlaceNow()) {
+            return;
+        }
         if (ItemUtil.isHoldingBlock() && this.blockCount > 0) {
             if (mc.playerController.onPlayerRightClick(mc.thePlayer, mc.theWorld, mc.thePlayer.inventory.getCurrentItem(), blockPos, enumFacing, vec3)) {
                 if (mc.playerController.getCurrentGameType() != GameType.CREATIVE) {
                     this.blockCount--;
                 }
                 this.placedThisTick = true;
+                if (this.isThreeFmcMode()) {
+                    this.threeFmcPlaceCooldown = 1;
+                }
                 this.eagleBlocksPlaced++;
                 if (this.swing.getValue()) {
                     mc.thePlayer.swingItem();
@@ -370,6 +440,8 @@ public class Scaffold extends Module {
     public void onUpdate(UpdateEvent event) {
         if (this.isEnabled() && event.getType() == EventType.PRE) {
             this.placedThisTick = false;
+            this.updateThreeFmcState();
+            this.quietThreeFmcMovement();
             if (this.safeStuckDelayTicks > 0) {
                 this.safeStuckDelayTicks--;
                 if (this.safeStuckDelayTicks <= 0) {
@@ -446,7 +518,9 @@ public class Scaffold extends Module {
                 float diagonalYaw = this.isDiagonal(currentYaw)
                         ? yawDiffTo180
                         : RotationUtil.wrapAngleDiff(currentYaw - 135.0F * ((currentYaw + 180.0F) % 90.0F < 45.0F ? 1.0F : -1.0F), event.getYaw());
-                boolean snapMode = this.rotationMode.getValue() == 7;
+                boolean snapMode = this.rotationMode.getValue() == ROTATION_SNAP;
+                boolean threeFmcMode = this.rotationMode.getValue() == ROTATION_THREE_FMC;
+                boolean threeFmcTelly = this.isThreeFmcTellyMode();
                 this.snapRotating = false;
                 if (!this.canRotate) {
                     switch (this.rotationMode.getValue()) {
@@ -514,9 +588,15 @@ public class Scaffold extends Module {
                                 this.yaw = RotationUtil.quantizeAngle(diagonalYaw);
                             }
                             break;
-                        case 7:
+                        case ROTATION_SNAP:
                             this.yaw = RotationUtil.quantizeAngle(yawDiffTo180);
                             this.pitch = RotationUtil.quantizeAngle(85.0F);
+                            break;
+                        case ROTATION_THREE_FMC:
+                            if (this.yaw == -180.0F && this.pitch == 0.0F) {
+                                this.yaw = RotationUtil.quantizeAngle(event.getYaw());
+                                this.pitch = RotationUtil.quantizeAngle(event.getPitch());
+                            }
                             break;
                     }
                 }
@@ -577,6 +657,8 @@ public class Scaffold extends Module {
                         this.yaw = bestYaw;
                         this.pitch = bestPitch;
                         this.canRotate = true;
+                    } else if (threeFmcMode) {
+                        this.canRotate = false;
                     }
                 }
                 boolean towerRotating = this.towering || this.isTowering();
@@ -628,10 +710,12 @@ public class Scaffold extends Module {
                             this.yaw = RotationUtil.quantizeAngle(diagonalYaw);
                     }
                 }
+                float placeYaw = this.yaw;
+                float placePitch = this.pitch;
                 if (this.rotationMode.getValue() != 0 && (!snapMode || this.snapRotating || towerRotating)) {
                     float targetYaw = this.yaw;
                     float targetPitch = this.pitch;
-                    if (this.towering && (mc.thePlayer.motionY > 0.0 || mc.thePlayer.posY > (double) (this.startY + 1))) {
+                    if ((!threeFmcMode || threeFmcTelly) && this.towering && (mc.thePlayer.motionY > 0.0 || mc.thePlayer.posY > (double) (this.startY + 1))) {
                         float yawDiff = MathHelper.wrapAngleTo180_float(this.yaw - event.getYaw());
                         float tolerance = this.rotationTick >= 2 ? RandomUtil.nextFloat(tellystartrotationminspeed.getValue(), tellystartrotationmaxspeed.getValue()) : RandomUtil.nextFloat(tellynormalrotationminspeed.getValue(), tellynormalrotationmaxspeed.getValue());
                         if (Math.abs(yawDiff) > tolerance) {
@@ -641,15 +725,27 @@ public class Scaffold extends Module {
                         }
                     }
                     if (towerRotating && this.isTowering()) {
-                        float yawDelta = MathHelper.wrapAngleTo180_float(mc.thePlayer.rotationYaw - event.getYaw());
-                        targetYaw = RotationUtil.quantizeAngle(event.getYaw() + yawDelta * RandomUtil.nextFloat(0.98F, 0.99F));
-                        targetPitch = RotationUtil.quantizeAngle(RandomUtil.nextFloat(30.0F, 80.0F));
+                        if (!threeFmcMode || threeFmcTelly) {
+                            float yawDelta = MathHelper.wrapAngleTo180_float(mc.thePlayer.rotationYaw - event.getYaw());
+                            targetYaw = RotationUtil.quantizeAngle(event.getYaw() + yawDelta * RandomUtil.nextFloat(0.98F, 0.99F));
+                            targetPitch = RotationUtil.quantizeAngle(RandomUtil.nextFloat(30.0F, 80.0F));
+                        }
                         this.rotationTick = 3;
                         this.towering = true;
                     }
+                    placeYaw = targetYaw;
+                    placePitch = targetPitch;
                     event.setRotation(targetYaw, targetPitch, 3);
                     if (this.moveFix.getValue() == 1) {
                         event.setPervRotation(targetYaw, 3);
+                    }
+                }
+                if (threeFmcMode && blockData != null && hitVec != null) {
+                    MovingObjectPosition verifiedMop = this.getPlacementMop(blockData, placeYaw, placePitch);
+                    if (verifiedMop == null) {
+                        hitVec = null;
+                    } else {
+                        hitVec = verifiedMop.hitVec;
                     }
                 }
                 if (blockData != null && hitVec != null && snapCanPlace && (this.rotationTick <= 0 || snapAlreadyLooking)) {
@@ -691,7 +787,9 @@ public class Scaffold extends Module {
                     }
                 }
                 if (this.targetFacing != null) {
-                    if (this.rotationTick <= 0 && !this.placedThisTick) {
+                    if (threeFmcMode) {
+                        this.targetFacing = null;
+                    } else if (this.rotationTick <= 0 && !this.placedThisTick) {
                         int playerBlockX = MathHelper.floor_double(mc.thePlayer.posX);
                         int playerBlockY = MathHelper.floor_double(mc.thePlayer.posY);
                         int playerBlockZ = MathHelper.floor_double(mc.thePlayer.posZ);
@@ -723,6 +821,11 @@ public class Scaffold extends Module {
             if (this.safeStuckTicks > 0) {
                 event.setForward(0.0F);
                 event.setStrafe(0.0F);
+                return;
+            }
+            if (this.isThreeFmcMode() && !this.isThreeFmcTellyMode()) {
+                this.towerTick = 0;
+                this.towerDelay = 0;
                 return;
             }
             if (!mc.thePlayer.isCollidedHorizontally
@@ -873,6 +976,7 @@ public class Scaffold extends Module {
                 mc.thePlayer.movementInput.sneak = false;
                 return;
             }
+            this.quietThreeFmcMovement();
             if (this.moveFix.getValue() == 1
                     && RotationState.isActived()
                     && RotationState.getPriority() == 3.0F
@@ -899,7 +1003,8 @@ public class Scaffold extends Module {
                 mc.thePlayer.motionZ = 0.0;
                 this.safeStuckTicks--;
             }
-            float speed = this.getSpeed();
+            this.quietThreeFmcMovement();
+            float speed = this.isThreeFmcMode() && !this.isThreeFmcTellyMode() ? 1.0F : this.getSpeed();
             if (speed != 1.0F) {
                 if (mc.thePlayer.movementInput.moveForward != 0.0F && mc.thePlayer.movementInput.moveStrafe != 0.0F) {
                     mc.thePlayer.movementInput.moveForward = mc.thePlayer.movementInput.moveForward * (1.0F / (float) Math.sqrt(2.0));
@@ -1035,6 +1140,9 @@ public class Scaffold extends Module {
         this.eagleBlocksPlaced = 0;
         this.eagleLastSneakTime = 0L;
         this.snapRotating = false;
+        this.threeFmcAirTicks = 0;
+        this.threeFmcGroundTicks = 0;
+        this.threeFmcPlaceCooldown = 0;
         this.lastSnapPlaceYaw = Float.NaN;
         this.lastSnapPlacePitch = Float.NaN;
     }
@@ -1056,6 +1164,9 @@ public class Scaffold extends Module {
         this.safeStuckActive = false;
         this.eagleSneaking = false;
         this.eagleSneakTicks = 0;
+        this.threeFmcAirTicks = 0;
+        this.threeFmcGroundTicks = 0;
+        this.threeFmcPlaceCooldown = 0;
     }
 
     public int getBlockCount() {

@@ -136,7 +136,7 @@ public class KillAura extends Module {
     private int hypixel3Asw = 0;
     private boolean blinkReset = false;
     private long attackDelayMS = 0L;
-    private int blockTick = 0;
+    int blockTick = 0;
     private int lastTickProcessed;
     private long lastRotationUpdateTime = 0;
 

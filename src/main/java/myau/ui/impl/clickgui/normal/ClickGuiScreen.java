@@ -112,6 +112,7 @@ public class ClickGuiScreen extends GuiScreen {
                 Myau.moduleManager.getModule(TeamHealthDisplay.class),
                 Myau.moduleManager.getModule(SeasonDisplay.class),
                 Myau.moduleManager.getModule(Animations.class),
+                Myau.moduleManager.getModule(Ambience.class),
                 Myau.moduleManager.getModule(ClickGUIModule.class)
         );
 
