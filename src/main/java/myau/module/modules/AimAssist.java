@@ -86,10 +86,10 @@ public class AimAssist extends Module {
 
     private boolean checkSlinkyRequirements() {
         if (slinkyDisableOnBlockBreak.getValue() && isLookingAtBlock()) return false;
-        if (slinkyRequireSprint && !mc.thePlayer.isSprinting()) return false;
-        if (slinkyRequireMousePressed && !mc.gameSettings.keyBindAttack.isKeyDown()) return false;
-        if (slinkyRequireMouseMoved && !slinkyMouseMoved()) return false;
-        if (slinkyRequireWeapon && !ItemUtil.isHoldingSword()) return false;
+        if (slinkyRequireSprint.getValue() && !mc.thePlayer.isSprinting()) return false;
+        if (slinkyRequireMousePressed.getValue() && !mc.gameSettings.keyBindAttack.isKeyDown()) return false;
+        if (slinkyRequireMouseMoved.getValue() && !slinkyMouseMoved()) return false;
+        if (slinkyRequireWeapon.getValue() && !ItemUtil.isHoldingSword()) return false;
         return true;
     }
 
@@ -114,7 +114,7 @@ public class AimAssist extends Module {
             EntityPlayer e = (EntityPlayer) obj;
             if (e == mc.thePlayer) continue;
             if (e.deathTime > 0) continue;
-            if (slinkyIgnoreInvis && e.isInvisible()) continue;
+            if (slinkyIgnoreInvis.getValue() && e.isInvisible()) continue;
             double dx = e.posX - px, dy = e.posY - py, dz = e.posZ - pz;
             double distSq = dx * dx + dy * dy + dz * dz;
             if (distSq > rangeSq) continue;
@@ -135,7 +135,7 @@ public class AimAssist extends Module {
 
     private boolean isSlinkyTargetValid(EntityPlayer e) {
         if (e == null || e.deathTime > 0) return false;
-        if (slinkyIgnoreInvis && e.isInvisible()) return false;
+        if (slinkyIgnoreInvis.getValue() && e.isInvisible()) return false;
         return mc.thePlayer.getDistanceToEntity(e) <= range.getValue();
     }
 
@@ -258,7 +258,7 @@ public class AimAssist extends Module {
         if (target == null || !isSlinkyTargetValid(target)) target = selectSlinkyTarget();
         lockedTarget = target;
         if (target == null) return;
-        if (slinkyRequireLineOfSight && RotationUtil.rayTrace(target) != null) return;
+        if (slinkyRequireLineOfSight.getValue() && RotationUtil.rayTrace(target) != null) return;
         float[] angles = computeSlinkyAngles(target);
         String modeName = this.mode.getModeString();
         if ("Slinky-Silent".equals(modeName) && slinkySilentIgnoreManualAim.getValue() && slinkyMouseMoved()) return;
@@ -272,4 +272,4 @@ public class AimAssist extends Module {
             this.timer.reset();
         }
     }
-                                                         }
+}
