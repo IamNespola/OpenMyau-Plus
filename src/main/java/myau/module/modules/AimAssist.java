@@ -52,7 +52,7 @@ public class AimAssist extends Module {
     public final BooleanProperty allowTools = new BooleanProperty("allow-tools", false, this.weaponOnly::getValue);
     public final BooleanProperty botChecks = new BooleanProperty("bot-check", true);
     public final BooleanProperty team = new BooleanProperty("teams", true);
-    private long lastAimTime = 0;
+    private int aimTickCounter = 0;
     private EntityPlayer lockedTarget = null;
     private float lastYaw = 0, lastPitch = 0;
     private boolean mouseMovedThisTick = false;
@@ -80,8 +80,8 @@ public class AimAssist extends Module {
     }
 
     private boolean isTimeToAim() {
-        long now = System.currentTimeMillis();
-        if (now - lastAimTime >= 50) { lastAimTime = now; return true; }
+        aimTickCounter++;
+        if (aimTickCounter >= 1) { aimTickCounter = 0; return true; }
         return false;
     }
 
@@ -108,19 +108,21 @@ public class AimAssist extends Module {
         EntityPlayer best = null;
         double bestScore = Double.MAX_VALUE;
         double bestDist = Double.MAX_VALUE;
-        double rangeSq = range.getValue() * range.getValue();
-        double px = mc.thePlayer.posX, py = mc.thePlayer.posY, pz = mc.thePlayer.posZ;
+        float rangeVal = range.getValue();
         int sortIndex = slinkySortBy.getValue();
+        float fovVal = fov.getValue();
         for (Object obj : mc.theWorld.loadedEntityList) {
             if (!(obj instanceof EntityPlayer)) continue;
             EntityPlayer e = (EntityPlayer) obj;
             if (e == mc.thePlayer) continue;
             if (e.deathTime > 0) continue;
             if (slinkyIgnoreInvis.getValue() && e.isInvisible()) continue;
-            double dx = e.posX - px, dy = e.posY - py, dz = e.posZ - pz;
-            double distSq = dx * dx + dy * dy + dz * dz;
-            if (distSq > rangeSq) continue;
-            double dist = Math.sqrt(distSq);
+            double dist = mc.thePlayer.getDistanceToEntity(e);
+            if (dist > rangeVal) continue;
+            if (!slinkyAllowExceedFov.getValue()) {
+                float angle = RotationUtil.angleToEntity(e);
+                if (angle > fovVal) continue;
+            }
             double score;
             switch (sortIndex) {
                 case 1: score = TeamUtil.getHealthScore(e); break;
@@ -267,11 +269,13 @@ public class AimAssist extends Module {
         }
 
     private void tickSlinky() {
-        if (!isTimeToAim()) return;
         if (!checkSlinkyRequirements()) return;
+        // 每 tick 都执行，不再跳过
         EntityPlayer target = lockedTarget;
-        if (target == null || !isSlinkyTargetValid(target)) target = selectSlinkyTarget();
-        lockedTarget = target;
+        if (target == null || !isSlinkyTargetValid(target)) {
+            target = selectSlinkyTarget();
+            lockedTarget = target;
+        }
         if (target == null) return;
         if (slinkyRequireLineOfSight.getValue() && RotationUtil.rayTrace(target) != null) return;
         float[] angles = computeSlinkyAngles(target);
@@ -287,4 +291,4 @@ public class AimAssist extends Module {
             this.timer.reset();
         }
     }
-}
+    }
