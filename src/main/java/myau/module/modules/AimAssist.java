@@ -55,6 +55,7 @@ public class AimAssist extends Module {
     private long lastAimTime = 0;
     private EntityPlayer lockedTarget = null;
     private float lastYaw = 0, lastPitch = 0;
+    private boolean mouseMovedThisTick = false;
 
     private boolean isValidTarget(EntityPlayer entityPlayer) {
         if (entityPlayer != mc.thePlayer && entityPlayer != mc.thePlayer.ridingEntity) {
@@ -80,7 +81,7 @@ public class AimAssist extends Module {
 
     private boolean isTimeToAim() {
         long now = System.currentTimeMillis();
-        if (now - lastAimTime >= 100) { lastAimTime = now; return true; }
+        if (now - lastAimTime >= 50) { lastAimTime = now; return true; }
         return false;
     }
 
@@ -99,6 +100,7 @@ public class AimAssist extends Module {
         boolean moved = yaw != lastYaw || pitch != lastPitch;
         lastYaw = yaw;
         lastPitch = pitch;
+        mouseMovedThisTick = moved;
         return moved;
     }
 
@@ -140,8 +142,8 @@ public class AimAssist extends Module {
     }
 
     private float[] computeSlinkyAngles(EntityPlayer target) {
-        double px = mc.thePlayer.posX, py = mc.thePlayer.posY, pz = mc.thePlayer.posZ;
-        double tx = target.posX, ty = target.posY, tz = target.posZ;
+        double px = mc.thePlayer.posX, py = mc.thePlayer.posY + mc.thePlayer.getEyeHeight(), pz = mc.thePlayer.posZ;
+        double tx = target.posX, ty = target.posY + target.getEyeHeight(), tz = target.posZ;
         if (slinkyPredict.getValue() > 0) {
             double vx = target.posX - target.prevPosX;
             double vy = target.posY - target.prevPosY;
@@ -149,8 +151,20 @@ public class AimAssist extends Module {
             double pred = slinkyPredict.getValue();
             tx += vx * pred; ty += vy * pred; tz += vz * pred;
         }
-        if (slinkyVerHitboxCorrect.getValue()) ty += 1.62;
-        if (slinkyHorHitboxCorrect.getValue()) py += 1.62;
+        if (slinkyVerHitboxCorrect.getValue()) {
+            // aim at center of hitbox vertically
+            ty = target.posY + target.getEyeHeight() - 0.3;
+        }
+        if (slinkyHorHitboxCorrect.getValue()) {
+            // horizontal hitbox correction: aim at edge based on relative position
+            double dx = tx - px, dz = tz - pz;
+            double horiz = Math.sqrt(dx * dx + dz * dz);
+            if (horiz > 0) {
+                double hitboxRadius = target.getCollisionBorderSize();
+                tx += (dx / horiz) * hitboxRadius * 0.5;
+                tz += (dz / horiz) * hitboxRadius * 0.5;
+            }
+        }
         double dx = tx - px, dy = ty - py, dz = tz - pz;
         double horiz = Math.sqrt(dx * dx + dz * dz);
         return new float[]{
@@ -170,8 +184,10 @@ public class AimAssist extends Module {
         float dyaw = normalizeAngle(targetYaw - curYaw);
         float dpitch = slinkyLockOnVertical.getValue() ? normalizeAngle(targetPitch - curPitch) : 0f;
         if (slinkyRandomization.getValue() > 0) {
-            float jitter = (float) (slinkyRandomization.getValue() * (Math.random() * 2.0 - 1.0));
-            dyaw += jitter; dpitch += jitter;
+            float rand = slinkyRandomization.getValue();
+            float jitterYaw = (float) (rand * (Math.random() * 2.0 - 1.0));
+            float jitterPitch = (float) (rand * (Math.random() * 2.0 - 1.0));
+            dyaw += jitterYaw; dpitch += jitterPitch;
         }
         float finalYaw, finalPitch;
         switch (modeName) {
@@ -181,19 +197,19 @@ public class AimAssist extends Module {
                 break;
             }
             case "Slinky-LockOn": {
-                float step = (float) Math.min(1.0, 0.2 + slinkyHorSpeed.getValue() * 0.15);
+                float step = (float) Math.min(1.0, 0.35 + slinkyHorSpeed.getValue() * 0.2);
                 finalYaw = curYaw + dyaw * step; finalPitch = curPitch + dpitch * step;
                 break;
             }
             case "Slinky-Linear": {
-                float step = (float) (0.05 * (slinkyHorSpeed.getValue() + slinkyVerSpeed.getValue()));
+                float step = (float) (0.08 * (slinkyHorSpeed.getValue() + slinkyVerSpeed.getValue()));
                 finalYaw = curYaw + dyaw * step; finalPitch = curPitch + dpitch * step;
                 break;
             }
             case "Slinky-Regular":
             default: {
-                float yawStep = (float) (slinkyHorSpeed.getValue() * 0.1);
-                float pitchStep = (float) (slinkyVerSpeed.getValue() * 0.1);
+                float yawStep = (float) (slinkyHorSpeed.getValue() * 0.15);
+                float pitchStep = (float) (slinkyVerSpeed.getValue() * 0.15);
                 finalYaw = curYaw + dyaw * yawStep; finalPitch = curPitch + dpitch * pitchStep;
                 break;
             }
@@ -260,7 +276,7 @@ public class AimAssist extends Module {
         if (slinkyRequireLineOfSight.getValue() && RotationUtil.rayTrace(target) != null) return;
         float[] angles = computeSlinkyAngles(target);
         String modeName = this.mode.getModeString();
-        if ("Slinky-Silent".equals(modeName) && slinkySilentIgnoreManualAim.getValue() && slinkyMouseMoved()) return;
+        if ("Slinky-Silent".equals(modeName) && slinkySilentIgnoreManualAim.getValue() && mouseMovedThisTick) return;
         if (!slinkyAllowExceedFov.getValue() && !isWithinSlinkyFov(angles[0])) return;
         applySlinkyAngles(angles, modeName);
     }
@@ -271,4 +287,4 @@ public class AimAssist extends Module {
             this.timer.reset();
         }
     }
-                                                                       }
+}
