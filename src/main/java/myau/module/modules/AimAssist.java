@@ -25,27 +25,27 @@ public class AimAssist extends Module {
     private static final Minecraft mc = Minecraft.getMinecraft();
     private final TimerUtil timer = new TimerUtil();
     public final ModeProperty mode = new ModeProperty("mode", 0, new String[]{"Normal", "Slinky-Regular", "Slinky-Linear", "Slinky-LockOn", "Slinky-Silent"});
-    public final FloatProperty hSpeed = new FloatProperty("horizontal-speed", 3.0F, 0.0F, 10.0F);
-    public final FloatProperty vSpeed = new FloatProperty("vertical-speed", 0.0F, 0.0F, 10.0F);
-    public final PercentProperty smoothing = new PercentProperty("smoothing", 50);
-    public final FloatProperty slinkyHorSpeed = new FloatProperty("slinky-hor-speed", 1.0F, 0.0F, 10.0F);
-    public final FloatProperty slinkyVerSpeed = new FloatProperty("slinky-ver-speed", 1.0F, 0.0F, 10.0F);
-    public final BooleanProperty slinkyLockOnVertical = new BooleanProperty("slinky-lock-vertical", false);
-    public final BooleanProperty slinkySilentMoveCorrect = new BooleanProperty("slinky-silent-move-correct", false);
-    public final BooleanProperty slinkySilentIgnoreManualAim = new BooleanProperty("slinky-silent-ignore-manual-aim", false);
-    public final FloatProperty slinkyPredict = new FloatProperty("slinky-predict", 0.0F, 0.0F, 5.0F);
-    public final FloatProperty slinkyRandomization = new FloatProperty("slinky-randomization", 0.0F, 0.0F, 5.0F);
-    public final BooleanProperty slinkyVerHitboxCorrect = new BooleanProperty("slinky-ver-hitbox", false);
-    public final BooleanProperty slinkyHorHitboxCorrect = new BooleanProperty("slinky-hor-hitbox", false);
-    public final BooleanProperty slinkyAllowExceedFov = new BooleanProperty("slinky-allow-exceed-fov", false);
-    public final BooleanProperty slinkyRequireSprint = new BooleanProperty("slinky-require-sprint", false);
-    public final BooleanProperty slinkyRequireMousePressed = new BooleanProperty("slinky-require-mouse-pressed", false);
-    public final BooleanProperty slinkyRequireMouseMoved = new BooleanProperty("slinky-require-mouse-moved", false);
-    public final BooleanProperty slinkyDisableOnBlockBreak = new BooleanProperty("slinky-disable-on-block-break", false);
-    public final BooleanProperty slinkyRequireWeapon = new BooleanProperty("slinky-require-weapon", false);
-    public final BooleanProperty slinkyIgnoreInvis = new BooleanProperty("slinky-ignore-invis", false);
-    public final BooleanProperty slinkyRequireLineOfSight = new BooleanProperty("slinky-require-line-of-sight", false);
-    public final ModeProperty slinkySortBy = new ModeProperty("slinky-sort-by", 0, new String[]{"Distance", "Health", "HurtTime", "AimAngle"});
+    public final FloatProperty hSpeed = new FloatProperty("horizontal-speed", 3.0F, 0.0F, 10.0F, () -> "Normal".equals(this.mode.getModeString()));
+    public final FloatProperty vSpeed = new FloatProperty("vertical-speed", 0.0F, 0.0F, 10.0F, () -> "Normal".equals(this.mode.getModeString()));
+    public final PercentProperty smoothing = new PercentProperty("smoothing", 50, () -> "Normal".equals(this.mode.getModeString()));
+    public final FloatProperty slinkyHorSpeed = new FloatProperty("slinky-hor-speed", 1.0F, 0.0F, 10.0F, () -> this.mode.getModeString().startsWith("Slinky-"));
+    public final FloatProperty slinkyVerSpeed = new FloatProperty("slinky-ver-speed", 1.0F, 0.0F, 10.0F, () -> this.mode.getModeString().startsWith("Slinky-"));
+    public final BooleanProperty slinkyLockOnVertical = new BooleanProperty("slinky-lock-vertical", false, () -> this.mode.getModeString().startsWith("Slinky-"));
+    public final BooleanProperty slinkySilentMoveCorrect = new BooleanProperty("slinky-silent-move-correct", false, () -> this.mode.getModeString().startsWith("Slinky-"));
+    public final BooleanProperty slinkySilentIgnoreManualAim = new BooleanProperty("slinky-silent-ignore-manual-aim", false, () -> this.mode.getModeString().startsWith("Slinky-"));
+    public final FloatProperty slinkyPredict = new FloatProperty("slinky-predict", 0.0F, 0.0F, 5.0F, () -> this.mode.getModeString().startsWith("Slinky-"));
+    public final FloatProperty slinkyRandomization = new FloatProperty("slinky-randomization", 0.0F, 0.0F, 5.0F, () -> this.mode.getModeString().startsWith("Slinky-"));
+    public final BooleanProperty slinkyVerHitboxCorrect = new BooleanProperty("slinky-ver-hitbox", false, () -> this.mode.getModeString().startsWith("Slinky-"));
+    public final BooleanProperty slinkyHorHitboxCorrect = new BooleanProperty("slinky-hor-hitbox", false, () -> this.mode.getModeString().startsWith("Slinky-"));
+    public final BooleanProperty slinkyAllowExceedFov = new BooleanProperty("slinky-allow-exceed-fov", false, () -> this.mode.getModeString().startsWith("Slinky-"));
+    public final BooleanProperty slinkyRequireSprint = new BooleanProperty("slinky-require-sprint", false, () -> this.mode.getModeString().startsWith("Slinky-"));
+    public final BooleanProperty slinkyRequireMousePressed = new BooleanProperty("slinky-require-mouse-pressed", false, () -> this.mode.getModeString().startsWith("Slinky-"));
+    public final BooleanProperty slinkyRequireMouseMoved = new BooleanProperty("slinky-require-mouse-moved", false, () -> this.mode.getModeString().startsWith("Slinky-"));
+    public final BooleanProperty slinkyDisableOnBlockBreak = new BooleanProperty("slinky-disable-on-block-break", false, () -> this.mode.getModeString().startsWith("Slinky-"));
+    public final BooleanProperty slinkyRequireWeapon = new BooleanProperty("slinky-require-weapon", false, () -> this.mode.getModeString().startsWith("Slinky-"));
+    public final BooleanProperty slinkyIgnoreInvis = new BooleanProperty("slinky-ignore-invis", false, () -> this.mode.getModeString().startsWith("Slinky-"));
+    public final BooleanProperty slinkyRequireLineOfSight = new BooleanProperty("slinky-require-line-of-sight", false, () -> this.mode.getModeString().startsWith("Slinky-"));
+    public final ModeProperty slinkySortBy = new ModeProperty("slinky-sort-by", 0, new String[]{"Distance", "Health", "HurtTime", "AimAngle"}, () -> this.mode.getModeString().startsWith("Slinky-"));
     public final FloatProperty range = new FloatProperty("range", 4.5F, 3.0F, 8.0F);
     public final IntProperty fov = new IntProperty("fov", 90, 30, 360);
     public final BooleanProperty weaponOnly = new BooleanProperty("weapons-only", true);
@@ -213,15 +213,15 @@ public class AimAssist extends Module {
 
     @EventTarget
     public void onTick(TickEvent event) {
-        if (!this.isEnabled() || event.getType() != EventType.POST || mc.currentScreen == null) return;
+        if (!this.isEnabled() || event.getType() != EventType.POST || mc.currentScreen != null) return;
         String currentMode = this.mode.getModeString();
         if ("Normal".equals(currentMode)) tickNormal();
         else if (currentMode.startsWith("Slinky-")) tickSlinky();
     }
 
     private void tickNormal() {
-        if (!(Boolean) this.weaponOnly.getValue() || ItemUtil.hasRawUnbreakingEnchant() || this.allowTools.getValue() && ItemUtil.isHoldingTool()) {
-            boolean attacking = PlayerUtil.isAttacking();
+        if (this.weaponOnly.getValue() && !ItemUtil.isHoldingSword() && !(this.allowTools.getValue() && ItemUtil.isHoldingTool())) return;
+        boolean attacking = PlayerUtil.isAttacking();
             if (!attacking || !this.isLookingAtBlock()) {
                 if (attacking || !this.timer.hasTimeElapsed(350L)) {
                     List<EntityPlayer> inRange = mc.theWorld.loadedEntityList.stream()
@@ -249,7 +249,6 @@ public class AimAssist extends Module {
                 }
             }
         }
-    }
 
     private void tickSlinky() {
         if (!isTimeToAim()) return;
@@ -272,4 +271,4 @@ public class AimAssist extends Module {
             this.timer.reset();
         }
     }
-}
+                                                                       }
