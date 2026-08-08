@@ -52,7 +52,6 @@ public class AimAssist extends Module {
     public final BooleanProperty allowTools = new BooleanProperty("allow-tools", false, this.weaponOnly::getValue);
     public final BooleanProperty botChecks = new BooleanProperty("bot-check", true);
     public final BooleanProperty team = new BooleanProperty("teams", true);
-    private int aimTickCounter = 0;
     private EntityPlayer lockedTarget = null;
     private float lastYaw = 0, lastPitch = 0;
     private boolean mouseMovedThisTick = false;
@@ -77,12 +76,6 @@ public class AimAssist extends Module {
 
     private boolean isLookingAtBlock() {
         return mc.objectMouseOver != null && mc.objectMouseOver.typeOfHit == MovingObjectType.BLOCK;
-    }
-
-    private boolean isTimeToAim() {
-        aimTickCounter++;
-        if (aimTickCounter >= 1) { aimTickCounter = 0; return true; }
-        return false;
     }
 
     private boolean checkSlinkyRequirements() {
@@ -144,35 +137,26 @@ public class AimAssist extends Module {
     }
 
     private float[] computeSlinkyAngles(EntityPlayer target) {
-        double px = mc.thePlayer.posX, py = mc.thePlayer.posY + mc.thePlayer.getEyeHeight(), pz = mc.thePlayer.posZ;
-        double tx = target.posX, ty = target.posY + target.getEyeHeight(), tz = target.posZ;
+        AxisAlignedBB box = target.getEntityBoundingBox();
+        double border = target.getCollisionBorderSize();
+        box = box.expand(border, border, border);
         if (slinkyPredict.getValue() > 0) {
             double vx = target.posX - target.prevPosX;
             double vy = target.posY - target.prevPosY;
             double vz = target.posZ - target.prevPosZ;
             double pred = slinkyPredict.getValue();
-            tx += vx * pred; ty += vy * pred; tz += vz * pred;
+            box = box.offset(vx * pred, vy * pred, vz * pred);
         }
         if (slinkyVerHitboxCorrect.getValue()) {
-            // aim at center of hitbox vertically
-            ty = target.posY + target.getEyeHeight() - 0.3;
+            double h = box.maxY - box.minY;
+            box = AxisAlignedBB.fromBounds(box.minX, box.minY + h * 0.2, box.minZ, box.maxX, box.maxY - h * 0.2, box.maxZ);
         }
         if (slinkyHorHitboxCorrect.getValue()) {
-            // horizontal hitbox correction: aim at edge based on relative position
-            double dx = tx - px, dz = tz - pz;
-            double horiz = Math.sqrt(dx * dx + dz * dz);
-            if (horiz > 0) {
-                double hitboxRadius = target.getCollisionBorderSize();
-                tx += (dx / horiz) * hitboxRadius * 0.5;
-                tz += (dz / horiz) * hitboxRadius * 0.5;
-            }
+            double cx = (box.minX + box.maxX) / 2.0;
+            double cz = (box.minZ + box.maxZ) / 2.0;
+            box = AxisAlignedBB.fromBounds(cx - 0.1, box.minY, cz - 0.1, cx + 0.1, box.maxY, cz + 0.1);
         }
-        double dx = tx - px, dy = ty - py, dz = tz - pz;
-        double horiz = Math.sqrt(dx * dx + dz * dz);
-        return new float[]{
-                (float) Math.toDegrees(Math.atan2(dx, dz)),
-                (float) Math.toDegrees(Math.atan2(dy, horiz))
-        };
+        return RotationUtil.getRotationsToBox(box, mc.thePlayer.rotationYaw, mc.thePlayer.rotationPitch, 180.0F, 0.0F);
     }
 
     private boolean isWithinSlinkyFov(float targetYaw) {
@@ -199,7 +183,7 @@ public class AimAssist extends Module {
                 break;
             }
             case "Slinky-LockOn": {
-                float step = (float) Math.min(1.0, 0.35 + slinkyHorSpeed.getValue() * 0.2);
+                float step = (float) Math.min(1.0, 0.2 + slinkyHorSpeed.getValue() * 0.15);
                 finalYaw = curYaw + dyaw * step; finalPitch = curPitch + dpitch * step;
                 break;
             }
@@ -291,4 +275,4 @@ public class AimAssist extends Module {
             this.timer.reset();
         }
     }
-    }
+}
