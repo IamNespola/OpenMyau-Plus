@@ -52,8 +52,8 @@ public class CheadleClickGui extends GuiScreen {
             "ESP", "Chams", "FullBright", "Tracers", "NameTags", "Xray", "TargetESP", "TargetHUD", "Indicators",
             "BedESP", "ItemESP", "BreakProgress", "ViewClip", "NoHurtCam", "HUD", "GuiModule", "RiseClickGUI",
             "ClickGUI", "ChestESP", "Trajectories", "Radar", "RenderFixes", "FPScounter", "WaterMark", "WaterMark2",
-            "HitParticleEffects", "DynamicIsland", "ESP2D", "TeamHealthDisplay", "SessionDisplay", "Animations",
-            "BlockOverlay", "Ambience", "Capes");
+            "HitParticleEffects", "DynamicIsland", "ESP2D", "TeamHealthDisplay", "Statistics", "Animations",
+            "BlockOverlay", "Ambience", "Capes", "FreeLook", "ItemPhysics");
     private static final Set<String> PLAYER = set(
             "AutoHeal", "FakeLag", "AutoTool", "ChestStealer", "AutoBedDef", "InvManager", "InvWalk", "Scaffold",
             "AutoBlockIn", "AutoSwap", "SpeedMine", "FastPlace", "GhostHand", "MCF", "AntiDebuff", "FlagDetector",

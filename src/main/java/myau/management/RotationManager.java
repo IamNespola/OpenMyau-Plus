@@ -54,12 +54,11 @@ public class RotationManager {
         if (this.priority <= priority) {
             this.priority = priority;
 
-            float[] fixed = RotationUtil.gcd(new float[]{yaw, pitch}, new float[]{mc.thePlayer.rotationYaw, mc.thePlayer.rotationPitch});
-            float finalYaw = fixed[0];
-            float finalPitch = fixed[1];
+            float[] patched = RotationUtil.gcd(yaw, pitch, mc.thePlayer.rotationYaw, mc.thePlayer.rotationPitch);
 
-            this.yawDelta = MathHelper.wrapAngleTo180_float(finalYaw - mc.thePlayer.rotationYaw);
-            this.pitchDelta = MathHelper.clamp_float(finalPitch - mc.thePlayer.rotationPitch, -90.0F, 90.0F);
+            this.yawDelta = MathHelper.wrapAngleTo180_float(patched[0] - mc.thePlayer.rotationYaw);
+            this.pitchDelta = MathHelper.clamp_float(patched[1] - mc.thePlayer.rotationPitch, -90.0F, 90.0F);
+            // -------------------------
 
             this.lastUpdate = 0.0F;
             this.rotated = force;

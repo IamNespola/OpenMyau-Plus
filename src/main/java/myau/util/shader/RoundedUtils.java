@@ -236,6 +236,7 @@ public class RoundedUtils {
             float outlineThickness,
             Color color,
             Color outlineColor) {
+        initShaders();
         RenderUtil.resetColor();
         GlStateManager.enableBlend();
         GlStateManager.blendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);

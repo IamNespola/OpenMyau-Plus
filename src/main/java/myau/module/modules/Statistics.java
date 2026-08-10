@@ -13,6 +13,8 @@ import myau.module.Module;
 import myau.property.properties.ColorProperty;
 import myau.property.properties.DragProperty;
 import myau.property.properties.ModeProperty;
+import myau.font.CFontRenderer;
+import myau.font.FontProcess;
 import myau.util.shader.BlurUtils;
 import myau.util.shader.RoundedUtils;
 import myau.util.vector.Vector2d;
@@ -24,7 +26,7 @@ import net.minecraft.network.play.server.S02PacketChat;
 import net.minecraft.network.play.server.S45PacketTitle;
 import net.minecraft.util.StringUtils;
 
-public class SessionDisplay extends Module {
+public class Statistics extends Module {
 
     private static final Minecraft mc = Minecraft.getMinecraft();
 
@@ -43,8 +45,8 @@ public class SessionDisplay extends Module {
     private float width, height;
     private String timeString = "0 seconds";
 
-    public SessionDisplay() {
-        super("SessionDisplay", false, true);
+    public Statistics() {
+        super("Statistics", false, false);
     }
 
     private Color getAccentColor() {
@@ -100,39 +102,35 @@ public class SessionDisplay extends Module {
         Color c1 = applyOpacity(getAccentColor(), 0.8f);
         RoundedUtils.drawRoundOutline(x, y, width, height, 6, 1.0f, new Color(0, 0, 0, 100), c1);
 
-        net.minecraft.client.gui.FontRenderer font = mc.fontRendererObj;
+        CFontRenderer font18 = FontProcess.getFont("sans");
 
         double padding = 8;
 
         // Title
         String title = "Session Stats";
-        font.drawStringWithShadow(
+        font18.drawString(
                 title,
-                x + width / 2F - font.getStringWidth(title) / 2F,
+                x + width / 2F - font18.getStringWidth(title) / 2F,
                 (float) (y + padding),
                 getAccentColor().getRGB());
 
         // Time
-        font.drawStringWithShadow(
+        font18.drawString(
                 timeString,
-                x + width / 2F - font.getStringWidth(timeString) / 2F,
-                (float) (y + padding + 14),
-                0xFFFFFFFF);
+                x + width / 2F - font18.getStringWidth(timeString) / 2F,
+                (float) (y + padding + 19),
+                new Color(255, 255, 255, 200).getRGB());
 
         // Kills & Wins
         String killsText = "kills " + killCount;
         String winsText = "wins " + wins;
-        font.drawStringWithShadow(
-                killsText,
-                x + 8,
-                (float) (y + padding + 28),
-                0xFFFFFFFF);
-
-        font.drawStringWithShadow(
+        font18.drawString(
+                killsText, x + 25, (float) (y + padding + 32), new Color(255, 255, 255, 200).getRGB());
+        font18.drawString(
                 winsText,
-                x + width - 8 - font.getStringWidth(winsText),
-                (float) (y + padding + 28),
-                0xFFFFFFFF);
+                x + width - 25 - font18.getStringWidth(winsText),
+                (float) (y + padding + 32),
+                new Color(255, 255, 255, 200).getRGB());
     }
 
     private Color applyOpacity(Color color, float alpha) {

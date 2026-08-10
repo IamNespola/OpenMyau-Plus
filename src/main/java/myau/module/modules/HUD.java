@@ -53,7 +53,7 @@ public class HUD extends Module {
             ViewClip.class, NoHurtCam.class, HUD.class, GuiModule.class, RiseClickGUIModule.class,
             ChestESP.class, Trajectories.class, Radar.class, RenderFixes.class, FPScounter.class,
             WaterMark.class, WaterMark2.class, HitParticleEffects.class, DynamicIsland.class,
-            ESP2D.class, TeamHealthDisplay.class, SessionDisplay.class, Animations.class
+            ESP2D.class, TeamHealthDisplay.class, Statistics.class, Animations.class
     ));
     private static final Set<Class<?>> PLAYER_MODULES = new HashSet<>(Arrays.<Class<?>>asList(
             AutoHeal.class, FakeLag.class, AutoTool.class, ChestStealer.class, InvManager.class,
@@ -107,9 +107,10 @@ public class HUD extends Module {
     public final BooleanProperty notifications = new BooleanProperty("notifications", true);
     public final BooleanProperty toggleSound = new BooleanProperty("toggle-sounds", true);
     public final BooleanProperty toggleAlerts = new BooleanProperty("toggle-alerts", false);
-    public final ModeProperty fontMode = new ModeProperty("font-mode", 0, new String[]{"SANS", "MINECRAFT", "NUNITO"});
+    public final ModeProperty fontMode = new ModeProperty("font-mode", 0, new String[]{"SANS", "MINECRAFT", "NUNITO", "TENACITY", "TENACITY_BOLD", "SF_PRO"});
     public final BooleanProperty creidaFont = new BooleanProperty("creida-font", true, () -> this.interfaceMode.getValue() == 1);
     public final BooleanProperty creidaWatermark = new BooleanProperty("creida-watermark", true, () -> this.interfaceMode.getValue() == 1);
+    public final BooleanProperty clientInfo = new BooleanProperty("client-info", true);
     public final BooleanProperty rounded = new BooleanProperty("rounded", true);
     public final FloatProperty cornerRadius = new FloatProperty("corner-radius", 4.0F, 1.0F, 8.0F, () -> rounded.getValue());
     public final FloatProperty padding = new FloatProperty("padding", 2.0F, 0.0F, 6.0F);
@@ -223,6 +224,15 @@ public class HUD extends Module {
             case 2: // NUNITO
                 selectedFont = getNunitoFontRenderer();
                 break;
+            case 3: // TENACITY
+                selectedFont = FontProcess.getFont("tenacity");
+                break;
+            case 4: // TENACITY_BOLD
+                selectedFont = FontProcess.getFont("tenacity-bold");
+                break;
+            case 5: // SF_PRO
+                selectedFont = FontProcess.getFont("sf-pro");
+                break;
             default:
                 selectedFont = FontProcess.getFont("sans");
                 break;
@@ -246,6 +256,7 @@ public class HUD extends Module {
         }
         return nunitoFontRenderer;
     }
+
 
     public Color getColor(long time) {
         return this.getColor(time, 0L);
@@ -410,6 +421,9 @@ public class HUD extends Module {
             }
         }
         if (this.isEnabled() && !mc.gameSettings.showDebugInfo) {
+            if (this.clientInfo.getValue()) {
+                this.renderClientInfo();
+            }
             if (this.interfaceMode.getValue() == 1) {
                 renderCreidaInterface();
             } else {
@@ -724,6 +738,38 @@ public class HUD extends Module {
 
     private boolean isCreidaMinecraftFont() {
         return !this.creidaFont.getValue() || this.fontMode.getValue() == 1;
+    }
+
+    // "Version: x.x.x Username: name" bottom-left line, ported from Miau Client's HUD (Normal mode).
+    private void renderClientInfo() {
+        float fontHeight = this.fontMode.getValue() == 1 ? mcFont.FONT_HEIGHT : fontRenderer.FONT_HEIGHT;
+        ScaledResolution sr = new ScaledResolution(mc);
+        float yCoord = sr.getScaledHeight() - fontHeight - 2.0F;
+        int hudColor = this.getColor(System.currentTimeMillis()).getRGB();
+        int whiteColor = -1;
+
+        float currentX = 2.0F;
+        currentX += this.drawClientInfoText("Version: ", currentX, yCoord, whiteColor);
+
+        String ver = Myau.version;
+        if (ver != null && ver.length() > 0) {
+            String firstChar = ver.substring(0, 1);
+            String restVer = ver.substring(1);
+            currentX += this.drawClientInfoText(firstChar, currentX, yCoord, hudColor);
+            currentX += this.drawClientInfoText(restVer, currentX, yCoord, whiteColor);
+        }
+
+        currentX += this.drawClientInfoText(" Username: ", currentX, yCoord, whiteColor);
+        this.drawClientInfoText(mc.getSession().getUsername(), currentX, yCoord, hudColor);
+    }
+
+    private float drawClientInfoText(String text, float x, float y, int color) {
+        if (this.fontMode.getValue() == 1) {
+            mcFont.drawStringWithShadow(text, x, y, color);
+            return mcFont.getStringWidth(text);
+        }
+        fontRenderer.drawStringWithShadow(text, x, y, color);
+        return fontRenderer.getStringWidth(text);
     }
 
     private void renderNotifications() {

@@ -32,6 +32,9 @@ import org.lwjgl.opengl.GL11;
 import java.awt.*;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
 
 public class Scaffold extends Module {
     private static final Minecraft mc = Minecraft.getMinecraft();
@@ -113,6 +116,9 @@ public class Scaffold extends Module {
     private int eagleSneakTicks = 0;
     private long eagleLastSneakTime = 0L;
     private int eagleBlocksPlaced = 0;
+    public final BooleanProperty espOutline = new BooleanProperty("outline-esp", false);
+    public final ModeProperty espColor = new ModeProperty("outline-color", 0, new String[]{"Default", "HUD"}, () -> this.espOutline.getValue());
+    private final Map<BlockPos, Long> espHighlight = new HashMap<>();
 
     private boolean shouldStopSprint() {
         if (this.isThreeFmcMode() && !this.isThreeFmcTellyMode()) {
@@ -272,6 +278,7 @@ public class Scaffold extends Module {
                 if (this.isThreeFmcMode()) {
                     this.threeFmcPlaceCooldown = 1;
                 }
+                this.markPlaced(blockPos.offset(enumFacing));
                 this.eagleBlocksPlaced++;
                 if (this.swing.getValue()) {
                     mc.thePlayer.swingItem();
@@ -1091,6 +1098,48 @@ public class Scaffold extends Module {
         }
     }
 
+    private void markPlaced(BlockPos pos) {
+        if (this.espOutline.getValue()) {
+            this.espHighlight.put(pos, System.currentTimeMillis());
+        }
+    }
+
+    @EventTarget
+    public void onRender3D(Render3DEvent event) {
+        if (!this.espOutline.getValue() || mc.theWorld == null || mc.thePlayer == null) {
+            return;
+        }
+        if (this.espHighlight.isEmpty()) {
+            return;
+        }
+        int themeColor;
+        if (this.espColor.getValue() == 1) {
+            HUD hud = (HUD) Myau.moduleManager.modules.get(HUD.class);
+            themeColor = hud.getColor(0L).getRGB();
+        } else {
+            themeColor = Color.CYAN.getRGB();
+        }
+        Iterator<Map.Entry<BlockPos, Long>> iterator = this.espHighlight.entrySet().iterator();
+        while (iterator.hasNext()) {
+            Map.Entry<BlockPos, Long> entry = iterator.next();
+            long time = System.currentTimeMillis() - entry.getValue();
+            if (time > 750L) {
+                iterator.remove();
+                continue;
+            }
+            int currentAlpha = (int) (210 - (time / 750.0 * 210));
+            if (currentAlpha <= 0) {
+                iterator.remove();
+                continue;
+            }
+            RenderUtil.renderBlock(
+                    entry.getKey(),
+                    (themeColor & 0xFFFFFF) | (currentAlpha << 24),
+                    true,
+                    false);
+        }
+    }
+
     @EventTarget
     public void onLeftClick(LeftClickMouseEvent event) {
         if (this.isEnabled()) {
@@ -1149,6 +1198,7 @@ public class Scaffold extends Module {
         this.threeFmcPlaceCooldown = 0;
         this.lastSnapPlaceYaw = Float.NaN;
         this.lastSnapPlacePitch = Float.NaN;
+        this.espHighlight.clear();
     }
 
     @Override

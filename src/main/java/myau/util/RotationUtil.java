@@ -3,6 +3,7 @@ package myau.util;
 import myau.mixin.IAccessorEntity;
 import net.minecraft.client.Minecraft;
 import net.minecraft.entity.Entity;
+import net.minecraft.entity.EntityLivingBase;
 import net.minecraft.util.AxisAlignedBB;
 import net.minecraft.util.MathHelper;
 import net.minecraft.util.MovingObjectPosition;
@@ -10,6 +11,11 @@ import net.minecraft.util.Vec3;
 
 public class RotationUtil {
     private static final Minecraft mc = Minecraft.getMinecraft();
+
+
+    public static float serverYaw;
+    public static float serverPitch;
+    public static boolean customRots;
 
     public static float wrapAngleDiff(float angle, float target) {
         return target + MathHelper.wrapAngleTo180_float(angle - target);
@@ -147,6 +153,37 @@ public class RotationUtil {
 
         float patchedYaw = prev[0] + (float) (Math.round(deltaYaw / mult) * mult);
         float patchedPitch = prev[1] + (float) (Math.round(deltaPitch / mult) * mult);
+
+        return new float[]{patchedYaw, MathHelper.clamp_float(patchedPitch, -90.0F, 90.0F)};
+    }
+
+    public static double distanceSqFromEyeToClosestOnAABB(Entity entity) {
+        if (entity == null || mc.thePlayer == null) return Double.MAX_VALUE;
+        Vec3 eye = mc.thePlayer.getPositionEyes(1.0f);
+        float borderSize = entity.getCollisionBorderSize();
+        AxisAlignedBB bb = entity.getEntityBoundingBox().expand(borderSize, borderSize, borderSize);
+        Vec3 closest = closestPointOnAabb(bb, eye);
+        double dx = eye.xCoord - closest.xCoord;
+        double dy = eye.yCoord - closest.yCoord;
+        double dz = eye.zCoord - closest.zCoord;
+        return dx * dx + dy * dy + dz * dz;
+    }
+
+    public static Vec3 closestPointOnAabb(AxisAlignedBB box, Vec3 point) {
+        double x = Math.max(box.minX, Math.min(box.maxX, point.xCoord));
+        double y = Math.max(box.minY, Math.min(box.maxY, point.yCoord));
+        double z = Math.max(box.minZ, Math.min(box.maxZ, point.zCoord));
+        return new Vec3(x, y, z);
+    }
+
+    public static float[] gcd(float yaw, float pitch, float rotationYaw, float rotationPitch) {
+        double mult = gcd();
+
+        float deltaYaw = yaw - rotationYaw;
+        float deltaPitch = pitch - rotationPitch;
+
+        float patchedYaw = rotationYaw + (float) (Math.round(deltaYaw / mult) * mult);
+        float patchedPitch = rotationPitch + (float) (Math.round(deltaPitch / mult) * mult);
 
         return new float[]{patchedYaw, MathHelper.clamp_float(patchedPitch, -90.0F, 90.0F)};
     }

@@ -16,6 +16,8 @@ public class FontManager {
             icon20,
             productSans12, productSans16, productSans18, productSans20, productSans24, productSans28, productSans32, productSansLight, productSansMedium,
             tenacity12, tenacity16, tenacity20, tenacity24, tenacity28, tenacity32, tenacity80,
+            tenacityBold12, tenacityBold16, tenacityBold20, tenacityBold24, tenacityBold28, tenacityBold32,
+            sfPro12, sfPro16, sfPro20, sfPro24, sfPro28, sfPro32,
             vision12, vision16, vision20, vision24, vision28, vision32,
             nbpInforma12, nbpInforma16, nbpInforma20, nbpInforma24, nbpInforma28, nbpInforma32,
             tahomaBold12, tahomaBold16, tahomaBold20, tahomaBold24, tahomaBold28, tahomaBold32,
@@ -69,6 +71,22 @@ public class FontManager {
             tenacity28 = new FontRenderer(FontUtil.getResource(locationMap, "tenacity.ttf", 28));
             tenacity32 = new FontRenderer(FontUtil.getResource(locationMap, "tenacity.ttf", 32));
             tenacity80 = new FontRenderer(FontUtil.getResource(locationMap, "tenacity.ttf", 80));
+
+            // Tenacity Bold Fonts
+            tenacityBold12 = new FontRenderer(FontUtil.getResource(locationMap, "tenacity-bold.ttf", 12));
+            tenacityBold16 = new FontRenderer(FontUtil.getResource(locationMap, "tenacity-bold.ttf", 16));
+            tenacityBold20 = new FontRenderer(FontUtil.getResource(locationMap, "tenacity-bold.ttf", 20));
+            tenacityBold24 = new FontRenderer(FontUtil.getResource(locationMap, "tenacity-bold.ttf", 24));
+            tenacityBold28 = new FontRenderer(FontUtil.getResource(locationMap, "tenacity-bold.ttf", 28));
+            tenacityBold32 = new FontRenderer(FontUtil.getResource(locationMap, "tenacity-bold.ttf", 32));
+
+            // San Francisco Pro
+            sfPro12 = new FontRenderer(FontUtil.getResource(locationMap, "San-Francisco-Pro-Fonts.ttf", 12));
+            sfPro16 = new FontRenderer(FontUtil.getResource(locationMap, "San-Francisco-Pro-Fonts.ttf", 16));
+            sfPro20 = new FontRenderer(FontUtil.getResource(locationMap, "San-Francisco-Pro-Fonts.ttf", 20));
+            sfPro24 = new FontRenderer(FontUtil.getResource(locationMap, "San-Francisco-Pro-Fonts.ttf", 24));
+            sfPro28 = new FontRenderer(FontUtil.getResource(locationMap, "San-Francisco-Pro-Fonts.ttf", 28));
+            sfPro32 = new FontRenderer(FontUtil.getResource(locationMap, "San-Francisco-Pro-Fonts.ttf", 32));
 
             // Vision Fonts
             vision12 = new FontRenderer(FontUtil.getResource(locationMap, "Vision.otf", 12));
@@ -217,6 +235,54 @@ public class FontManager {
         if (tenacity80 != null) {
             tenacity80.destroy();
             tenacity80 = null;
+        }
+        if (tenacityBold12 != null) {
+            tenacityBold12.destroy();
+            tenacityBold12 = null;
+        }
+        if (tenacityBold16 != null) {
+            tenacityBold16.destroy();
+            tenacityBold16 = null;
+        }
+        if (tenacityBold20 != null) {
+            tenacityBold20.destroy();
+            tenacityBold20 = null;
+        }
+        if (tenacityBold24 != null) {
+            tenacityBold24.destroy();
+            tenacityBold24 = null;
+        }
+        if (tenacityBold28 != null) {
+            tenacityBold28.destroy();
+            tenacityBold28 = null;
+        }
+        if (tenacityBold32 != null) {
+            tenacityBold32.destroy();
+            tenacityBold32 = null;
+        }
+        if (sfPro12 != null) {
+            sfPro12.destroy();
+            sfPro12 = null;
+        }
+        if (sfPro16 != null) {
+            sfPro16.destroy();
+            sfPro16 = null;
+        }
+        if (sfPro20 != null) {
+            sfPro20.destroy();
+            sfPro20 = null;
+        }
+        if (sfPro24 != null) {
+            sfPro24.destroy();
+            sfPro24 = null;
+        }
+        if (sfPro28 != null) {
+            sfPro28.destroy();
+            sfPro28 = null;
+        }
+        if (sfPro32 != null) {
+            sfPro32.destroy();
+            sfPro32 = null;
         }
         if (vision12 != null) {
             vision12.destroy();
