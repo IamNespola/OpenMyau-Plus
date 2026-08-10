@@ -7,6 +7,7 @@ import myau.property.properties.IntProperty;
 import myau.property.properties.ModeProperty;
 import myau.ui.ClickGui;
 import myau.ui.impl.clickgui.normal.ClickGuiScreen;
+import myau.ui.impl.clickgui.modern.ModernClickGui;
 import myau.ui.impl.clickgui.raven.RavenClickGui;
 import myau.ui.impl.clickgui.cheadle.CheadleClickGui;
 import net.minecraft.client.Minecraft;
@@ -34,7 +35,7 @@ public class ClickGUIModule extends Module {
     };
 
     public ModeProperty accentColor = new ModeProperty("Color", 0, COLOR_NAMES);
-    public ModeProperty style = new ModeProperty("Style", 0, new String[]{"Normal", "Raven B3", "Raven B4", "Cheadle"});
+    public ModeProperty style = new ModeProperty("Style", 4, new String[]{"Normal", "Raven B3", "Raven B4", "Cheadle", "Modern"});
     public BooleanProperty saveGuiState = new BooleanProperty("Save GUI State", true);
     public BooleanProperty shadow = new BooleanProperty("Shadow", true);
 
@@ -59,7 +60,8 @@ public class ClickGUIModule extends Module {
         this.switchingGuiStyle = mc.currentScreen instanceof ClickGui
                 || mc.currentScreen instanceof ClickGuiScreen
                 || mc.currentScreen instanceof RavenClickGui
-                || mc.currentScreen instanceof CheadleClickGui;
+                || mc.currentScreen instanceof CheadleClickGui
+                || mc.currentScreen instanceof ModernClickGui;
         try {
             mc.displayGuiScreen(screen);
         } finally {
@@ -83,6 +85,9 @@ public class ClickGUIModule extends Module {
             CheadleClickGui cheadle = CheadleClickGui.getInstance();
             return cheadle != null ? cheadle : new CheadleClickGui();
         }
+        if (style.getValue() == 4) {
+            return ModernClickGui.getInstance();
+        }
         return ClickGuiScreen.getInstance();
     }
 
@@ -91,7 +96,8 @@ public class ClickGUIModule extends Module {
         if ("Style".equalsIgnoreCase(name)) {
             Minecraft mc = Minecraft.getMinecraft();
             if (mc.currentScreen instanceof ClickGui || mc.currentScreen instanceof ClickGuiScreen
-                    || mc.currentScreen instanceof RavenClickGui || mc.currentScreen instanceof CheadleClickGui) {
+                    || mc.currentScreen instanceof RavenClickGui || mc.currentScreen instanceof CheadleClickGui
+                    || mc.currentScreen instanceof ModernClickGui) {
                 openSelectedGui();
             }
         }

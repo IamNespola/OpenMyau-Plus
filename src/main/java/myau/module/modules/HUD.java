@@ -53,7 +53,7 @@ public class HUD extends Module {
             ViewClip.class, NoHurtCam.class, HUD.class, GuiModule.class, RiseClickGUIModule.class,
             ChestESP.class, Trajectories.class, Radar.class, RenderFixes.class, FPScounter.class,
             WaterMark.class, WaterMark2.class, HitParticleEffects.class, DynamicIsland.class,
-            ESP2D.class, TeamHealthDisplay.class, Statistics.class, Animations.class
+            ESP2D.class, TeamHealthDisplay.class, Statistics.class, Animations.class, Hotbar.class
     ));
     private static final Set<Class<?>> PLAYER_MODULES = new HashSet<>(Arrays.<Class<?>>asList(
             AutoHeal.class, FakeLag.class, AutoTool.class, ChestStealer.class, InvManager.class,
@@ -84,9 +84,9 @@ public class HUD extends Module {
     public final ModeProperty interfaceMode = new ModeProperty("interface", 0, new String[]{"MYAU", "CREIDA"});
     public final PercentProperty background = new PercentProperty("background", 25);
     public final IntProperty bgAlpha = new IntProperty("bg-alpha", 120, 0, 255);
-    public final BooleanProperty blur = new BooleanProperty("blur", false);
+    public final BooleanProperty blur = new BooleanProperty("blur", true);
     public final FloatProperty blurRadius = new FloatProperty("blur-radius", 10.0F, 1.0F, 30.0F, this.blur::getValue);
-    public final BooleanProperty glow = new BooleanProperty("glow", false);
+    public final BooleanProperty glow = new BooleanProperty("glow", true);
     public final ModeProperty glowColorMode = new ModeProperty("glow-color", 0, new String[]{"SYNC", "CUSTOM"}, this.glow::getValue);
     public final ColorProperty glowCustomColor = new ColorProperty("glow-custom-color", Color.WHITE.getRGB() & 0xFFFFFF, () -> this.glow.getValue() && this.glowColorMode.getValue() == 1);
     public final IntProperty glowAlpha = new IntProperty("glow-alpha", 100, 0, 255, this.glow::getValue);
@@ -107,7 +107,7 @@ public class HUD extends Module {
     public final BooleanProperty notifications = new BooleanProperty("notifications", true);
     public final BooleanProperty toggleSound = new BooleanProperty("toggle-sounds", true);
     public final BooleanProperty toggleAlerts = new BooleanProperty("toggle-alerts", false);
-    public final ModeProperty fontMode = new ModeProperty("font-mode", 0, new String[]{"SANS", "MINECRAFT", "NUNITO", "TENACITY", "TENACITY_BOLD", "SF_PRO"});
+    public final ModeProperty fontMode = new ModeProperty("font-mode", 6, new String[]{"SANS", "MINECRAFT", "NUNITO", "TENACITY", "TENACITY_BOLD", "SF_PRO", "GOOGLE_SANS"});
     public final BooleanProperty creidaFont = new BooleanProperty("creida-font", true, () -> this.interfaceMode.getValue() == 1);
     public final BooleanProperty creidaWatermark = new BooleanProperty("creida-watermark", true, () -> this.interfaceMode.getValue() == 1);
     public final BooleanProperty clientInfo = new BooleanProperty("client-info", true);
@@ -232,6 +232,9 @@ public class HUD extends Module {
                 break;
             case 5: // SF_PRO
                 selectedFont = FontProcess.getFont("sf-pro");
+                break;
+            case 6: // GOOGLE_SANS
+                selectedFont = FontProcess.getFont("google-sans");
                 break;
             default:
                 selectedFont = FontProcess.getFont("sans");
@@ -440,8 +443,74 @@ public class HUD extends Module {
             GlStateManager.pushMatrix();
             GlStateManager.scale(this.scale.getValue(), this.scale.getValue(), 0.0F);
 
-
             long l = System.currentTimeMillis();
+
+            if (this.glow.getValue() || this.blur.getValue()) {
+                if (this.glow.getValue()) {
+                    myau.util.shader.BlurUtils.prepareBloom();
+                    long offset = 0L;
+                    float currentY = y;
+                    for (Module module : this.activeModules) {
+                        float totalWidth = this.getModuleRenderWidth(module);
+                        float pad = this.padding.getValue();
+                        float bgX1 = x / this.scale.getValue() - 1.0F - pad - (this.posX.getValue() == 0 ? 0.0F : totalWidth);
+                        float bgY1 = currentY / this.scale.getValue() - pad - (this.posY.getValue() == 0 ? (offset == 0L ? 1.0F : 0.0F) : (this.shadow.getValue() ? 1.0F : 0.0F));
+                        float bgX2 = x / this.scale.getValue() + 1.0F + pad + (this.posX.getValue() == 0 ? totalWidth : 0.0F);
+                        float bgY2 = currentY / this.scale.getValue() + height + pad + (this.posY.getValue() == 0 ? (this.shadow.getValue() ? 1.0F : 0.0F) : (offset == 0L ? 1.0F : 0.0F));
+                        int glowColor = new Color(0, 0, 0, 150).getRGB(); // Glassmorphic drop shadow instead of gradient
+                        glowColor = RenderUtil.mergeAlpha(glowColor, this.glowAlpha.getValue());
+                        if (this.rounded.getValue()) {
+                            float bgW = bgX2 - bgX1;
+                            float bgH = bgY2 - bgY1;
+                            float rad = this.cornerRadius.getValue();
+                            boolean isFirst = (offset == 0L);
+                            boolean isLast = (offset == this.activeModules.size() - 1);
+                            boolean sideLeft = this.posX.getValue() == 1;
+                            boolean sideRight = this.posX.getValue() == 0;
+                            boolean isTopEntry = (this.posY.getValue() == 0) ? isFirst : isLast;
+                            boolean isBottomEntry = (this.posY.getValue() == 0) ? isLast : isFirst;
+                            RenderUtil.drawRoundedRect(bgX1, bgY1, bgW, bgH, rad, glowColor, sideLeft && isTopEntry, sideRight && isTopEntry, sideLeft && isBottomEntry, sideRight && isBottomEntry);
+                        } else {
+                            RenderUtil.drawRect(bgX1, bgY1, bgX2, bgY2, glowColor);
+                        }
+                        currentY += (height + (this.shadow.getValue() ? 1.0F : 0.0F) + this.padding.getValue() * 2.0F) * this.scale.getValue() * (this.posY.getValue() == 0 ? 1.0F : -1.0F);
+                        offset++;
+                    }
+                    myau.util.shader.BlurUtils.bloomEnd(3, this.glowRadius.getValue());
+                }
+                if (this.blur.getValue()) {
+                    myau.util.shader.BlurUtils.prepareBlur();
+                    long offset = 0L;
+                    float currentY = y;
+                    for (Module module : this.activeModules) {
+                        float totalWidth = this.getModuleRenderWidth(module);
+                        float pad = this.padding.getValue();
+                        float bgX1 = x / this.scale.getValue() - 1.0F - pad - (this.posX.getValue() == 0 ? 0.0F : totalWidth);
+                        float bgY1 = currentY / this.scale.getValue() - pad - (this.posY.getValue() == 0 ? (offset == 0L ? 1.0F : 0.0F) : (this.shadow.getValue() ? 1.0F : 0.0F));
+                        float bgX2 = x / this.scale.getValue() + 1.0F + pad + (this.posX.getValue() == 0 ? totalWidth : 0.0F);
+                        float bgY2 = currentY / this.scale.getValue() + height + pad + (this.posY.getValue() == 0 ? (this.shadow.getValue() ? 1.0F : 0.0F) : (offset == 0L ? 1.0F : 0.0F));
+                        int blurColor = 0xFFFFFFFF; // White mask for blur
+                        if (this.rounded.getValue()) {
+                            float bgW = bgX2 - bgX1;
+                            float bgH = bgY2 - bgY1;
+                            float rad = this.cornerRadius.getValue();
+                            boolean isFirst = (offset == 0L);
+                            boolean isLast = (offset == this.activeModules.size() - 1);
+                            boolean sideLeft = this.posX.getValue() == 1;
+                            boolean sideRight = this.posX.getValue() == 0;
+                            boolean isTopEntry = (this.posY.getValue() == 0) ? isFirst : isLast;
+                            boolean isBottomEntry = (this.posY.getValue() == 0) ? isLast : isFirst;
+                            RenderUtil.drawRoundedRect(bgX1, bgY1, bgW, bgH, rad, blurColor, sideLeft && isTopEntry, sideRight && isTopEntry, sideLeft && isBottomEntry, sideRight && isBottomEntry);
+                        } else {
+                            RenderUtil.drawRect(bgX1, bgY1, bgX2, bgY2, blurColor);
+                        }
+                        currentY += (height + (this.shadow.getValue() ? 1.0F : 0.0F) + this.padding.getValue() * 2.0F) * this.scale.getValue() * (this.posY.getValue() == 0 ? 1.0F : -1.0F);
+                        offset++;
+                    }
+                    myau.util.shader.BlurUtils.blurEnd(2, this.blurRadius.getValue());
+                }
+            }
+
             long offset = 0L;
             for (Module module : this.activeModules) {
                 String moduleName = this.getModuleName(module);
@@ -455,7 +524,8 @@ public class HUD extends Module {
                 float bgY2 = y / this.scale.getValue() + height + pad + (this.posY.getValue() == 0 ? (this.shadow.getValue() ? 1.0F : 0.0F) : (offset == 0L ? 1.0F : 0.0F));
                 RenderUtil.enableRenderState();
                 if (this.background.getValue() > 0) {
-                    int bgColor = new Color(0.0F, 0.0F, 0.0F, this.background.getValue().floatValue() / 100.0F).getRGB();
+                    int alpha = (int) (255 * (this.background.getValue().floatValue() / 100.0F));
+                    int bgColor = new Color(15, 15, 15, alpha).getRGB(); // Glassmorphic dark background
                     if (this.rounded.getValue()) {
                         float bgW = bgX2 - bgX1;
                         float bgH = bgY2 - bgY1;
@@ -475,7 +545,17 @@ public class HUD extends Module {
                         RenderUtil.drawRect(bgX1, bgY1, bgX2, bgY2, bgColor);
                     }
                 }
-                renderSidebar(module, (int) offset, bgX1, bgY1, bgX2, bgY2, color);
+                
+                // Draw a subtle white edge for glassmorphism instead of a colored sidebar
+                if (this.showBar.getValue()) {
+                    int edgeColor = new Color(255, 255, 255, 40).getRGB();
+                    if (this.posX.getValue() == 0) { // Right side
+                        RenderUtil.drawRect(bgX2 - 1.0F, bgY1, bgX2, bgY2, edgeColor);
+                    } else { // Left side
+                        RenderUtil.drawRect(bgX1, bgY1, bgX1 + 1.0F, bgY2, edgeColor);
+                    }
+                }
+
                 RenderUtil.disableRenderState();
                 GlStateManager.disableDepth();
                 if (this.shadow.getValue()) {

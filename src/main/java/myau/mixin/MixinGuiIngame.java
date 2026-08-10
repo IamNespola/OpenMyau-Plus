@@ -27,6 +27,16 @@ public abstract class MixinGuiIngame {
         }
     }
 
+    @Inject(method = "renderTooltip", at = @At("HEAD"), cancellable = true)
+    private void myau$renderTooltip(ScaledResolution sr, float partialTicks, CallbackInfo callbackInfo) {
+        if (Myau.moduleManager != null) {
+            myau.module.modules.Hotbar hotbar = (myau.module.modules.Hotbar) Myau.moduleManager.modules.get(myau.module.modules.Hotbar.class);
+            if (hotbar != null && hotbar.isEnabled()) {
+                callbackInfo.cancel();
+            }
+        }
+    }
+
     @Redirect(
             method = {"updateTick"},
             at = @At(

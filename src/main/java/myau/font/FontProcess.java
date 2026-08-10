@@ -56,6 +56,7 @@ public class FontProcess {
         registerFont("tenacity", createFont("tenacity", 20));
         registerFont("tenacity-bold", createFont("tenacity-bold", 20));
         registerFont("sf-pro", createFont("San-Francisco-Pro-Fonts", 18));
+        registerFont("google-sans", createFont("product_sans_medium", 19));
         registerFont("icon", createFont("icon", 40));
     }
 

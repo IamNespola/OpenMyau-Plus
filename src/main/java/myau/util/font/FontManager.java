@@ -15,6 +15,7 @@ public class FontManager {
             regular12, regular14, regular16, regular18, regular22,
             icon20,
             productSans12, productSans16, productSans18, productSans20, productSans24, productSans28, productSans32, productSansLight, productSansMedium,
+            googleSans18, googleSans20, googleSans24,
             tenacity12, tenacity16, tenacity20, tenacity24, tenacity28, tenacity32, tenacity80,
             tenacityBold12, tenacityBold16, tenacityBold20, tenacityBold24, tenacityBold28, tenacityBold32,
             sfPro12, sfPro16, sfPro20, sfPro24, sfPro28, sfPro32,
@@ -62,6 +63,11 @@ public class FontManager {
             productSans32 = new FontRenderer(FontUtil.getResource(locationMap, "product_sans_regular.ttf", 32));
             productSansLight = new FontRenderer(FontUtil.getResource(locationMap, "product_sans_light.ttf", 22));
             productSansMedium = new FontRenderer(FontUtil.getResource(locationMap, "product_sans_medium.ttf", 22));
+
+            // Google Sans
+            googleSans18 = new FontRenderer(FontUtil.getResource(locationMap, "Google-Sans.ttf", 18));
+            googleSans20 = new FontRenderer(FontUtil.getResource(locationMap, "Google-Sans.ttf", 20));
+            googleSans24 = new FontRenderer(FontUtil.getResource(locationMap, "Google-Sans.ttf", 24));
 
             // Tenacity Fonts
             tenacity12 = new FontRenderer(FontUtil.getResource(locationMap, "tenacity.ttf", 12));
@@ -207,6 +213,18 @@ public class FontManager {
         if (productSansMedium != null) {
             productSansMedium.destroy();
             productSansMedium = null;
+        }
+        if (googleSans18 != null) {
+            googleSans18.destroy();
+            googleSans18 = null;
+        }
+        if (googleSans20 != null) {
+            googleSans20.destroy();
+            googleSans20 = null;
+        }
+        if (googleSans24 != null) {
+            googleSans24.destroy();
+            googleSans24 = null;
         }
         if (tenacity12 != null) {
             tenacity12.destroy();

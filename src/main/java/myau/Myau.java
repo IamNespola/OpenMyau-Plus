@@ -11,6 +11,8 @@ import myau.font.FontManagers;
 import myau.management.*;
 import myau.module.Module;
 import myau.module.ModuleManager;
+import myau.module.modules.HUD;
+import myau.module.modules.Hotbar;
 import myau.module.modules.*;
 import myau.property.Property;
 import myau.property.PropertyManager;
@@ -110,6 +112,7 @@ public class Myau {
         moduleManager.modules.put(HitSelect.class, new HitSelect());
         moduleManager.modules.put(AutoHypixel.class, new AutoHypixel());
         moduleManager.modules.put(HUD.class, new HUD());
+        moduleManager.modules.put(Hotbar.class, new Hotbar());
         moduleManager.modules.put(MoreKB.class, new MoreKB());
         moduleManager.modules.put(Indicators.class, new Indicators());
         moduleManager.modules.put(InventoryClicker.class, new InventoryClicker());
