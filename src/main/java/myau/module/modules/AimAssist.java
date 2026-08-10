@@ -27,12 +27,20 @@ public class AimAssist extends Module {
     private final TimerUtil timer = new TimerUtil();
     public final ModeProperty mode = new ModeProperty("mode", 0, new String[]{"Normal", "LockOn"});
     // Normal 模式属性
-    public final FloatProperty hSpeed = new FloatProperty("horizontal-speed", 3.0F, 0.0F, 10.0F, () -> "Normal".equals(this.mode.getModeString()));
-    public final FloatProperty vSpeed = new FloatProperty("vertical-speed", 0.0F, 0.0F, 10.0F, () -> "Normal".equals(this.mode.getModeString()));
+    public final FloatProperty hSpeed = new FloatProperty("horizontal-speed", 3.0F, 0.0F, 10.0F);
+    public final FloatProperty vSpeed = new FloatProperty("vertical-speed", 0.0F, 0.0F, 10.0F);
     public final FloatProperty smoothing = new FloatProperty("smoothing", 50.0F, 0.0F, 100.0F);
     // LockOn 模式属性
-    public final FloatProperty lockOnSpeed = new FloatProperty("lockon-speed", 5.0F, 0.0F, 10.0F, () -> "LockOn".equals(this.mode.getModeString()));
-    public final FloatProperty headBoxExpand = new FloatProperty("head-box-expand", 1.0F, 0.5F, 2.0F, () -> "LockOn".equals(this.mode.getModeString()));
+    public final ModeProperty safeZone = new ModeProperty("safe-zone", 1, new String[]{"Head", "Torso", "Feet"}, () -> "LockOn".equals(this.mode.getModeString()));
+    public final BooleanProperty noiseEnabled = new BooleanProperty("noise", false, () -> "LockOn".equals(this.mode.getModeString()));
+    public final FloatProperty noiseMinYaw = new FloatProperty("noise-min-yaw", 0.0F, 0.0F, 5.0F, () -> "LockOn".equals(this.mode.getModeString()) && this.noiseEnabled.getValue());
+    public final FloatProperty noiseMaxYaw = new FloatProperty("noise-max-yaw", 1.0F, 0.0F, 5.0F, () -> "LockOn".equals(this.mode.getModeString()) && this.noiseEnabled.getValue());
+    public final FloatProperty noiseMinPitch = new FloatProperty("noise-min-pitch", 0.0F, 0.0F, 5.0F, () -> "LockOn".equals(this.mode.getModeString()) && this.noiseEnabled.getValue());
+    public final FloatProperty noiseMaxPitch = new FloatProperty("noise-max-pitch", 1.0F, 0.0F, 5.0F, () -> "LockOn".equals(this.mode.getModeString()) && this.noiseEnabled.getValue());
+    public final FloatProperty noiseSpeed = new FloatProperty("noise-speed", 1.0F, 0.1F, 10.0F, () -> "LockOn".equals(this.mode.getModeString()) && this.noiseEnabled.getValue());
+    // Noise 状态
+    private double noiseYaw = 0, noisePitch = 0;
+    private long lastNoiseTime = 0;
     // 通用属性
     public final FloatProperty range = new FloatProperty("range", 4.5F, 3.0F, 8.0F);
     public final IntProperty fov = new IntProperty("fov", 90, 30, 360);
@@ -108,91 +116,115 @@ public class AimAssist extends Module {
         }
     }
 
-    // ==================== LockOn 模式（屏幕死区 + 角度瞄准） ====================
+    // ==================== LockOn 模式（部位死区 + Noise + 角度瞄准） ====================
     private void tickLockOn() {
-        // 条件检查：只按下鼠标时自瞄
         if (!mc.gameSettings.keyBindAttack.isKeyDown()) return;
-        // 破坏方块时不自瞄
         if (isLookingAtBlock()) return;
-        // 武器检查
         if (this.weaponOnly.getValue() && !ItemUtil.isHoldingSword() && !(this.allowTools.getValue() && ItemUtil.isHoldingTool())) return;
 
-        // 选人：与 Normal 一致
         EntityPlayer target = selectTarget();
         if (target == null) return;
 
-        // 1. 获取准星屏幕坐标（屏幕中心）
-        int screenWidth = mc.displayWidth;
-        int screenHeight = mc.displayHeight;
-        double aimX = screenWidth / 2.0;
-        double aimY = screenHeight / 2.0;
+        // 1. 将人体分为头/躯干/腿三部分（参考 KillAura）
+        AxisAlignedBB fullBox = target.getEntityBoundingBox();
+        double bbHeight = fullBox.maxY - fullBox.minY;
+        double headSize = bbHeight / 4.5F;
+        double torsoSize = bbHeight / 2.75F;
+        AxisAlignedBB headBox = new AxisAlignedBB(fullBox.minX, fullBox.maxY - headSize, fullBox.minZ, fullBox.maxX, fullBox.maxY, fullBox.maxZ);
+        AxisAlignedBB torsoBox = new AxisAlignedBB(fullBox.minX, fullBox.minY + torsoSize, fullBox.minZ, fullBox.maxX, fullBox.maxY - headSize, fullBox.maxZ);
+        AxisAlignedBB feetBox = new AxisAlignedBB(fullBox.minX, fullBox.minY, fullBox.minZ, fullBox.maxX, fullBox.minY + torsoSize, fullBox.maxZ);
 
-        // 2. 获取目标头部屏幕包围盒
+        // 根据safeZone选择死区
+        AxisAlignedBB safeBox;
+        String zone = this.safeZone.getModeString();
+        if ("Head".equals(zone)) safeBox = headBox;
+        else if ("Feet".equals(zone)) safeBox = feetBox;
+        else safeBox = torsoBox;
+
+        // 2. 将安全区8角投影到屏幕，判断准星是否在框内
         EntityPlayerSP player = mc.thePlayer;
         float partialTicks = 1.0F;
-        Vec3 targetPos = new Vec3(
-                target.lastTickPosX + (target.posX - target.lastTickPosX) * partialTicks,
-                target.lastTickPosY + (target.posY - target.lastTickPosY) * partialTicks,
-                target.lastTickPosZ + (target.posZ - target.lastTickPosZ) * partialTicks
-        );
         Vec3 playerPos = new Vec3(
                 player.lastTickPosX + (player.posX - player.lastTickPosX) * partialTicks,
                 player.lastTickPosY + (player.posY - player.lastTickPosY) * partialTicks + player.getEyeHeight(),
                 player.lastTickPosZ + (player.posZ - player.lastTickPosZ) * partialTicks
         );
 
-        double headHeight = 0.3;
-        double headBase = targetPos.yCoord + target.getEyeHeight() - 0.1;
-        double headTop = headBase + headHeight;
-        double headBottom = headBase;
-        double headRadius = 0.15 * headBoxExpand.getValue();
-
-        Vec3[] headCorners = new Vec3[]{
-                new Vec3(targetPos.xCoord - headRadius, headBottom, targetPos.zCoord - headRadius),
-                new Vec3(targetPos.xCoord + headRadius, headBottom, targetPos.zCoord - headRadius),
-                new Vec3(targetPos.xCoord - headRadius, headBottom, targetPos.zCoord + headRadius),
-                new Vec3(targetPos.xCoord + headRadius, headBottom, targetPos.zCoord + headRadius),
-                new Vec3(targetPos.xCoord - headRadius, headTop, targetPos.zCoord - headRadius),
-                new Vec3(targetPos.xCoord + headRadius, headTop, targetPos.zCoord - headRadius),
-                new Vec3(targetPos.xCoord - headRadius, headTop, targetPos.zCoord + headRadius),
-                new Vec3(targetPos.xCoord + headRadius, headTop, targetPos.zCoord + headRadius)
+        Vec3[] safeCorners = new Vec3[]{
+                new Vec3(safeBox.minX, safeBox.minY, safeBox.minZ),
+                new Vec3(safeBox.maxX, safeBox.minY, safeBox.minZ),
+                new Vec3(safeBox.minX, safeBox.minY, safeBox.maxZ),
+                new Vec3(safeBox.maxX, safeBox.minY, safeBox.maxZ),
+                new Vec3(safeBox.minX, safeBox.maxY, safeBox.minZ),
+                new Vec3(safeBox.maxX, safeBox.maxY, safeBox.minZ),
+                new Vec3(safeBox.minX, safeBox.maxY, safeBox.maxZ),
+                new Vec3(safeBox.maxX, safeBox.maxY, safeBox.maxZ)
         };
 
-        double headLeft = Double.MAX_VALUE, headRight = -Double.MAX_VALUE;
-        double headScreenTop = Double.MAX_VALUE, headScreenBottom = -Double.MAX_VALUE;
+        int screenWidth = mc.displayWidth;
+        int screenHeight = mc.displayHeight;
+        double aimX = screenWidth / 2.0;
+        double aimY = screenHeight / 2.0;
 
-        for (Vec3 corner : headCorners) {
+        double boxLeft = Double.MAX_VALUE, boxRight = -Double.MAX_VALUE;
+        double boxTop = Double.MAX_VALUE, boxBottom = -Double.MAX_VALUE;
+
+        for (Vec3 corner : safeCorners) {
             double[] screenPos = worldToScreen(corner, playerPos, player.rotationYaw, player.rotationPitch);
             if (screenPos == null) continue;
-            if (screenPos[0] < headLeft) headLeft = screenPos[0];
-            if (screenPos[0] > headRight) headRight = screenPos[0];
-            if (screenPos[1] < headScreenTop) headScreenTop = screenPos[1];
-            if (screenPos[1] > headScreenBottom) headScreenBottom = screenPos[1];
+            if (screenPos[0] < boxLeft) boxLeft = screenPos[0];
+            if (screenPos[0] > boxRight) boxRight = screenPos[0];
+            if (screenPos[1] < boxTop) boxTop = screenPos[1];
+            if (screenPos[1] > boxBottom) boxBottom = screenPos[1];
         }
 
-        // 3. 矩形死区判断
-        boolean inBox = headLeft != Double.MAX_VALUE
-                && aimX >= headLeft && aimX <= headRight
-                && aimY >= headScreenTop && aimY <= headScreenBottom;
+        // 3. 矩形死区判断：准星在安全区 → 零吸附
+        boolean inBox = boxLeft != Double.MAX_VALUE
+                && aimX >= boxLeft && aimX <= boxRight
+                && aimY >= boxTop && aimY <= boxBottom;
 
         // === 物理隔离：手动自由区 ===
-        if (inBox) return; // 准星在头部框内，零吸附
+        if (inBox) return;
 
-        // === 非自由区：采用 Normal 的角度瞄准逻辑，只瞄头 ===
-        AxisAlignedBB headBox = new AxisAlignedBB(
-                targetPos.xCoord - headRadius, headBottom, targetPos.zCoord - headRadius,
-                targetPos.xCoord + headRadius, headTop, targetPos.zCoord + headRadius
-        );
+        // === 非自由区：角度瞄准（与 Normal 一致） ===
         double border = target.getCollisionBorderSize();
-        headBox = headBox.expand(border, border, border);
+        AxisAlignedBB aimBox = safeBox.expand(border, border, border);
         float[] rotation = RotationUtil.getRotationsToBox(
-                headBox,
+                aimBox,
                 mc.thePlayer.rotationYaw, mc.thePlayer.rotationPitch, 180.0F,
                 (float) this.smoothing.getValue() / 100.0F);
-        float speed = Math.min(Math.abs(this.lockOnSpeed.getValue()), 10.0F);
-        Myau.rotationManager.setRotation(
-                mc.thePlayer.rotationYaw + (rotation[0] - mc.thePlayer.rotationYaw) * 0.1F * speed,
-                mc.thePlayer.rotationPitch + (rotation[1] - mc.thePlayer.rotationPitch) * 0.1F * speed, 0, false);
+        float yaw = Math.min(Math.abs(this.hSpeed.getValue()), 10.0F);
+        float pitch = Math.min(Math.abs(this.vSpeed.getValue()), 10.0F);
+        float targetYaw = mc.thePlayer.rotationYaw + (rotation[0] - mc.thePlayer.rotationYaw) * 0.1F * yaw;
+        float targetPitch = mc.thePlayer.rotationPitch + (rotation[1] - mc.thePlayer.rotationPitch) * 0.1F * pitch;
+
+        // === Noise 随机偏移 ===
+        if (noiseEnabled.getValue()) {
+            updateNoise();
+            targetYaw += (float) noiseYaw;
+            targetPitch += (float) noisePitch;
+        }
+
+        Myau.rotationManager.setRotation(targetYaw, targetPitch, 0, false);
+    }
+
+    /**
+     * 更新 Noise 随机偏移（按 noise-speed 控制变化频率）
+     */
+    private void updateNoise() {
+        long now = System.currentTimeMillis();
+        long interval = (long) (1000.0 / noiseSpeed.getValue());
+        if (now - lastNoiseTime >= interval) {
+            lastNoiseTime = now;
+            double minYaw = noiseMinYaw.getValue();
+            double maxYaw = noiseMaxYaw.getValue();
+            double minPitch = noiseMinPitch.getValue();
+            double maxPitch = noiseMaxPitch.getValue();
+            noiseYaw = minYaw + Math.random() * (maxYaw - minYaw);
+            if (Math.random() < 0.5) noiseYaw = -noiseYaw;
+            noisePitch = minPitch + Math.random() * (maxPitch - minPitch);
+            if (Math.random() < 0.5) noisePitch = -noisePitch;
+        }
     }
 
     /**
