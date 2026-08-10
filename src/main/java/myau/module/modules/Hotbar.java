@@ -6,6 +6,7 @@ import myau.module.Module;
 import myau.util.AnimationUtil;
 import myau.util.RenderUtil;
 import myau.util.shader.BlurUtils;
+import myau.util.shader.RoundedUtils;
 import net.minecraft.client.gui.ScaledResolution;
 import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.client.renderer.RenderHelper;
@@ -33,7 +34,7 @@ public class Hotbar extends Module {
 
     @EventTarget
     public void onRender2D(Render2DEvent event) {
-        if (mc.gameSettings.showDebugInfo || mc.thePlayer == null || mc.playerController.isSpectator()) return;
+        if (!this.isEnabled() || mc.gameSettings.showDebugInfo || mc.thePlayer == null || mc.playerController.isSpectator()) return;
 
         ScaledResolution sr = new ScaledResolution(mc);
         int middleX = sr.getScaledWidth() / 2;
@@ -47,15 +48,13 @@ public class Hotbar extends Module {
         // Draw Glassmorphic Background
         if (RenderFixes.shouldUseShaders()) {
             BlurUtils.prepareBlur();
-            RenderUtil.drawRoundedRect(startX, startY, width, height, 4.0F, 0xFFFFFFFF, true, true, true, true);
+            RoundedUtils.drawRound(startX, startY, width, height, 8.0F, Color.WHITE);
             BlurUtils.blurEnd(2, 4.0F);
         }
 
-        int backgroundColor = new Color(15, 15, 15, 100).getRGB();
-        int outlineColor = new Color(255, 255, 255, RenderFixes.shouldUseShaders() ? 40 : 18).getRGB();
+        Color backgroundColor = new Color(15, 15, 15, 100);
 
-        RenderUtil.drawRoundedRect(startX, startY, width, height, 4.0F, backgroundColor, true, true, true, true);
-        RenderUtil.drawRoundedRectOutline(startX, startY, width, height, 4.0F, 1.5F, outlineColor, true, true, true, true);
+        RoundedUtils.drawRound(startX, startY, width, height, 8.0F, backgroundColor);
 
         // Selection Box Animation
         int currentItem = mc.thePlayer.inventory.currentItem;
@@ -75,8 +74,8 @@ public class Hotbar extends Module {
         float highlightX = (float) animationUtil.getValue();
 
         // Draw Selection Highlight
-        int highlightColor = new Color(255, 255, 255, 60).getRGB();
-        RenderUtil.drawRoundedRect(highlightX, startY + 1, 20, 20, 3.0F, highlightColor, true, true, true, true);
+        Color highlightColor = new Color(255, 255, 255, 60);
+        RoundedUtils.drawRound(highlightX, startY + 1, 20, 20, 6.0F, highlightColor);
 
         // Draw Items
         RenderHelper.enableGUIStandardItemLighting();
