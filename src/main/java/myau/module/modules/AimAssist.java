@@ -29,7 +29,7 @@ public class AimAssist extends Module {
     // Normal 模式属性
     public final FloatProperty hSpeed = new FloatProperty("horizontal-speed", 3.0F, 0.0F, 10.0F, () -> "Normal".equals(this.mode.getModeString()));
     public final FloatProperty vSpeed = new FloatProperty("vertical-speed", 0.0F, 0.0F, 10.0F, () -> "Normal".equals(this.mode.getModeString()));
-    public final FloatProperty smoothing = new FloatProperty("smoothing", 50, 0, 100, () -> "Normal".equals(this.mode.getModeString()));
+    public final FloatProperty smoothing = new FloatProperty("smoothing", 50.0F, 0.0F, 100.0F, () -> "Normal".equals(this.mode.getModeString()));
     // LockOn 模式属性
     public final FloatProperty lockOnSpeed = new FloatProperty("lockon-speed", 5.0F, 0.1F, 10.0F, () -> "LockOn".equals(this.mode.getModeString()));
     public final FloatProperty lockOnSmooth = new FloatProperty("lockon-smooth", 50.0F, 0.0F, 100.0F, () -> "LockOn".equals(this.mode.getModeString()));
@@ -148,7 +148,7 @@ public class AimAssist extends Module {
         // 2. 获取目标头部屏幕包围盒
         // 头部范围：从眼睛到头顶上方
         EntityPlayerSP player = mc.thePlayer;
-        double partialTicks = 1.0; // POST tick，用完整 tick
+        float partialTicks = 1.0F; // POST tick，用完整 tick
         Vec3 targetPos = new Vec3(
                 target.lastTickPosX + (target.posX - target.lastTickPosX) * partialTicks,
                 target.lastTickPosY + (target.posY - target.lastTickPosY) * partialTicks,
