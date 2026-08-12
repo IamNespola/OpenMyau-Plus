@@ -5,6 +5,7 @@ plugins {
     id("gg.essential.loom") version "0.10.0.+"
     id("dev.architectury.architectury-pack200") version "0.1.3"
     id("com.github.johnrengelman.shadow") version "8.1.1"
+    kotlin("jvm") version "2.0.21"
 }
 //Constants:
 val baseGroup: String by project
@@ -57,6 +58,9 @@ sourceSets.main {
     resources.srcDir("rsl/src/main/resources")
     output.setResourcesDir(sourceSets.main.flatMap { it.java.classesDirectory })
 }
+tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach {
+    kotlinOptions.jvmTarget = "1.8"
+}
 // Dependencies:
 repositories {
     mavenCentral()
@@ -83,6 +87,7 @@ dependencies {
 
     shadowImpl("org.reflections:reflections:0.10.2")
     shadowImpl("org.java-websocket:Java-WebSocket:1.6.0")
+    shadowImpl("org.jetbrains.kotlin:kotlin-stdlib:2.0.21")
     compileOnly(files("libs/optifine-1.8.9.jar"))
 }
 // Tasks:

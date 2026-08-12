@@ -1,6 +1,5 @@
 package keystrokesmod.module.impl.client;
 
-import keystrokesmod.Raven;
 import keystrokesmod.module.Module;
 import keystrokesmod.module.setting.impl.ButtonSetting;
 import keystrokesmod.module.setting.impl.SliderSetting;
@@ -27,9 +26,14 @@ public class Gui extends Module {
     }
 
     public void onEnable() {
-        if (Utils.nullCheck() && mc.currentScreen != Raven.clickGui) {
-            mc.displayGuiScreen(Raven.clickGui);
-            Raven.clickGui.initMain();
+        // Script settings now live in Myau+'s own module/property system (see ScriptModule),
+        // so this opens Myau+'s GUI instead of Raven's own clickgui, which is otherwise dead
+        // weight left unreachable to avoid two independent GUIs fighting over the same key.
+        if (Utils.nullCheck()) {
+            myau.module.Module myauGui = myau.Myau.moduleManager.getModule("ClickGui");
+            if (myauGui != null) {
+                myauGui.setEnabled(true);
+            }
         }
 
         this.disable();

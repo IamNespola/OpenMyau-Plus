@@ -90,6 +90,7 @@ public class ScriptManager {
                         continue; // no changes detected, skip loading
                     }
                     entry.getKey().delete();
+                    myau.Myau.moduleManager.unregisterDynamicModule(entry.getValue().getName());
                     iterator.remove();
                     loadedHashes.remove(fileName);
                 }
@@ -130,6 +131,7 @@ public class ScriptManager {
         for (Module module : this.scripts.values()) {
             module.disable();
         }
+        syncMyauModules();
 
         for (CategoryComponent categoryComponent : Raven.clickGui.categories) {
             if (categoryComponent.category != Module.category.profiles) {
@@ -197,6 +199,7 @@ public class ScriptManager {
         Raven.scriptManager.scripts.put(script, module);
         ScriptDefaults.reloadModules();
         Raven.scriptManager.invoke("onLoad", module);
+        registerMyauModule(module);
 
         for (CategoryComponent categoryComponent : ClickGui.categories) {
             if (categoryComponent.category != Module.category.profiles) {
@@ -205,6 +208,46 @@ public class ScriptManager {
         }
 
         return !script.error;
+    }
+
+    /**
+     * Mirrors a loaded script as a Myau+ module so it can be toggled, bound, and configured
+     * through Myau+'s own module/property system - chat commands, keybinds, config profiles,
+     * and every ClickGui skin - instead of Raven's own clickgui.
+     */
+    private void registerMyauModule(Module module) {
+        myau.module.modules.ScriptModule scriptModule = new myau.module.modules.ScriptModule(module);
+        myau.Myau.moduleManager.registerDynamicModule(scriptModule);
+        ArrayList<myau.property.Property<?>> properties = new ArrayList<>(scriptModule.getScriptProperties());
+        for (myau.property.Property<?> property : properties) {
+            property.setOwner(scriptModule);
+        }
+        myau.Myau.propertyManager.properties.put(scriptModule, properties);
+        resetMyauClickGuis();
+    }
+
+    /**
+     * RSL disables every script directly on each reload (bypassing the ScriptModule wrapper),
+     * so this pulls Myau+'s side back in sync and refreshes any cached ClickGui skin so newly
+     * loaded/removed scripts show up next time one is opened.
+     */
+    private void syncMyauModules() {
+        for (myau.module.Module module : myau.Myau.moduleManager.dynamicModules.values()) {
+            if (module instanceof myau.module.modules.ScriptModule) {
+                ((myau.module.modules.ScriptModule) module).syncEnabledState();
+            }
+        }
+        resetMyauClickGuis();
+    }
+
+    private void resetMyauClickGuis() {
+        myau.ui.ClickGui.resetInstance();
+        myau.ui.impl.clickgui.cheadle.CheadleClickGui.resetInstance();
+        myau.ui.impl.clickgui.normal.ClickGuiScreen.resetInstance();
+        myau.ui.impl.clickgui.rise.RiseClickGUI.resetInstance();
+        // FDPClickGui is a persistent singleton rather than a reconstructed instance, so it
+        // rebuilds its own panel list directly instead of being nulled out and lazily rebuilt.
+        myau.ui.impl.clickgui.fdp.FDPClickGui.INSTANCE.rebuild();
     }
 
 

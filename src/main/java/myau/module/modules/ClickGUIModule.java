@@ -34,7 +34,7 @@ public class ClickGUIModule extends Module {
     };
 
     public ModeProperty accentColor = new ModeProperty("Color", 0, COLOR_NAMES);
-    public ModeProperty style = new ModeProperty("Style", 0, new String[]{"Normal", "Raven B3", "Raven B4", "Cheadle"});
+    public ModeProperty style = new ModeProperty("Style", 0, new String[]{"Normal", "Raven B3", "Raven B4", "Cheadle", "FDP"});
     public BooleanProperty saveGuiState = new BooleanProperty("Save GUI State", true);
     public BooleanProperty shadow = new BooleanProperty("Shadow", true);
 
@@ -59,7 +59,8 @@ public class ClickGUIModule extends Module {
         this.switchingGuiStyle = mc.currentScreen instanceof ClickGui
                 || mc.currentScreen instanceof ClickGuiScreen
                 || mc.currentScreen instanceof RavenClickGui
-                || mc.currentScreen instanceof CheadleClickGui;
+                || mc.currentScreen instanceof CheadleClickGui
+                || mc.currentScreen instanceof myau.ui.impl.clickgui.fdp.FDPClickGui;
         try {
             mc.displayGuiScreen(screen);
         } finally {
@@ -83,6 +84,12 @@ public class ClickGUIModule extends Module {
             CheadleClickGui cheadle = CheadleClickGui.getInstance();
             return cheadle != null ? cheadle : new CheadleClickGui();
         }
+        if (style.getValue() == 4) {
+            // FDPClickGui is a persistent singleton (matching FDPClient's own object ClickGui),
+            // not a class re-instantiated per open - it lazily builds its panel list once in
+            // initGui() and keeps drag/open/scroll state across reopens like the real thing did.
+            return myau.ui.impl.clickgui.fdp.FDPClickGui.INSTANCE;
+        }
         return ClickGuiScreen.getInstance();
     }
 
@@ -91,7 +98,8 @@ public class ClickGUIModule extends Module {
         if ("Style".equalsIgnoreCase(name)) {
             Minecraft mc = Minecraft.getMinecraft();
             if (mc.currentScreen instanceof ClickGui || mc.currentScreen instanceof ClickGuiScreen
-                    || mc.currentScreen instanceof RavenClickGui || mc.currentScreen instanceof CheadleClickGui) {
+                    || mc.currentScreen instanceof RavenClickGui || mc.currentScreen instanceof CheadleClickGui
+                    || mc.currentScreen instanceof myau.ui.impl.clickgui.fdp.FDPClickGui) {
                 openSelectedGui();
             }
         }

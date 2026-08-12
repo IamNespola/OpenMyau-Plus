@@ -39,7 +39,7 @@ public class ModuleEntry extends Component {
         propertiesComponents.add(keybindComp);
 
         if (Myau.propertyManager != null) {
-            List<Property<?>> properties = Myau.propertyManager.properties.get(module.getClass());
+            List<Property<?>> properties = Myau.propertyManager.properties.get(module);
             if (properties != null) {
                 for (Property<?> property : properties) {
                     Component comp = null;
