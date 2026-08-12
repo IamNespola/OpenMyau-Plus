@@ -419,7 +419,7 @@ public class Scaffold extends Module {
         return absYaw > 20.0F && absYaw < 70.0F;
     }
 
-    private boolean isTowering() {
+    public boolean isTowering() {
         if (mc.thePlayer.onGround && MoveUtil.isForwardPressed() && !PlayerUtil.isAirAbove()) {
             boolean keepY = this.keepY.getValue() == 3 || this.keepY.getValue() == 4;
             boolean tower = this.tower.getValue() == 3;

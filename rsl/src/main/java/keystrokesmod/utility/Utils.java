@@ -169,8 +169,8 @@ public class Utils {
         return entity.getHeldItem() != null && entity.getHeldItem().getItem() instanceof ItemFood;
     }
 
-    private boolean holdingPotion(EntityPlayer player) {
-        ItemStack itemStack = player.getHeldItemMainhand();
+    public static boolean holdingPotion(EntityPlayer player) {
+        ItemStack itemStack = player.getHeldItem();
         return itemStack != null && itemStack.getItem() instanceof ItemPotion;
     }
 

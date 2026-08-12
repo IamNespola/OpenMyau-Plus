@@ -53,6 +53,8 @@ loom {
     }
 }
 sourceSets.main {
+    java.srcDir("rsl/src/main/java")
+    resources.srcDir("rsl/src/main/resources")
     output.setResourcesDir(sourceSets.main.flatMap { it.java.classesDirectory })
 }
 // Dependencies:
@@ -80,6 +82,7 @@ dependencies {
     runtimeOnly("me.djtheredstoner:DevAuth-forge-legacy:1.2.1")
 
     shadowImpl("org.reflections:reflections:0.10.2")
+    shadowImpl("org.java-websocket:Java-WebSocket:1.6.0")
     compileOnly(files("libs/optifine-1.8.9.jar"))
 }
 // Tasks:
@@ -93,7 +96,7 @@ tasks.withType(org.gradle.jvm.tasks.Jar::class) {
         this["ForceLoadAsMod"] = "true"
         // If you don't want mixins, remove these lines
         this["TweakClass"] = "org.spongepowered.asm.launch.MixinTweaker"
-        this["MixinConfigs"] = "mixins.$modid.json"
+        this["MixinConfigs"] = "mixins.$modid.json,mixins.rsl.json"
         if (transformerFile.exists())
             this["FMLAT"] = "${modid}_at.cfg"
     }
@@ -132,47 +135,3 @@ tasks.shadowJar {
 tasks.assemble.get().dependsOn(tasks.remapJar)
 
 
-val rslDir = layout.projectDirectory.dir("rsl")
-val rslLibsDir = rslDir.dir("build/libs")
-val rslIntermediateJars = listOf(
-    "*-sources.jar", "*-dev.jar", "*-shaded.jar", "*-namedElements.jar", "*-slim.jar"
-)
-
-val buildRsl by tasks.registering(Exec::class) {
-    group = "rsl"
-    description = "Builds the vendored Raven Script Loader mod with its own Gradle wrapper."
-    workingDir = rslDir.asFile
-    commandLine(
-        if (SystemUtils.IS_OS_WINDOWS) listOf("cmd", "/c", "gradlew.bat", "build")
-        else listOf("sh", "gradlew", "build")
-    )
-    inputs.dir(rslDir.dir("src"))
-    inputs.file(rslDir.file("build.gradle.kts"))
-    inputs.file(rslDir.file("gradle.properties"))
-    outputs.dir(rslLibsDir)
-}
-
-val copyRslJar by tasks.registering(Copy::class) {
-    group = "rsl"
-    description = "Copies the Raven Script Loader jar next to the Myau+ jar."
-    dependsOn(buildRsl)
-    from(rslLibsDir) {
-        include("*.jar")
-        exclude(rslIntermediateJars)
-    }
-    into(layout.buildDirectory.dir("libs"))
-}
-
-val installRslToRunMods by tasks.registering(Copy::class) {
-    group = "rsl"
-    description = "Installs the Raven Script Loader jar into run/mods so the dev client loads it beside Myau+."
-    dependsOn(buildRsl)
-    from(rslLibsDir) {
-        include("*.jar")
-        exclude(rslIntermediateJars)
-    }
-    into(layout.projectDirectory.dir("run/mods"))
-}
-
-tasks.build { dependsOn(copyRslJar) }
-tasks.matching { it.name == "runClient" }.configureEach { dependsOn(installRslToRunMods) }

@@ -42,35 +42,32 @@ cd OpenMyau-Plus
 ./gradlew build
 ```
 
-This produces two jars in `build/libs`:
-
-- `Myau+.jar` — the client itself
-- the **Raven Script Loader** jar — the scripting mod (see below)
+This produces a single `build/libs/Myau+.jar` containing **both** the client and its
+scripting support.
 
 ---
 
 # Scripting (Raven Script Loader)
 
-Script support lives in [`rsl/`](rsl/), a vendored copy of
-[Raven Script Loader](https://codeberg.org/monster-energy/raven-script-loader). It is a
-**separate Forge mod** (`modid=rsl`), not part of the client jar — the two are installed
-side by side in your mods folder. RSL has no compile-time dependency on Myau+; its `myau.*`
-script API drives the client at runtime by issuing chat commands and reading back the
-suppressed output. See [`rsl/UPSTREAM.md`](rsl/UPSTREAM.md) for provenance and update steps.
+Script support comes from [`rsl/`](rsl/), a vendored copy of
+[Raven Script Loader](https://codeberg.org/monster-energy/raven-script-loader). It is
+bundled into the client jar rather than shipped separately: the root build compiles
+`rsl/src/main/java` and `rsl/src/main/resources` as extra source directories, so one jar
+registers **two Forge mods** — `myau` and `rsl` — under the mixin configs
+`mixins.myau.json,mixins.rsl.json`.
 
-Because RSL ships its own Gradle 8.11 wrapper and Loom toolchain (this project uses Gradle
-8.8 + essential-loom), it is built out of process through its own wrapper rather than as a
-composite build. `./gradlew build` drives it automatically; these tasks are also available
-individually:
+RSL's own `build.gradle.kts` and wrapper are **not used** (they need a Java 21+ JVM). Keeping
+it in the root build means one compile and one remap pass, with both mixin configs sharing a
+single generated refmap. Install just the one jar.
 
-| Task | Purpose |
-|---|---|
-| `./gradlew buildRsl` | Build RSL via `rsl/gradlew` |
-| `./gradlew copyRslJar` | Build it and copy the jar into `build/libs` |
-| `./gradlew installRslToRunMods` | Build it and install it into `run/mods` |
+Scripts drive the client through the `myau.*` API, which has no compile-time link to the
+client — it issues chat commands (`.t <module>`, `.<module> <property> <value>`) that Myau+
+intercepts on the outgoing chat packet, and reads back the replies while suppressing them
+from the chat GUI. That bridge depends on Myau+'s command output format, so changes to
+command replies can break scripts.
 
-`./gradlew runClient` runs `installRslToRunMods` first, so the dev client launches with both
-mods loaded and you can test scripts against live Myau+ modules.
+See [`rsl/UPSTREAM.md`](rsl/UPSTREAM.md) for provenance, the local patches applied on top of
+upstream, and how to pull updates.
 
 ---
 

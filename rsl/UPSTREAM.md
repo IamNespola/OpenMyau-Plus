@@ -27,6 +27,9 @@ diff -ru rsl /tmp/rsl-upstream --exclude=.git --exclude=build --exclude=.gradle 
 
 Apply the hunks you want, then bump the commit hash recorded above.
 
+## changes from upstream:
+raven b4 script compatibility. all of the missing stuff now uses myau modules (killaura/bedaura stuff)
+
 ## How it talks to Myau+
 
 RSL has **no compile-time dependency on Myau+**. The `myau.*` script API in

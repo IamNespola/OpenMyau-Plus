@@ -18,6 +18,10 @@ import keystrokesmod.script.packets.serverbound.CPacket;
 import keystrokesmod.script.packets.serverbound.PacketHandler;
 import keystrokesmod.utility.*;
 import keystrokesmod.utility.shader.RoundedUtils;
+import myau.Myau;
+import myau.module.modules.BedNuker;
+import myau.module.modules.KillAura;
+import myau.module.modules.Scaffold;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.entity.EntityOtherPlayerMP;
@@ -34,7 +38,9 @@ import net.minecraft.creativetab.CreativeTabs;
 import net.minecraft.entity.EntityLivingBase;
 import net.minecraft.init.Blocks;
 import net.minecraft.inventory.ContainerChest;
+import net.minecraft.inventory.ContainerWorkbench;
 import net.minecraft.inventory.IInventory;
+import net.minecraft.inventory.InventoryCrafting;
 import net.minecraft.network.EnumConnectionState;
 import net.minecraft.network.EnumPacketDirection;
 import net.minecraft.network.Packet;
@@ -552,6 +558,70 @@ public class ScriptDefaults {
         public static boolean isEnemy(String username) {
             return Utils.isEnemy(username);
         }
+
+        public static void multiplyMotion(double factor) {
+            mc.thePlayer.motionZ *= factor;
+            mc.thePlayer.motionX *= factor;
+        }
+
+        public static float getEquippedProgress() {
+            return ((keystrokesmod.mixin.impl.accessor.IAccessorItemRenderer) mc.getItemRenderer()).getEquippedProgress();
+        }
+
+        public static boolean canPlaceBlock(ItemStack stack, Vec3 pos, String side) {
+            if (stack == null || stack.itemStack == null || stack.itemStack.getItem() == null || !stack.isBlock) {
+                return false;
+            }
+            return ((net.minecraft.item.ItemBlock) stack.itemStack.getItem()).canPlaceBlockOnSide(mc.theWorld, Vec3.getBlockPos(pos), Utils.getEnum(EnumFacing.class, side), mc.thePlayer, stack.itemStack);
+        }
+
+        public static void swingReset() {
+            if (mc.thePlayer != null) {
+                mc.thePlayer.swingProgressInt = 0;
+                mc.thePlayer.swingProgress = 0.0F;
+                mc.thePlayer.isSwingInProgress = false;
+            }
+        }
+
+        public static void setYaw(float yaw) {
+            if (Myau.rotationManager != null) {
+                Myau.rotationManager.setRotation(yaw, mc.thePlayer.rotationPitch, Integer.MAX_VALUE, true);
+            }
+        }
+
+        public static void setPitch(float pitch) {
+            if (Myau.rotationManager != null) {
+                Myau.rotationManager.setRotation(mc.thePlayer.rotationYaw, pitch, Integer.MAX_VALUE, true);
+            }
+        }
+
+        public static void setRotations(float yaw, float pitch) {
+            if (Myau.rotationManager != null) {
+                Myau.rotationManager.setRotation(yaw, pitch, Integer.MAX_VALUE, true);
+            }
+        }
+
+        public static boolean isRotationActive() {
+            return Myau.rotationManager != null && Myau.rotationManager.isRotated();
+        }
+
+        public static Float getServerYaw() {
+            return null;
+        }
+
+        public static Float getServerPitch() {
+            return null;
+        }
+
+        public static void enableMovementFix() {
+        }
+
+        public static void disableMovementFix() {
+        }
+
+        public static boolean isMovementFixActive() {
+            return false;
+        }
     }
 
     public static class world {
@@ -726,24 +796,30 @@ public class ScriptDefaults {
             return Utils.isDiagonalMyauCalc();
         }
 
+        private static String normalizeName(final String name) {
+            return name.toLowerCase().replace("-", "").replace(" ", "").trim();
+        }
+
+        private static boolean isUnknown(final List<String> result) {
+            return result.isEmpty() || result.get(0).contains("Unknown command");
+        }
+
         public static boolean isEnabled(final String name) {
             final List<String> result = runSilently(String.format(".%s", name));
 
-            if (result.get(0).contains("Unknown command")) {
+            if (isUnknown(result)) {
                 return false;
             }
 
-            final String value = result.get(0).split("\\(")[1].split("\\)")[0];
+            final String header = result.get(0);
+            final int open = header.lastIndexOf('(');
+            final int close = header.lastIndexOf(')');
 
-            switch (value) {
-                case "ON":
-                    return true;
-                case "OFF":
-                    return false;
-                default:
-                    Utils.sendMessage("Unknown value: " + value);
-                    return false;
+            if (open < 0 || close < open) {
+                return false;
             }
+
+            return "ON".equalsIgnoreCase(header.substring(open + 1, close).trim());
         }
 
         public static void toggle(final String name) {
@@ -751,9 +827,7 @@ public class ScriptDefaults {
         }
 
         public static void setEnabled(final String name, final boolean state) {
-            if (isEnabled(name) != state) {
-                toggle(name);
-            }
+            runSilently(String.format(".t %s %s", name, state ? "on" : "off"));
         }
 
         public static void setProperty(final String moduleName, final String propertyName, final Object value) {
@@ -764,26 +838,24 @@ public class ScriptDefaults {
         public static String getProperty(final String moduleName, final String propertyName) {
             final List<String> result = runSilently(String.format(".%s", moduleName));
 
-            if (result.get(0).contains("Unknown command")) {
+            if (isUnknown(result) || result.size() == 1) {
                 return null;
             }
 
-            if (result.size() == 1) {
-                return null;
-            }
-
-            final String searchTerm = propertyName.toLowerCase().replace("-", "");
+            final String searchTerm = normalizeName(propertyName);
 
             for (int i = 1; i < result.size(); i++) {
-                if (!result.get(i).contains(":")) {
-                    Utils.sendMessage("what the fuck? " + result.get(i));
+                final String line = result.get(i);
+                final int separator = line.indexOf(": ");
+
+                if (separator < 0) {
                     continue;
                 }
 
-                final String[] lineTerm = result.get(i).substring(3).split(": ");
+                final String name = line.substring(0, separator).replaceAll("^[^\\p{Alnum}]+", "");
 
-                if (lineTerm[0].equals(searchTerm)) {
-                    return lineTerm[1];
+                if (normalizeName(name).equals(searchTerm)) {
+                    return line.substring(separator + 2).trim();
                 }
             }
 
@@ -856,6 +928,42 @@ public class ScriptDefaults {
             return getModule(moduleName).isEnabled();
         }
 
+        public Entity getKillAuraTarget() {
+            KillAura killAura = (KillAura) Myau.moduleManager.getModule(KillAura.class);
+            if (killAura == null || !killAura.isEnabled()) {
+                return null;
+            }
+            EntityLivingBase target = killAura.getTarget();
+            return target != null ? Entity.convert(target) : null;
+        }
+
+        public Vec3 getBedAuraPosition() {
+            BedNuker bedNuker = (BedNuker) Myau.moduleManager.getModule(BedNuker.class);
+            if (bedNuker == null || !bedNuker.isEnabled()) {
+                return null;
+            }
+            net.minecraft.util.BlockPos p = bedNuker.getTargetBed();
+            return p != null ? new Vec3(p) : null;
+        }
+
+        public float[] getBedAuraProgress() {
+            BedNuker bedNuker = (BedNuker) Myau.moduleManager.getModule(BedNuker.class);
+            if (bedNuker == null || !bedNuker.isEnabled()) {
+                return new float[]{0, 0};
+            }
+            return new float[]{bedNuker.isBreaking() ? 1.0f : 0.0f, 0};
+        }
+
+        public boolean isScaffolding() {
+            Scaffold scaffold = (Scaffold) Myau.moduleManager.getModule(Scaffold.class);
+            return scaffold != null && scaffold.isEnabled();
+        }
+
+        public boolean isTowering() {
+            Scaffold scaffold = (Scaffold) Myau.moduleManager.getModule(Scaffold.class);
+            return scaffold != null && scaffold.isEnabled() && scaffold.isTowering();
+        }
+
         public Map<String, Object> getSettings(String name) {
             Map<String, Object> settings = new HashMap<>();
             Module module = getModule(name);
@@ -867,6 +975,8 @@ public class ScriptDefaults {
                     settings.put(setting.getName(), ((SliderSetting) setting).getInput());
                 } else if (setting instanceof ButtonSetting) {
                     settings.put(setting.getName(), ((ButtonSetting) setting).isToggled());
+                } else if (setting instanceof ColorSetting) {
+                    settings.put(setting.getName(), ((ColorSetting) setting).getColor());
                 }
             }
             return settings;
@@ -1064,6 +1174,10 @@ public class ScriptDefaults {
             }
         }
 
+        public static void resetColor() {
+            GlStateManager.resetColor();
+        }
+
         public static void end() {
             GL11.glEnd();
         }
@@ -1130,6 +1244,42 @@ public class ScriptDefaults {
 
         public static void vertex3(float x, float y, float z) {
             GL11.glVertex3f(x, y, z);
+        }
+
+        public static void color(double r, double g, double b, double a) {
+            GlStateManager.color((float) r, (float) g, (float) b, (float) a);
+        }
+
+        public static void color(double r, double g, double b) {
+            GlStateManager.color((float) r, (float) g, (float) b, 1.0f);
+        }
+
+        public static void translate(double x, double y, double z) {
+            GL11.glTranslated(x, y, z);
+        }
+
+        public static void rotate(double angle, double x, double y, double z) {
+            GL11.glRotated(angle, x, y, z);
+        }
+
+        public static void scale(double x, double y, double z) {
+            GL11.glScaled(x, y, z);
+        }
+
+        public static void normal(double x, double y, double z) {
+            GL11.glNormal3f((float) x, (float) y, (float) z);
+        }
+
+        public static void lineWidth(double width) {
+            GL11.glLineWidth((float) width);
+        }
+
+        public static void vertex2(double x, double y) {
+            GL11.glVertex2d(x, y);
+        }
+
+        public static void vertex3(double x, double y, double z) {
+            GL11.glVertex3d(x, y, z);
         }
 
         private static void setGLEnable(int cap, boolean enable) {
@@ -1380,6 +1530,10 @@ public class ScriptDefaults {
             GlStateManager.popMatrix();
         }
 
+        public static void text(String text, float x, float y, float scale, int color, boolean shadow) {
+            text2d(text, x, y, scale, color, shadow);
+        }
+
         public static void text3d(String text, Vec3 position, float scale, boolean shadow, boolean depth, boolean background, int color) {
             ((IAccessorEntityRenderer) mc.entityRenderer).callSetupCameraTransform(((IAccessorMinecraft) mc).getTimer().renderPartialTicks, 0);
             GlStateManager.pushMatrix();
@@ -1483,9 +1637,15 @@ public class ScriptDefaults {
         }
 
         public static void line3D(final double startX, final double startY, final double startZ, double endX, double endY, double endZ, final float lineWidth, final int color) {
-            endX -= mc.getRenderManager().viewerPosX;
-            endY -= mc.getRenderManager().viewerPosY;
-            endZ -= mc.getRenderManager().viewerPosZ;
+            final double vx = mc.getRenderManager().viewerPosX;
+            final double vy = mc.getRenderManager().viewerPosY;
+            final double vz = mc.getRenderManager().viewerPosZ;
+            final double sx = startX - vx;
+            final double sy = startY - vy;
+            final double sz = startZ - vz;
+            endX -= vx;
+            endY -= vy;
+            endZ -= vz;
             final float a = (color >> 24 & 0xFF) / 255.0f;
             final float r = (color >> 16 & 0xFF) / 255.0f;
             final float g = (color >> 8 & 0xFF) / 255.0f;
@@ -1499,7 +1659,7 @@ public class ScriptDefaults {
             GL11.glLineWidth(lineWidth);
             GlStateManager.color(r, g, b, a);
             GL11.glBegin(2);
-            GL11.glVertex3d(startX - mc.thePlayer.posX, startY - mc.thePlayer.posY, startZ - mc.thePlayer.posZ);
+            GL11.glVertex3d(sx, sy, sz);
             GL11.glVertex3d(endX, endY, endZ);
             GL11.glEnd();
             GlStateManager.color(1.0f, 1.0f, 1.0f, 1.0f);
@@ -1514,7 +1674,37 @@ public class ScriptDefaults {
             return RenderUtils.isInViewFrustum(en.entity);
         }
 
+        public static void block(double x, double y, double z, int color, boolean outline, boolean shade) {
+            RenderUtils.renderBlock(new BlockPos(x, y, z), color, outline, shade);
+        }
 
+        public static void text(String text, double x, double y, double scale, int color, boolean shadow) {
+            text(text, (float) x, (float) y, (float) scale, color, shadow);
+        }
+
+        public static void text2d(String text, double x, double y, double scale, int color, boolean shadow) {
+            text2d(text, (float) x, (float) y, (float) scale, color, shadow);
+        }
+
+        public static void text3d(String text, Vec3 position, double scale, boolean shadow, boolean depth, boolean background, int color) {
+            text3d(text, position, (float) scale, shadow, depth, background, color);
+        }
+
+        public static void roundedRect(double startX, double startY, double endX, double endY, double radius, int color) {
+            roundedRect((float) startX, (float) startY, (float) endX, (float) endY, (float) radius, color);
+        }
+
+        public static void gradientRect(double startX, double startY, double endX, double endY, int leftColor, int rightColor) {
+            gradientRect((float) startX, (float) startY, (float) endX, (float) endY, leftColor, rightColor);
+        }
+
+        public static void image(Image image, double x, double y, double width, double height) {
+            image(image, (float) x, (float) y, (float) width, (float) height);
+        }
+
+        public static void rect(double startX, double startY, double endX, double endY, int color) {
+            rect((float) startX, (float) startY, (float) endX, (float) endY, color);
+        }
 
         public static class blur {
             public static void prepare() {
@@ -1626,6 +1816,28 @@ public class ScriptDefaults {
             return null;
         }
 
+        public static ItemStack getStackInCraftingSlot(int slot) {
+            if (mc.thePlayer.openContainer instanceof ContainerWorkbench) {
+                InventoryCrafting craftMatrix = ((ContainerWorkbench) mc.thePlayer.openContainer).craftMatrix;
+                if (craftMatrix.getStackInSlot(slot) == null) {
+                    return null;
+                }
+                return new ItemStack(craftMatrix.getStackInSlot(slot), (byte) 0);
+            }
+            return null;
+        }
+
+        public static ItemStack getCraftResult() {
+            if (mc.thePlayer.openContainer instanceof ContainerWorkbench) {
+                IInventory craftResult = ((ContainerWorkbench) mc.thePlayer.openContainer).craftResult;
+                if (craftResult.getStackInSlot(0) == null) {
+                    return null;
+                }
+                return new ItemStack(craftResult.getStackInSlot(0), (byte) 0);
+            }
+            return null;
+        }
+
         public static void open() {
             KeyBinding inventoryKey = mc.gameSettings.keyBindInventory;
             int originalKeyCode = inventoryKey.getKeyCode();
@@ -1666,12 +1878,23 @@ public class ScriptDefaults {
             }
         }
 
+        public static void onTick(final String key) {
+            KeyBinding keyBind = Reflection.keybinds.get(key);
+            if (keyBind != null) {
+                KeyBinding.onTick(keyBind.getKeyCode());
+            }
+        }
+
         public static int getKeyCode(final String key) {
             final KeyBinding keyBind = Reflection.keybinds.get(key);
             if (keyBind != null) {
                 return keyBind.getKeyCode();
             }
             return -1;
+        }
+
+        public static int getKeycode(final String key) {
+            return getKeyCode(key);
         }
 
         public static int getKeyIndex(String key) {

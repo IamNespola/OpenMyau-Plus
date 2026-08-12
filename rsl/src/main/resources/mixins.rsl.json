@@ -1,10 +1,11 @@
 {
     "required": true,
     "package": "keystrokesmod.mixin.impl",
-    "refmap": "mixins.rsl.refmap.json",
+    "refmap": "mixins.myau.refmap.json",
     "compatibilityLevel": "JAVA_8",
     "mixins": [
         "accessor.IAccessorEntityArrow",
+        "accessor.IAccessorEntity",
         "accessor.IAccessorEntityLivingBase",
         "accessor.IAccessorEntityPlayer",
         "accessor.IAccessorEntityPlayerSP",
@@ -14,6 +15,7 @@
         "accessor.IAccessorGuiScreen",
         "accessor.IAccessorGuiScreenBook",
         "accessor.IAccessorItemFood",
+        "accessor.IAccessorItemRenderer",
         "accessor.IAccessorMinecraft",
         "accessor.IAccessorPlayerControllerMP",
         "accessor.IAccessorRenderManager",
