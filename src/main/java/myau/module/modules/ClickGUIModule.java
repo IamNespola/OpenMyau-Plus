@@ -34,7 +34,7 @@ public class ClickGUIModule extends Module {
     };
 
     public ModeProperty accentColor = new ModeProperty("Color", 0, COLOR_NAMES);
-    public ModeProperty style = new ModeProperty("Style", 0, new String[]{"Normal", "Raven B3", "Raven B4", "Cheadle", "FDP"});
+    public ModeProperty style = new ModeProperty("Style", 0, new String[]{"Normal", "Raven B3", "Raven B4", "Cheadle", "FDP", "Modern"});
     public BooleanProperty saveGuiState = new BooleanProperty("Save GUI State", true);
     public BooleanProperty shadow = new BooleanProperty("Shadow", true);
 
@@ -60,7 +60,8 @@ public class ClickGUIModule extends Module {
                 || mc.currentScreen instanceof ClickGuiScreen
                 || mc.currentScreen instanceof RavenClickGui
                 || mc.currentScreen instanceof CheadleClickGui
-                || mc.currentScreen instanceof myau.ui.impl.clickgui.fdp.FDPClickGui;
+                || mc.currentScreen instanceof myau.ui.impl.clickgui.fdp.FDPClickGui
+                || mc.currentScreen instanceof myau.ui.impl.clickgui.modern.ModernClickGui;
         try {
             mc.displayGuiScreen(screen);
         } finally {
@@ -90,6 +91,10 @@ public class ClickGUIModule extends Module {
             // initGui() and keeps drag/open/scroll state across reopens like the real thing did.
             return myau.ui.impl.clickgui.fdp.FDPClickGui.INSTANCE;
         }
+        if (style.getValue() == 5) {
+            myau.ui.impl.clickgui.modern.ModernClickGui modern = myau.ui.impl.clickgui.modern.ModernClickGui.getInstance();
+            return modern != null ? modern : new myau.ui.impl.clickgui.modern.ModernClickGui();
+        }
         return ClickGuiScreen.getInstance();
     }
 
@@ -99,7 +104,8 @@ public class ClickGUIModule extends Module {
             Minecraft mc = Minecraft.getMinecraft();
             if (mc.currentScreen instanceof ClickGui || mc.currentScreen instanceof ClickGuiScreen
                     || mc.currentScreen instanceof RavenClickGui || mc.currentScreen instanceof CheadleClickGui
-                    || mc.currentScreen instanceof myau.ui.impl.clickgui.fdp.FDPClickGui) {
+                    || mc.currentScreen instanceof myau.ui.impl.clickgui.fdp.FDPClickGui
+                    || mc.currentScreen instanceof myau.ui.impl.clickgui.modern.ModernClickGui) {
                 openSelectedGui();
             }
         }
