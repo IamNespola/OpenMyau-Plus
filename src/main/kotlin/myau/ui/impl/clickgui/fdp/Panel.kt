@@ -1,7 +1,8 @@
 /*
- * Ported from FDPClient's clickgui/Panel.kt. FDPClient reads its layout knobs (fadeSpeed,
- * maxElements, panelsForcedInBoundaries, scale) from its own ClickGUIModule; those are
- * skin-internal tuning here rather than user-facing Myau+ properties, so they're constants.
+ * Ported from FDPClient's clickgui/Panel.kt. FDPClient reads its layout knobs
+ * (fadeSpeed, maxElements, panelsForcedInBoundaries, scale) from its own
+ * ClickGUIModule; those are skin-internal tuning here rather than user-facing
+ * Myau+ properties, so they're constants.
  */
 package myau.ui.impl.clickgui.fdp
 
@@ -33,71 +34,105 @@ class Panel(
     var y2 = 0
 
     private var updatePos = false
+    private var elementsHeight = 0
+
+    /*
+     * Keep sub-pixel fade progress here. `fade` is an Int because it is used
+     * as a GUI coordinate, but updating the Int directly with 0.4f rounds to
+     * zero on normal one-tick render deltas.
+     */
+    private var fadeProgress = 0f
 
     fun parseX(value: Int = x): Int {
-        if (!PANELS_FORCED_IN_BOUNDARIES)
+        if (!PANELS_FORCED_IN_BOUNDARIES) {
             return value
+        }
 
         val settingsWidth =
-            if (open || FDPClickGui.search.active) displayedElements().filterIsInstance<ModuleElement>()
-                .maxOfOrNull { if (it.showSettings) it.settingsWidth else 0 } ?: 0
-            else 0
+            if (open || FDPClickGui.search.active) {
+                displayedElements()
+                    .filterIsInstance<ModuleElement>()
+                    .maxOfOrNull { if (it.showSettings) it.settingsWidth else 0 }
+                    ?: 0
+            } else {
+                0
+            }
 
-        return value.clamp(0, (ScaledResolution(mc).scaledWidth / SCALE - width - settingsWidth).roundToInt())
+        return value.clamp(
+            0,
+            (ScaledResolution(mc).scaledWidth / SCALE - width - settingsWidth).roundToInt()
+        )
     }
+
     fun parseY(value: Int = y): Int {
-        if (!PANELS_FORCED_IN_BOUNDARIES)
+        if (!PANELS_FORCED_IN_BOUNDARIES) {
             return value
+        }
 
         var yPos = height + 4
         var panelHeight = height + fade
 
-        if (open || FDPClickGui.search.active)
+        if (open || FDPClickGui.search.active) {
             for (element in displayedElements()) {
-                if (element.isVisible) {
-                    if (element is ModuleElement && element.showSettings && element.settingsHeight != 0) {
-                        val relativeSettingsHeight = yPos + element.settingsHeight
-                        if (relativeSettingsHeight > panelHeight) panelHeight = relativeSettingsHeight
-                    }
-                    yPos += element.height + 1
+                if (!element.isVisible) {
+                    continue
                 }
-            }
 
-        return value.clamp(0, (ScaledResolution(mc).scaledHeight / SCALE - panelHeight).roundToInt())
+                if (element is ModuleElement && element.showSettings && element.settingsHeight != 0) {
+                    val relativeSettingsHeight = yPos + element.settingsHeight
+
+                    if (relativeSettingsHeight > panelHeight) {
+                        panelHeight = relativeSettingsHeight
+                    }
+                }
+
+                yPos += element.height + 1
+            }
+        }
+
+        return value.clamp(
+            0,
+            (ScaledResolution(mc).scaledHeight / SCALE - panelHeight).roundToInt()
+        )
     }
 
     var drag = false
-    val scrollbar
+
+    val scrollbar: Boolean
         get() = displayedElements().size > MAX_ELEMENTS
 
     var isVisible = true
+
     var fade = 0
         set(value) {
             val parsed = value.clamp(0, elementsHeight)
 
             if (parsed != field) {
-                // Update panel pos not to extend beyond border.
                 field = parsed
 
+                // Keep the panel within the screen as its visible height changes.
                 x = parseX()
                 y = parseY()
             }
         }
 
-    private var elementsHeight = 0
-
     private var scroll = 0
         set(value) {
-            // How many elements should be hidden
             val hiddenCount = displayedElements().size - MAX_ELEMENTS
-            // Don't overscroll
-            field = if (hiddenCount > 0) min(hiddenCount, value.coerceAtLeast(0)) else 0
+            field = if (hiddenCount > 0) {
+                min(hiddenCount, value.coerceAtLeast(0))
+            } else {
+                0
+            }
         }
 
     fun drawScreenAndClick(mouseX: Int, mouseY: Int, mouseButton: Int? = null): Boolean {
-        if (!isVisible) return false
+        if (!isVisible) {
+            return false
+        }
 
         val displayedElements = displayedElements()
+
         if (FDPClickGui.search.active && displayedElements.isEmpty()) {
             elements.forEach { it.isVisible = false }
             return false
@@ -105,7 +140,6 @@ class Panel(
 
         updateElementsHeight()
 
-        // Drag
         if (drag) {
             x = parseX(x2 + mouseX)
             y = parseY(y2 + mouseY)
@@ -114,32 +148,38 @@ class Panel(
         FDPClickGui.style.drawPanel(mouseX, mouseY, this)
 
         var yPos = y + height - 2
-
         val visibleRange = getVisibleRange()
 
         elements.forEach { it.isVisible = false }
+
         displayedElements.forEachIndexed { index, element ->
-            if (index in visibleRange) {
-                element.isVisible = true
-                element.setLocation(x, yPos)
-                element.width = width
+            if (index !in visibleRange) {
+                element.isVisible = false
+                return@forEachIndexed
+            }
 
-                // If mouse wasn't hovering above any ButtonElement, drawScreenAndClick got called with mouseButton != null.
-                // Mouse was detected to be hovering above a value while rendering it.
-                // True was returned to stop any further values from getting clicked.
-                if (yPos <= y + fade && element.drawScreenAndClick(mouseX, mouseY, mouseButton)) {
-                    // Update panel pos not to extend beyond border.
-                    updatePos = true
-                    return true
-                }
+            element.isVisible = true
+            element.setLocation(x, yPos)
+            element.width = width
 
-                yPos += element.height + 1
-                element.isVisible = true
-            } else element.isVisible = false
+            /*
+             * `fade` is the expanded content height. Include the header height
+             * when deciding whether an element is inside the revealed region.
+             */
+            if (yPos <= y + height + fade &&
+                element.drawScreenAndClick(mouseX, mouseY, mouseButton)
+            ) {
+                updatePos = true
+                return true
+            }
+
+            yPos += element.height + 1
         }
 
-        // Position is updated on next draw calls because ModuleElement.settingsHeight gets updated on next draw call.
-        // Updated to prevent long settings lists from extending beyond window boundaries.
+        /*
+         * ModuleElement.settingsHeight may change during drawing, so constrain
+         * the panel on the following draw call.
+         */
         if (updatePos) {
             x = parseX()
             y = parseY()
@@ -150,8 +190,13 @@ class Panel(
     }
 
     fun mouseClicked(mouseX: Int, mouseY: Int, mouseButton: Int): Boolean {
-        if (!isVisible) return false
-        if (FDPClickGui.search.active && displayedElements().isEmpty()) return false
+        if (!isVisible) {
+            return false
+        }
+
+        if (FDPClickGui.search.active && displayedElements().isEmpty()) {
+            return false
+        }
 
         if (mouseButton == 1 && isHovered(mouseX, mouseY)) {
             open = !open
@@ -159,8 +204,13 @@ class Panel(
             return true
         }
 
-        if (displayedElements().any { it.y <= y + fade && it.mouseClicked(mouseX, mouseY, mouseButton) }) {
-            // Update panel pos not to extend beyond border.
+        if (
+            displayedElements().any { element ->
+                element.isVisible &&
+                    element.y <= y + height + fade &&
+                    element.mouseClicked(mouseX, mouseY, mouseButton)
+            }
+        ) {
             updatePos = true
             return true
         }
@@ -169,59 +219,107 @@ class Panel(
     }
 
     fun mouseReleased(mouseX: Int, mouseY: Int, button: Int): Boolean {
-        if (!isVisible) return false
+        if (!isVisible) {
+            return false
+        }
 
         drag = false
 
-        if (!open && !FDPClickGui.search.active) return false
+        if (!open && !FDPClickGui.search.active) {
+            return false
+        }
 
-        return displayedElements().any { it.y <= y + fade && it.mouseReleased(mouseX, mouseY, button) }
+        return displayedElements().any { element ->
+            element.isVisible &&
+                element.y <= y + height + fade &&
+                element.mouseReleased(mouseX, mouseY, button)
+        }
     }
 
     fun handleScroll(mouseX: Int, mouseY: Int, wheel: Int): Boolean {
-        if (FDPClickGui.search.active && displayedElements().isEmpty()) return false
+        if (FDPClickGui.search.active && displayedElements().isEmpty()) {
+            return false
+        }
+
         if (mouseX in x..x + width && mouseY in y..y + height + elementsHeight) {
-            if (wheel < 0) scroll++
-            else scroll--
+            if (wheel < 0) {
+                scroll++
+            } else {
+                scroll--
+            }
 
             return true
         }
+
         return false
     }
 
     fun updateFade(delta: Int) {
-        fade += ((if (open || FDPClickGui.search.active) 0.4f else -0.4f) * delta * FADE_SPEED).roundToInt()
+        val target = if (open || FDPClickGui.search.active) {
+            elementsHeight.toFloat()
+        } else {
+            0f
+        }
+
+        val step = 0.4f * delta.coerceAtLeast(0) * FADE_SPEED
+
+        fadeProgress = when {
+            fadeProgress < target -> min(target, fadeProgress + step)
+            fadeProgress > target -> max(target, fadeProgress - step)
+            else -> fadeProgress
+        }
+
+        fade = fadeProgress.roundToInt()
     }
 
     private fun updateElementsHeight() {
-        var height = 0
+        var totalHeight = 0
 
         for ((count, element) in displayedElements().withIndex()) {
-            if (count >= MAX_ELEMENTS) break
-            height += element.height + 1
+            if (count >= MAX_ELEMENTS) {
+                break
+            }
+
+            totalHeight += element.height + 1
         }
 
-        elementsHeight = height
+        elementsHeight = totalHeight
+
+        // Settings or search results may have made the list smaller.
+        if (fadeProgress > elementsHeight) {
+            fadeProgress = elementsHeight.toFloat()
+            fade = fadeProgress.roundToInt()
+        }
     }
 
     fun getVisibleRange(): IntRange {
         val size = displayedElements().size
-        if (size == 0) return 1..0
+
+        if (size == 0) {
+            return 1..0
+        }
 
         val first = scroll.coerceIn(0, max(size - MAX_ELEMENTS, 0))
         return first..min(size - 1, first + MAX_ELEMENTS - 1)
     }
 
     private fun displayedElements(): List<Element> {
-        if (!FDPClickGui.search.active) return elements
+        if (!FDPClickGui.search.active) {
+            return elements
+        }
+
         return elements.filter { element ->
             element is ModuleElement && FDPClickGui.search.matches(element.module)
         }
     }
 
-    fun isHovered(mouseX: Int, mouseY: Int) = mouseX in x..x + width && mouseY in y..y + height
+    fun isHovered(mouseX: Int, mouseY: Int): Boolean {
+        return mouseX in x..x + width && mouseY in y..y + height
+    }
 
-    override fun hashCode(): Int = this.name.hashCode()
+    override fun hashCode(): Int = name.hashCode()
 
-    override fun equals(other: Any?): Boolean = other is Panel && other.name == this.name
+    override fun equals(other: Any?): Boolean {
+        return other is Panel && other.name == name
+    }
 }

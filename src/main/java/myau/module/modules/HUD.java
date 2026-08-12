@@ -81,7 +81,7 @@ public class HUD extends Module {
     public final IntProperty offsetX = new IntProperty("offset-x", 2, 0, 255);
     public final IntProperty offsetY = new IntProperty("offset-y", 2, 0, 255);
     public final FloatProperty scale = new FloatProperty("scale", 1.0F, 0.5F, 1.5F);
-    public final ModeProperty interfaceMode = new ModeProperty("interface", 0, new String[]{"MYAU", "CREIDA"});
+    public final ModeProperty interfaceMode = new ModeProperty("interface", 0, new String[]{"MYAU", "CREIDA", "FDP", "SLINKY", "RAVEN"});
     public final PercentProperty background = new PercentProperty("background", 25);
     public final IntProperty bgAlpha = new IntProperty("bg-alpha", 120, 0, 255);
     public final BooleanProperty blur = new BooleanProperty("blur", false);
@@ -412,6 +412,12 @@ public class HUD extends Module {
         if (this.isEnabled() && !mc.gameSettings.showDebugInfo) {
             if (this.interfaceMode.getValue() == 1) {
                 renderCreidaInterface();
+            } else if (this.interfaceMode.getValue() == 2) {
+                renderFDPInterface();
+            } else if (this.interfaceMode.getValue() == 3) {
+                renderSlinkyInterface();
+            } else if (this.interfaceMode.getValue() == 4) {
+                renderRavenInterface();
             } else {
             float height = (float) fontRenderer.FONT_HEIGHT - 1.0F;
             float x = (float) this.offsetX.getValue()
@@ -724,6 +730,175 @@ public class HUD extends Module {
 
     private boolean isCreidaMinecraftFont() {
         return !this.creidaFont.getValue() || this.fontMode.getValue() == 1;
+    }
+
+    // ==================== FDP interface ====================
+    // Adapted from FDPClient's Arraylist.kt: right-aligned rows with a themed accent bar
+    // hugging the trailing edge (rounded only at the outermost corners of the whole list).
+
+    private void renderFDPInterface() {
+        ScaledResolution sr = new ScaledResolution(mc);
+        float hudScale = Math.max(0.5F, Math.min(1.5F, this.scale.getValue()));
+        float right = sr.getScaledWidth() / hudScale - Math.max(3.0F, this.offsetX.getValue());
+        float y = Math.max(3.0F, this.offsetY.getValue() + 1.0F);
+        float entryHeight = getCreidaEntryHeight();
+        long time = System.currentTimeMillis();
+        int total = this.activeModules.size();
+
+        GlStateManager.pushMatrix();
+        GlStateManager.scale(hudScale, hudScale, 1.0F);
+
+        long offset = 0L;
+        for (Module module : this.activeModules) {
+            String name = this.getModuleName(module);
+            float nameWidth = getCreidaTextWidth(name);
+            float barWidth = 3.0F;
+            float x = right - nameWidth - 6.0F;
+            int accent = this.getColor(time, offset).getRGB();
+            boolean first = offset == 0L;
+            boolean last = offset == total - 1;
+
+            RenderUtil.enableRenderState();
+            RenderUtil.drawRect(x - 2.0F, y, right, y + entryHeight, new Color(0, 0, 0, 130).getRGB());
+            RenderUtil.drawRoundedRect(right - barWidth, y, barWidth, entryHeight, 2.0F, accent, false, first, false, last);
+            RenderUtil.disableRenderState();
+
+            GlStateManager.disableDepth();
+            drawCreidaStringWithShadow(name, x, y + getCreidaTextOffset(entryHeight), Color.WHITE.getRGB());
+            GlStateManager.enableDepth();
+
+            y += entryHeight;
+            offset++;
+        }
+
+        GlStateManager.popMatrix();
+    }
+
+    // ==================== Slinky interface ====================
+    // Adapted from the "Visible Categories HUD" Raven script: each row's background is square
+    // at the top and smoothly rounded only at the bottom-left, flush with the screen edge on
+    // the right, with the corner radius clamped so it never pokes into the row below.
+
+    private void renderSlinkyInterface() {
+        float hudScale = Math.max(0.5F, Math.min(1.5F, this.scale.getValue()));
+        ScaledResolution sr = new ScaledResolution(mc);
+        float right = sr.getScaledWidth() / hudScale - Math.max(3.0F, this.offsetX.getValue());
+        float top0 = Math.max(3.0F, this.offsetY.getValue() + 1.0F);
+        float rowHeight = getCreidaEntryHeight();
+        float requestedRadius = this.cornerRadius.getValue();
+        long time = System.currentTimeMillis();
+        int count = this.activeModules.size();
+
+        GlStateManager.pushMatrix();
+        GlStateManager.scale(hudScale, hudScale, 1.0F);
+
+        float[] rowLefts = new float[count];
+        String[] names = new String[count];
+        String[] infos = new String[count];
+        for (int i = 0; i < count; i++) {
+            Module module = this.activeModules.get(i);
+            names[i] = this.getModuleName(module);
+            infos[i] = this.formatSlinkySuffix(module);
+            float width = getCreidaTextWidth(names[i] + infos[i]);
+            rowLefts[i] = right - width - 6.0F;
+        }
+
+        int bg = new Color(0, 0, 0, 110).getRGB();
+        GlStateManager.disableDepth();
+        for (int i = 0; i < count; i++) {
+            float top = top0 + i * rowHeight;
+            float radius = requestedRadius;
+            if (i + 1 < count) {
+                radius = Math.min(radius, Math.max(0.0F, rowLefts[i + 1] - rowLefts[i]));
+            }
+            RenderUtil.drawRoundedRect(rowLefts[i], top, right - rowLefts[i], rowHeight, radius, bg, false, false, true, false);
+        }
+        GlStateManager.enableDepth();
+
+        long offset = 0L;
+        for (int i = 0; i < count; i++) {
+            float top = top0 + i * rowHeight;
+            float textY = top + getCreidaTextOffset(rowHeight);
+            int color = this.getColor(time, offset).getRGB();
+
+            drawCreidaStringWithShadow(names[i], rowLefts[i] + 3.0F, textY, color);
+            if (!infos[i].isEmpty()) {
+                drawCreidaStringWithShadow(infos[i], rowLefts[i] + 3.0F + getCreidaTextWidth(names[i]), textY, 0xFFAAAAAA);
+            }
+            offset++;
+        }
+
+        GlStateManager.popMatrix();
+    }
+
+    private String formatSlinkySuffix(Module module) {
+        if (!this.suffixes.getValue()) {
+            return "";
+        }
+        String[] suffix = this.getModuleSuffix(module);
+        if (suffix.length == 0) {
+            return "";
+        }
+        StringBuilder builder = new StringBuilder();
+        for (String s : suffix) {
+            builder.append(' ').append(s);
+        }
+        return builder.toString();
+    }
+
+    // ==================== Raven interface ====================
+    // Adapted from a Raven bS/b4 fork's HUD.java: always right-aligned rows with a full thin
+    // accent-colored outline (rather than Myau's default single-side bar), a dark fill, and a
+    // shared top/bottom cap closing off the first and last row.
+
+    private void renderRavenInterface() {
+        float hudScale = this.scale.getValue();
+        ScaledResolution sr = new ScaledResolution(mc);
+        float right = sr.getScaledWidth() / hudScale - Math.max(3.0F, this.offsetX.getValue());
+        float y = Math.max(3.0F, this.offsetY.getValue() + 1.0F);
+        float height = fontRenderer.FONT_HEIGHT - 1.0F;
+        float pad = this.padding.getValue();
+        float rowHeight = height + pad * 2.0F + 2.0F;
+        long time = System.currentTimeMillis();
+        int total = this.activeModules.size();
+
+        GlStateManager.pushMatrix();
+        GlStateManager.scale(hudScale, hudScale, 1.0F);
+
+        long offset = 0L;
+        for (Module module : this.activeModules) {
+            String name = this.getModuleName(module);
+            float totalWidth = getModuleRenderWidth(module);
+            int color = this.getColor(time, offset).getRGB();
+            boolean first = offset == 0L;
+            boolean last = offset == total - 1;
+
+            float bgX2 = right;
+            float bgX1 = bgX2 - totalWidth - 2.0F - pad * 2.0F;
+            float bgY1 = y;
+            float bgY2 = y + rowHeight;
+
+            RenderUtil.enableRenderState();
+            RenderUtil.drawRect(bgX1, bgY1, bgX2, bgY2, new Color(0, 0, 0, 130).getRGB());
+            drawVerticalSidebar(bgX1 - 1.0F, bgY1, bgY2, 1.0F, color);
+            drawVerticalSidebar(bgX2, bgY1, bgY2, 1.0F, color);
+            if (first) {
+                RenderUtil.drawRect(bgX1 - 1.0F, bgY1 - 1.0F, bgX2 + 1.0F, bgY1, color);
+            }
+            if (last) {
+                RenderUtil.drawRect(bgX1 - 1.0F, bgY2, bgX2 + 1.0F, bgY2 + 1.0F, color);
+            }
+            RenderUtil.disableRenderState();
+
+            GlStateManager.disableDepth();
+            drawCreidaStringWithShadow(name, bgX1 + pad + 1.0F, y + getCreidaTextOffset(rowHeight), color);
+            GlStateManager.enableDepth();
+
+            y += rowHeight;
+            offset++;
+        }
+
+        GlStateManager.popMatrix();
     }
 
     private void renderNotifications() {
