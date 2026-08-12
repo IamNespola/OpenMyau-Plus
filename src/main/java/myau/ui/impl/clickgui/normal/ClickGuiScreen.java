@@ -111,10 +111,14 @@ public class ClickGuiScreen extends GuiScreen {
                 Myau.moduleManager.getModule(ESP2D.class),
                 Myau.moduleManager.getModule(RiseClickGUIModule.class),
                 Myau.moduleManager.getModule(TeamHealthDisplay.class),
-                Myau.moduleManager.getModule(SessionDisplay.class),
+                Myau.moduleManager.getModule(Statistics.class),
                 Myau.moduleManager.getModule(Capes.class),
                 Myau.moduleManager.getModule(Animations.class),
                 Myau.moduleManager.getModule(Ambience.class),
+                Myau.moduleManager.getModule(GuiModule.class),
+                Myau.moduleManager.getModule(RenderFixes.class),
+                Myau.moduleManager.getModule(FreeLook.class),
+                Myau.moduleManager.getModule(ItemPhysics.class),
                 Myau.moduleManager.getModule(ClickGUIModule.class)
         );
 

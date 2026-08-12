@@ -27,7 +27,7 @@ public class Capes extends Module {
     private static List<String> getBuiltinCapes() {
         List<String> capes = new ArrayList<>();
         try {
-            java.net.URL url = Myau.class.getResource("/assets/myau/cape");
+            java.net.URL url = Myau.class.getResource("/assets/myau/capes/");
             if (url != null) {
                 if (url.getProtocol().equals("file")) {
                     File dir = new File(url.toURI());
@@ -45,7 +45,7 @@ public class Capes extends Module {
                         java.util.Enumeration<java.util.jar.JarEntry> entries = jar.entries();
                         while (entries.hasMoreElements()) {
                             String name = entries.nextElement().getName();
-                            if (name.startsWith("assets/myau/cape/")
+                            if (name.startsWith("assets/myau/capes/")
                                     && name.endsWith(".png")) {
                                 String capeName = name.substring(name.lastIndexOf("/") + 1).replace(".png", "");
                                 capes.add(capeName);
@@ -119,10 +119,10 @@ public class Capes extends Module {
             String name = s.toLowerCase();
             try {
                 InputStream stream =
-                        Myau.class.getResourceAsStream("/assets/keystrokesmod/textures/capes/" + name + ".png");
+                        Myau.class.getResourceAsStream("/assets/myau/capes/" + name + ".png");
                 if (stream == null) {
                     stream =
-                            Myau.class.getResourceAsStream("/assets/keystrokesmod/textures/capes/" + s + ".png");
+                            Myau.class.getResourceAsStream("/assets/myau/capes/" + s + ".png");
                 }
                 if (stream == null) {
                     continue;

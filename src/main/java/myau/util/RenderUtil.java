@@ -1155,48 +1155,7 @@ public class RenderUtil {
         if (width <= 0.0D || height <= 0.0D || (color >>> 24) == 0) {
             return;
         }
-
-        radius = Math.max(0.0D, Math.min(radius, Math.min(width, height) / 2.0D));
-        if (radius <= 0.0D || !(roundTopLeft || roundTopRight || roundBottomLeft || roundBottomRight)) {
-            drawRect((float) x, (float) y, (float) (x + width), (float) (y + height), color);
-            return;
-        }
-
-        enableRenderState();
-        setColor(color);
-        GL11.glEnable(GL11.GL_POLYGON_SMOOTH);
-        GL11.glHint(GL11.GL_POLYGON_SMOOTH_HINT, GL11.GL_NICEST);
-
-        drawQuadNoState(x + radius, y, x + width - radius, y + height);
-        drawQuadNoState(x, y + radius, x + radius, y + height - radius);
-        drawQuadNoState(x + width - radius, y + radius, x + width, y + height - radius);
-
-        if (roundTopLeft) {
-            drawCornerFan(x + radius, y + radius, radius, 180.0D, 270.0D);
-        } else {
-            drawQuadNoState(x, y, x + radius, y + radius);
-        }
-
-        if (roundTopRight) {
-            drawCornerFan(x + width - radius, y + radius, radius, 270.0D, 360.0D);
-        } else {
-            drawQuadNoState(x + width - radius, y, x + width, y + radius);
-        }
-
-        if (roundBottomRight) {
-            drawCornerFan(x + width - radius, y + height - radius, radius, 0.0D, 90.0D);
-        } else {
-            drawQuadNoState(x + width - radius, y + height - radius, x + width, y + height);
-        }
-
-        if (roundBottomLeft) {
-            drawCornerFan(x + radius, y + height - radius, radius, 90.0D, 180.0D);
-        } else {
-            drawQuadNoState(x, y + height - radius, x + radius, y + height);
-        }
-
-        GL11.glDisable(GL11.GL_POLYGON_SMOOTH);
-        disableRenderState();
+        myau.util.shader.RoundedUtils.drawRoundedRectRise((float) x, (float) y, (float) width, (float) height, (float) radius, color, roundTopLeft, roundTopRight, roundBottomRight, roundBottomLeft);
     }
 
     public static void drawRoundedRect(float x, float y, float width, float height, float radius, int color, boolean roundTopLeft, boolean roundTopRight, boolean roundBottomLeft, boolean roundBottomRight) {
@@ -1293,7 +1252,6 @@ public class RenderUtil {
     public static void releaseScissor() {
         GL11.glDisable(GL11.GL_SCISSOR_TEST);
     }
-
     public static void drawRoundedRectOutline(float x, float y, float width, float height, float radius, float lineWidth, int color, boolean topLeft, boolean topRight, boolean bottomLeft, boolean bottomRight) {
         radius = Math.min(radius, Math.min(width, height) / 2.0f);
         float f = (float) (color >> 24 & 255) / 255.0F;
@@ -1380,5 +1338,105 @@ public class RenderUtil {
             this.put(61, new EnchantmentData("LoS", 3));
             this.put(62, new EnchantmentData("Lu", 3));
         }
+    }
+
+    public static void renderBlock(BlockPos blockPos, int color, boolean outline, boolean shade) {
+        renderBox(blockPos.getX(), blockPos.getY(), blockPos.getZ(), 1, 1, 1, color, outline, shade);
+    }
+
+    public static void renderBox(double x, double y, double z, double x2, double y2, double z2, int color, boolean outline, boolean shade) {
+        double xPos = x - mc.getRenderManager().viewerPosX;
+        double yPos = y - mc.getRenderManager().viewerPosY;
+        double zPos = z - mc.getRenderManager().viewerPosZ;
+        GL11.glPushMatrix();
+        GL11.glBlendFunc(770, 771);
+        GL11.glEnable(3042);
+        GL11.glLineWidth(2.0f);
+        GL11.glDisable(3553);
+        GL11.glDisable(2929);
+        GL11.glDepthMask(false);
+        float a = (color >> 24 & 0xFF) / 255.0f;
+        float r = (color >> 16 & 0xFF) / 255.0f;
+        float g = (color >> 8 & 0xFF) / 255.0f;
+        float b = (color & 0xFF) / 255.0f;
+        GL11.glColor4f(r, g, b, a);
+        AxisAlignedBB axisAlignedBB = new AxisAlignedBB(xPos, yPos, zPos, xPos + x2, yPos + y2, zPos + z2);
+        if (outline) {
+            RenderGlobal.drawSelectionBoundingBox(axisAlignedBB);
+        }
+        if (shade) {
+            drawFilledBoundingBox(axisAlignedBB, r, g, b, 0.25f);
+        }
+        GL11.glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
+        GL11.glEnable(3553);
+        GL11.glEnable(2929);
+        GL11.glDepthMask(true);
+        GL11.glDisable(3042);
+        GL11.glPopMatrix();
+    }
+
+    public static void drawFilledBoundingBox(AxisAlignedBB abb, float r, float g, float b, float a) {
+        Tessellator ts = Tessellator.getInstance();
+        WorldRenderer vb = ts.getWorldRenderer();
+        vb.begin(7, DefaultVertexFormats.POSITION_COLOR);
+        vb.pos(abb.minX, abb.minY, abb.minZ).color(r, g, b, a).endVertex();
+        vb.pos(abb.minX, abb.maxY, abb.minZ).color(r, g, b, a).endVertex();
+        vb.pos(abb.maxX, abb.minY, abb.minZ).color(r, g, b, a).endVertex();
+        vb.pos(abb.maxX, abb.maxY, abb.minZ).color(r, g, b, a).endVertex();
+        vb.pos(abb.maxX, abb.minY, abb.maxZ).color(r, g, b, a).endVertex();
+        vb.pos(abb.maxX, abb.maxY, abb.maxZ).color(r, g, b, a).endVertex();
+        vb.pos(abb.minX, abb.minY, abb.maxZ).color(r, g, b, a).endVertex();
+        vb.pos(abb.minX, abb.maxY, abb.maxZ).color(r, g, b, a).endVertex();
+        ts.draw();
+        vb.begin(7, DefaultVertexFormats.POSITION_COLOR);
+        vb.pos(abb.maxX, abb.maxY, abb.minZ).color(r, g, b, a).endVertex();
+        vb.pos(abb.maxX, abb.minY, abb.minZ).color(r, g, b, a).endVertex();
+        vb.pos(abb.minX, abb.maxY, abb.minZ).color(r, g, b, a).endVertex();
+        vb.pos(abb.minX, abb.minY, abb.minZ).color(r, g, b, a).endVertex();
+        vb.pos(abb.minX, abb.maxY, abb.maxZ).color(r, g, b, a).endVertex();
+        vb.pos(abb.minX, abb.minY, abb.maxZ).color(r, g, b, a).endVertex();
+        vb.pos(abb.maxX, abb.maxY, abb.maxZ).color(r, g, b, a).endVertex();
+        vb.pos(abb.maxX, abb.minY, abb.maxZ).color(r, g, b, a).endVertex();
+        ts.draw();
+        vb.begin(7, DefaultVertexFormats.POSITION_COLOR);
+        vb.pos(abb.minX, abb.maxY, abb.minZ).color(r, g, b, a).endVertex();
+        vb.pos(abb.maxX, abb.maxY, abb.minZ).color(r, g, b, a).endVertex();
+        vb.pos(abb.maxX, abb.maxY, abb.maxZ).color(r, g, b, a).endVertex();
+        vb.pos(abb.minX, abb.maxY, abb.maxZ).color(r, g, b, a).endVertex();
+        vb.pos(abb.minX, abb.maxY, abb.minZ).color(r, g, b, a).endVertex();
+        vb.pos(abb.minX, abb.maxY, abb.maxZ).color(r, g, b, a).endVertex();
+        vb.pos(abb.maxX, abb.maxY, abb.maxZ).color(r, g, b, a).endVertex();
+        vb.pos(abb.maxX, abb.maxY, abb.minZ).color(r, g, b, a).endVertex();
+        ts.draw();
+        vb.begin(7, DefaultVertexFormats.POSITION_COLOR);
+        vb.pos(abb.minX, abb.minY, abb.minZ).color(r, g, b, a).endVertex();
+        vb.pos(abb.maxX, abb.minY, abb.minZ).color(r, g, b, a).endVertex();
+        vb.pos(abb.maxX, abb.minY, abb.maxZ).color(r, g, b, a).endVertex();
+        vb.pos(abb.minX, abb.minY, abb.maxZ).color(r, g, b, a).endVertex();
+        vb.pos(abb.minX, abb.minY, abb.minZ).color(r, g, b, a).endVertex();
+        vb.pos(abb.minX, abb.minY, abb.maxZ).color(r, g, b, a).endVertex();
+        vb.pos(abb.maxX, abb.minY, abb.maxZ).color(r, g, b, a).endVertex();
+        vb.pos(abb.maxX, abb.minY, abb.minZ).color(r, g, b, a).endVertex();
+        ts.draw();
+        vb.begin(7, DefaultVertexFormats.POSITION_COLOR);
+        vb.pos(abb.minX, abb.minY, abb.minZ).color(r, g, b, a).endVertex();
+        vb.pos(abb.minX, abb.maxY, abb.minZ).color(r, g, b, a).endVertex();
+        vb.pos(abb.minX, abb.minY, abb.maxZ).color(r, g, b, a).endVertex();
+        vb.pos(abb.minX, abb.maxY, abb.maxZ).color(r, g, b, a).endVertex();
+        vb.pos(abb.maxX, abb.minY, abb.maxZ).color(r, g, b, a).endVertex();
+        vb.pos(abb.maxX, abb.maxY, abb.maxZ).color(r, g, b, a).endVertex();
+        vb.pos(abb.maxX, abb.minY, abb.minZ).color(r, g, b, a).endVertex();
+        vb.pos(abb.maxX, abb.maxY, abb.minZ).color(r, g, b, a).endVertex();
+        ts.draw();
+        vb.begin(7, DefaultVertexFormats.POSITION_COLOR);
+        vb.pos(abb.minX, abb.maxY, abb.maxZ).color(r, g, b, a).endVertex();
+        vb.pos(abb.minX, abb.minY, abb.maxZ).color(r, g, b, a).endVertex();
+        vb.pos(abb.minX, abb.maxY, abb.minZ).color(r, g, b, a).endVertex();
+        vb.pos(abb.minX, abb.minY, abb.minZ).color(r, g, b, a).endVertex();
+        vb.pos(abb.maxX, abb.maxY, abb.minZ).color(r, g, b, a).endVertex();
+        vb.pos(abb.maxX, abb.minY, abb.minZ).color(r, g, b, a).endVertex();
+        vb.pos(abb.maxX, abb.maxY, abb.maxZ).color(r, g, b, a).endVertex();
+        vb.pos(abb.maxX, abb.minY, abb.maxZ).color(r, g, b, a).endVertex();
+        ts.draw();
     }
 }

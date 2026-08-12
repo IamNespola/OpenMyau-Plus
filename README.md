@@ -81,7 +81,7 @@ Contributions are welcome! You can:
 ---
 #  Support
 
-If you like this project, consider giving it a  on GitHub — it really helps!
+If you like this project, consider giving it a star on GitHub — it really helps!
 ---
 
 #  Contact

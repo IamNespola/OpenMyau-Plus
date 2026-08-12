@@ -2,6 +2,7 @@ package myau;
 
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import de.florianmichael.viamcp.ViaMCP;
 import myau.command.CommandManager;
 import myau.command.commands.*;
 import myau.config.Config;
@@ -10,6 +11,8 @@ import myau.font.FontManagers;
 import myau.management.*;
 import myau.module.Module;
 import myau.module.ModuleManager;
+import myau.module.modules.HUD;
+import myau.module.modules.Hotbar;
 import myau.module.modules.*;
 import myau.property.Property;
 import myau.property.PropertyManager;
@@ -109,6 +112,7 @@ public class Myau {
         moduleManager.modules.put(HitSelect.class, new HitSelect());
         moduleManager.modules.put(AutoHypixel.class, new AutoHypixel());
         moduleManager.modules.put(HUD.class, new HUD());
+        moduleManager.modules.put(Hotbar.class, new Hotbar());
         moduleManager.modules.put(MoreKB.class, new MoreKB());
         moduleManager.modules.put(Indicators.class, new Indicators());
         moduleManager.modules.put(InventoryClicker.class, new InventoryClicker());
@@ -165,7 +169,9 @@ public class Myau {
         moduleManager.modules.put(AntiBot.class, new AntiBot());
         moduleManager.modules.put(AutoBedDef.class, new AutoBedDef());
         moduleManager.modules.put(TickBase.class, new TickBase());
-        moduleManager.modules.put(SessionDisplay.class, new SessionDisplay());
+        moduleManager.modules.put(Statistics.class, new Statistics());
+        moduleManager.modules.put(FreeLook.class, new FreeLook());
+        moduleManager.modules.put(ItemPhysics.class, new ItemPhysics());
         moduleManager.modules.put(Spammer.class, new Spammer());
         moduleManager.modules.put(Speed.class, new Speed());
         moduleManager.modules.put(SpeedMine.class, new SpeedMine());
@@ -234,6 +240,7 @@ public class Myau {
         Runtime.getRuntime().addShutdownHook(new Thread(config::save));
 
         me.ksyz.accountmanager.AccountManager.init();
+        ViaMCP.create();
 
         try (InputStreamReader reader = new InputStreamReader(Objects.requireNonNull(Myau.class.getResourceAsStream("/version.json")), StandardCharsets.UTF_8)) {
             JsonObject modInfo = new JsonParser().parse(reader).getAsJsonObject();

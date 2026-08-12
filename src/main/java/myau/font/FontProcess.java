@@ -53,6 +53,10 @@ public class FontProcess {
         registerFont("apple", createFont("apple", 18));
         registerFont("sans", createFont("sans", 18));
         registerFont("nunito", createFont("nunito", 18));
+        registerFont("tenacity", createFont("tenacity", 20));
+        registerFont("tenacity-bold", createFont("tenacity-bold", 20));
+        registerFont("sf-pro", createFont("San-Francisco-Pro-Fonts", 18));
+        registerFont("google-sans", createFont("product_sans_medium", 19));
         registerFont("icon", createFont("icon", 40));
     }
 
