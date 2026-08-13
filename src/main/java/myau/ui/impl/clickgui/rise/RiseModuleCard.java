@@ -48,7 +48,7 @@ public class RiseModuleCard {
     private void initValueEditors() {
         if (Myau.propertyManager == null || Myau.propertyManager.properties == null) return;
 
-        List<Property<?>> properties = Myau.propertyManager.properties.get(module);
+        List<Property<?>> properties = Myau.propertyManager.properties.get(module.getClass());
         if (properties == null) return;
 
         for (Property<?> property : properties) {

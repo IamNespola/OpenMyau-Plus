@@ -36,7 +36,6 @@ public class RiseClickGUI extends GuiScreen {
         RENDER("Render", true),
         EXPLOIT("Exploit", true),
         GHOST("Ghost", true),
-        SCRIPTS("Scripts", true),
         MISC("Misc", true),
         CAS("CaS", false),
         THEMES("Themes", false),
@@ -143,9 +142,6 @@ public class RiseClickGUI extends GuiScreen {
     }
 
     private static Tab resolveModuleTab(Module module) {
-        if (module instanceof myau.module.modules.ScriptModule) {
-            return Tab.SCRIPTS;
-        }
         Tab tab = MODULE_TABS.get(key(module.getName()));
         return tab == null ? Tab.MISC : tab;
     }
@@ -161,7 +157,7 @@ public class RiseClickGUI extends GuiScreen {
             if (tab.moduleTab) moduleCards.put(tab, new ArrayList<RiseModuleCard>());
         }
 
-        List<Module> modules = new ArrayList<Module>(Myau.moduleManager.allModules());
+        List<Module> modules = new ArrayList<Module>(Myau.moduleManager.modules.values());
         Collections.sort(modules, new Comparator<Module>() {
             private final Collator collator = Collator.getInstance();
 

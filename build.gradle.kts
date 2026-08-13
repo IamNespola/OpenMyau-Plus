@@ -5,7 +5,6 @@ plugins {
     id("gg.essential.loom") version "0.10.0.+"
     id("dev.architectury.architectury-pack200") version "0.1.3"
     id("com.github.johnrengelman.shadow") version "8.1.1"
-    kotlin("jvm") version "2.0.21"
 }
 //Constants:
 val baseGroup: String by project
@@ -54,12 +53,7 @@ loom {
     }
 }
 sourceSets.main {
-    java.srcDir("rsl/src/main/java")
-    resources.srcDir("rsl/src/main/resources")
     output.setResourcesDir(sourceSets.main.flatMap { it.java.classesDirectory })
-}
-tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach {
-    kotlinOptions.jvmTarget = "1.8"
 }
 // Dependencies:
 repositories {
@@ -93,8 +87,6 @@ dependencies {
     runtimeOnly("me.djtheredstoner:DevAuth-forge-legacy:1.2.1")
 
     shadowImpl("org.reflections:reflections:0.10.2")
-    shadowImpl("org.java-websocket:Java-WebSocket:1.6.0")
-    shadowImpl("org.jetbrains.kotlin:kotlin-stdlib:2.0.21")
     compileOnly(files("libs/optifine-1.8.9.jar"))
 }
 // Tasks:
@@ -108,7 +100,7 @@ tasks.withType(org.gradle.jvm.tasks.Jar::class) {
         this["ForceLoadAsMod"] = "true"
         // If you don't want mixins, remove these lines
         this["TweakClass"] = "org.spongepowered.asm.launch.MixinTweaker"
-        this["MixinConfigs"] = "mixins.$modid.json,mixins.rsl.json"
+        this["MixinConfigs"] = "mixins.$modid.json"
         if (transformerFile.exists())
             this["FMLAT"] = "${modid}_at.cfg"
     }
@@ -155,5 +147,3 @@ tasks.shadowJar {
     fun relocate(name: String) = relocate(name, "$baseGroup.deps.$name")
 }
 tasks.assemble.get().dependsOn(tasks.remapJar)
-
-

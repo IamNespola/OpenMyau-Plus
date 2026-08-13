@@ -351,10 +351,6 @@ public class BedNuker extends Module {
         return this.targetBed != null && this.readyToBreak;
     }
 
-    public net.minecraft.util.BlockPos getTargetBed() {
-        return this.targetBed;
-    }
-
     public boolean isBreaking() {
         return this.targetBed != null && this.breaking;
     }
