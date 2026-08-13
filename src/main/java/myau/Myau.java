@@ -221,7 +221,7 @@ public class Myau {
                     properties.add((Property<?>) obj);
                 }
             }
-            propertyManager.properties.put(module.getClass(), properties);
+            propertyManager.properties.put(module, properties);
             EventManager.register(module);
         }
         Config config = new Config("default", true);

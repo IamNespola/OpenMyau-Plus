@@ -52,12 +52,12 @@ public class Config {
             }
 
             JsonObject jsonObject = parsed.getAsJsonObject();
-            for (Module module : Myau.moduleManager.modules.values()) {
+            for (Module module : Myau.moduleManager.allModules()) {
                 JsonElement moduleObj = jsonObject.get(module.getName());
                 if (moduleObj != null && moduleObj.isJsonObject()) {
                     JsonObject object = moduleObj.getAsJsonObject();
 
-                    ArrayList<Property<?>> list = Myau.propertyManager.properties.get(module.getClass());
+                    ArrayList<Property<?>> list = Myau.propertyManager.properties.get(module);
                     if (list != null) {
                         for (Property<?> property : list) {
                             if (object.has(property.getName())) {
@@ -111,13 +111,13 @@ public class Config {
             }
 
             JsonObject object = new JsonObject();
-            for (Module module : Myau.moduleManager.modules.values()) {
+            for (Module module : Myau.moduleManager.allModules()) {
                 JsonObject moduleObject = new JsonObject();
                 moduleObject.addProperty("toggled", module.isEnabled());
                 moduleObject.addProperty("key", module.getKey());
                 moduleObject.addProperty("hidden", module.isHidden());
 
-                ArrayList<Property<?>> list = Myau.propertyManager.properties.get(module.getClass());
+                ArrayList<Property<?>> list = Myau.propertyManager.properties.get(module);
                 if (list != null) {
                     for (Property<?> property : list) {
                         try {

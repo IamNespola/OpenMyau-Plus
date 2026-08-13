@@ -81,8 +81,13 @@ public class CheadleClickGui extends GuiScreen {
         List<Module> renderModules = new ArrayList<>();
         List<Module> playerModules = new ArrayList<>();
         List<Module> miscModules = new ArrayList<>();
+        List<Module> scriptModules = new ArrayList<>();
 
-        for (Module module : Myau.moduleManager.modules.values()) {
+        for (Module module : Myau.moduleManager.allModules()) {
+            if (module instanceof myau.module.modules.ScriptModule) {
+                scriptModules.add(module);
+                continue;
+            }
             String n = norm(module.getName());
             if (COMBAT.contains(n)) {
                 combatModules.add(module);
@@ -103,6 +108,7 @@ public class CheadleClickGui extends GuiScreen {
         renderModules.sort(comparator);
         playerModules.sort(comparator);
         miscModules.sort(comparator);
+        scriptModules.sort(comparator);
 
         this.categoryList = new ArrayList<>();
         int xOffset = 105;
@@ -136,12 +142,22 @@ public class CheadleClickGui extends GuiScreen {
         misc.setX(xOffset);
         misc.setY(25);
         categoryList.add(misc);
+        xOffset += spacing;
+
+        CategoryComponent scripts = new CategoryComponent("scripts", scriptModules);
+        scripts.setX(xOffset);
+        scripts.setY(25);
+        categoryList.add(scripts);
 
         loadPositions();
     }
 
     public static CheadleClickGui getInstance() {
         return instance;
+    }
+
+    public static void resetInstance() {
+        instance = null;
     }
 
     public void initGui() {
@@ -552,8 +568,8 @@ public class CheadleClickGui extends GuiScreen {
             this.settings = new ArrayList<>();
             this.panelExpand = false;
             int y = offsetY + 10;
-            if (!Myau.propertyManager.properties.get(mod.getClass()).isEmpty()) {
-                for (Property<?> baseProperty : Myau.propertyManager.properties.get(mod.getClass())) {
+            if (!Myau.propertyManager.properties.get(mod).isEmpty()) {
+                for (Property<?> baseProperty : Myau.propertyManager.properties.get(mod)) {
                     if (baseProperty instanceof BooleanProperty) {
                         CheckBoxComponent c = new CheckBoxComponent((BooleanProperty) baseProperty, this, y);
                         this.settings.add(c);
