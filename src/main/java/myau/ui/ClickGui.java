@@ -159,15 +159,12 @@ public class ClickGui extends GuiScreen {
         miscModules.add(Myau.moduleManager.getModule(BedwarUtils.class));
         miscModules.add(Myau.moduleManager.getModule(AutoAuth.class));
 
-        List<Module> scriptModules = new ArrayList<>(Myau.moduleManager.dynamicModules.values());
-
         Comparator<Module> comparator = Comparator.comparing(m -> m.getName().toLowerCase());
         combatModules.sort(comparator);
         movementModules.sort(comparator);
         renderModules.sort(comparator);
         playerModules.sort(comparator);
         miscModules.sort(comparator);
-        scriptModules.sort(comparator);
 
         Set<Module> registered = new HashSet<>();
         registered.addAll(combatModules);
@@ -175,9 +172,8 @@ public class ClickGui extends GuiScreen {
         registered.addAll(renderModules);
         registered.addAll(playerModules);
         registered.addAll(miscModules);
-        registered.addAll(scriptModules);
 
-        for (Module module : Myau.moduleManager.allModules()) {
+        for (Module module : Myau.moduleManager.modules.values()) {
             if (!registered.contains(module)) {
                 throw new RuntimeException(module.getClass().getName() + " is unregistered to click gui.");
             }
@@ -209,11 +205,6 @@ public class ClickGui extends GuiScreen {
         CategoryComponent misc = new CategoryComponent("Misc", miscModules);
         misc.setY(topOffset);
         categoryList.add(misc);
-        topOffset += 20;
-
-        CategoryComponent scripts = new CategoryComponent("Scripts", scriptModules);
-        scripts.setY(topOffset);
-        categoryList.add(scripts);
 
         loadPositions();
     }
@@ -223,10 +214,6 @@ public class ClickGui extends GuiScreen {
             instance = new ClickGui();
         }
         return instance;
-    }
-
-    public static void resetInstance() {
-        instance = null;
     }
 
     public void initGui() {
