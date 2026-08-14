@@ -820,7 +820,6 @@ public class HUD extends Module {
         return !this.creidaFont.getValue() || this.fontMode.getValue() == 1;
     }
 
-
     // "Version: x.x.x Username: name" bottom-left line, ported from Miau Client's HUD (Normal mode).
     private void renderClientInfo() {
         float fontHeight = this.fontMode.getValue() == 1 ? mcFont.FONT_HEIGHT : fontRenderer.FONT_HEIGHT;
@@ -842,6 +841,15 @@ public class HUD extends Module {
 
         currentX += this.drawClientInfoText(" Username: ", currentX, yCoord, whiteColor);
         this.drawClientInfoText(mc.getSession().getUsername(), currentX, yCoord, hudColor);
+    }
+
+    private float drawClientInfoText(String text, float x, float y, int color) {
+        if (this.fontMode.getValue() == 1) {
+            mcFont.drawStringWithShadow(text, x, y, color);
+            return mcFont.getStringWidth(text);
+        }
+        fontRenderer.drawStringWithShadow(text, x, y, color);
+        return fontRenderer.getStringWidth(text);
     }
 
     private void renderNotifications() {
