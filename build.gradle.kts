@@ -61,6 +61,8 @@ sourceSets.main {
 repositories {
     mavenCentral()
     maven("https://repo.spongepowered.org/maven/")
+    maven("https://repo.viaversion.com")
+    maven("https://jitpack.io")
     // If you don't want to log in with your real minecraft account, remove this line
     maven("https://pkgs.dev.azure.com/djtheredstoner/DevAuth/_packaging/public/maven/v1")
 }
@@ -78,6 +80,11 @@ dependencies {
         isTransitive = false
     }
     annotationProcessor("org.spongepowered:mixin:0.8.5-SNAPSHOT")
+    // ViaVersion / ViaMCP (multi-version protocol support)
+    shadowImpl("com.viaversion:viaversion:4.10.0") { isTransitive = false }
+    shadowImpl("com.viaversion:viabackwards:4.10.0") { isTransitive = false }
+    shadowImpl("com.viaversion:viarewind-common:3.1.2") { isTransitive = false }
+    shadowImpl("org.yaml:snakeyaml:2.2")
     // If you don't want to log in with your real minecraft account, remove this line
     runtimeOnly("me.djtheredstoner:DevAuth-forge-legacy:1.2.1")
 
@@ -124,6 +131,16 @@ tasks.shadowJar {
     destinationDirectory.set(layout.buildDirectory.dir("intermediates"))
     archiveClassifier.set("non-obfuscated-with-deps")
     configurations = listOf(shadowImpl)
+    // Exclude multi-release JAR entries (META-INF/versions/) which contain
+    // Java 9+ class files that break Forge's ASM 5.0.3 mod discovery
+    exclude("META-INF/versions/**")
+    exclude("plugin.yml")
+    exclude("bungee.yml")
+    exclude("velocity-plugin.json")
+    exclude("META-INF/sponge_plugins.json")
+    exclude("com/viaversion/viaversion/*Plugin.class")
+    exclude("com/viaversion/viabackwards/*Plugin.class")
+    exclude("com/viaversion/viarewind/*Plugin.class")
     doLast {
         configurations.forEach {
             println("Copying dependencies into mod: ${it.files}")

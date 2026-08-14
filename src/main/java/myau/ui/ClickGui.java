@@ -112,7 +112,9 @@ public class ClickGui extends GuiScreen {
         renderModules.add(Myau.moduleManager.getModule(DynamicIsland.class));
         renderModules.add(Myau.moduleManager.getModule(ESP2D.class));
         renderModules.add(Myau.moduleManager.getModule(TeamHealthDisplay.class));
-        renderModules.add(Myau.moduleManager.getModule(SessionDisplay.class));
+        renderModules.add(Myau.moduleManager.getModule(Statistics.class));
+        renderModules.add(Myau.moduleManager.getModule(FreeLook.class));
+        renderModules.add(Myau.moduleManager.getModule(ItemPhysics.class));
         renderModules.add(Myau.moduleManager.getModule(Capes.class));
         renderModules.add(Myau.moduleManager.getModule(Animations.class));
 
@@ -152,6 +154,7 @@ public class ClickGui extends GuiScreen {
         miscModules.add(Myau.moduleManager.getModule(InventoryClicker.class));
         miscModules.add(Myau.moduleManager.getModule(Disabler.class));
         miscModules.add(Myau.moduleManager.getModule(ClientSpoofer.class));
+        miscModules.add(Myau.moduleManager.getModule(MouseRawInput.class));
         miscModules.add(Myau.moduleManager.getModule(AutoHypixel.class));
         miscModules.add(Myau.moduleManager.getModule(BedwarUtils.class));
         miscModules.add(Myau.moduleManager.getModule(AutoAuth.class));

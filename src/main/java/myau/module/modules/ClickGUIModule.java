@@ -7,6 +7,7 @@ import myau.property.properties.IntProperty;
 import myau.property.properties.ModeProperty;
 import myau.ui.ClickGui;
 import myau.ui.impl.clickgui.normal.ClickGuiScreen;
+import myau.ui.impl.clickgui.modern.ModernClickGui;
 import myau.ui.impl.clickgui.raven.RavenClickGui;
 import myau.ui.impl.clickgui.cheadle.CheadleClickGui;
 import net.minecraft.client.Minecraft;

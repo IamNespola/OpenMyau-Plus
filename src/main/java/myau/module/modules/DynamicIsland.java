@@ -49,48 +49,54 @@ public class DynamicIsland extends Module { // nah bro i took 2 hour just to did
 
         String text = "Myau+  ·  " + username + "  ·  " + ping + "ms to " + server + "  ·  " + fps + "fps";
 
-        float width = mc.fontRendererObj.getStringWidth(text) + 24f;
+        HUD hud = (HUD) myau.Myau.moduleManager.getModule(HUD.class);
+        CFontRenderer fr = (hud != null && hud.fontRenderer != null) ? hud.fontRenderer : null;
+
+        float width = (fr != null ? fr.getStringWidth(text) : mc.fontRendererObj.getStringWidth(text)) + 24f;
         float height = 26f;
 
         float x = sr.getScaledWidth() / 2f - width / 2f;
         float y = 8f;
 
+        // Glassmorphism Blur Pass
+        myau.util.shader.BlurUtils.prepareBlur();
+        RoundedUtils.drawRoundedRect(x, y, width, height, this.radius, 0xFFFFFFFF);
+        myau.util.shader.BlurUtils.blurEnd(2, 4.0f);
+
         drawBackground(x, y, width, height);
 
-        float textY = y + (height - mc.fontRendererObj.FONT_HEIGHT) / 2f;
+        float textY = y + (height - (fr != null ? fr.getHeight() : mc.fontRendererObj.FONT_HEIGHT)) / 2f;
         float startX = x + 12f;
 
         int accentRGB = new Color(this.textColor.getValue()).getRGB();
 
-        mc.fontRendererObj.drawStringWithShadow(
-                "Myau+",
-                (int) startX,
-                (int) textY,
-                accentRGB);
+        if (fr != null) {
+            fr.drawString("Myau+", startX, textY, accentRGB);
+            String part1 = "  ·  " + username + "  ·  ";
+            float part1Width = fr.getStringWidth("Myau+");
+            fr.drawString(part1, startX + part1Width, textY, 0xFFFFFF);
 
-        String part1 = "  ·  " + username + "  ·  ";
-        float part1Width = mc.fontRendererObj.getStringWidth("Myau+");
-        mc.fontRendererObj.drawStringWithShadow(
-                part1,
-                (int) (startX + part1Width),
-                (int) textY,
-                0xFFFFFF);
+            String part2 = ping + "ms";
+            float part2Width = fr.getStringWidth("Myau+" + part1);
+            fr.drawString(part2, startX + part2Width, textY, accentRGB);
 
-        String part2 = ping + "ms";
-        float part2Width = mc.fontRendererObj.getStringWidth("Myau+" + part1);
-        mc.fontRendererObj.drawStringWithShadow(
-                part2,
-                (int) (startX + part2Width),
-                (int) textY,
-                accentRGB);
+            String rest = " to " + server + "  ·  " + fps + "fps";
+            float restWidth = fr.getStringWidth("Myau+" + part1 + part2);
+            fr.drawString(rest, startX + restWidth, textY, 0xFFFFFF);
+        } else {
+            mc.fontRendererObj.drawStringWithShadow("Myau+", (int) startX, (int) textY, accentRGB);
+            String part1 = "  ·  " + username + "  ·  ";
+            float part1Width = mc.fontRendererObj.getStringWidth("Myau+");
+            mc.fontRendererObj.drawStringWithShadow(part1, (int) (startX + part1Width), (int) textY, 0xFFFFFF);
 
-        String rest = " to " + server + "  ·  " + fps + "fps";
-        float restWidth = mc.fontRendererObj.getStringWidth("Myau+" + part1 + part2);
-        mc.fontRendererObj.drawStringWithShadow(
-                rest,
-                (int) (startX + restWidth),
-                (int) textY,
-                0xFFFFFF);
+            String part2 = ping + "ms";
+            float part2Width = mc.fontRendererObj.getStringWidth("Myau+" + part1);
+            mc.fontRendererObj.drawStringWithShadow(part2, (int) (startX + part2Width), (int) textY, accentRGB);
+
+            String rest = " to " + server + "  ·  " + fps + "fps";
+            float restWidth = mc.fontRendererObj.getStringWidth("Myau+" + part1 + part2);
+            mc.fontRendererObj.drawStringWithShadow(rest, (int) (startX + restWidth), (int) textY, 0xFFFFFF);
+        }
     }
 
     private void drawBackground(float x, float y, float w, float h) {
