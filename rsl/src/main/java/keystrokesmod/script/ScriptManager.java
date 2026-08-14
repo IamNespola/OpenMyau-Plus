@@ -458,10 +458,6 @@ public class ScriptManager {
             myau.ui.impl.clickgui.normal.ClickGuiScreen.resetInstance();
             myau.ui.impl.clickgui.rise.RiseClickGUI.resetInstance();
             myau.ui.impl.clickgui.modern.ModernClickGui.resetInstance();
-
-            if (myau.ui.impl.clickgui.fdp.FDPClickGui.INSTANCE != null) {
-                myau.ui.impl.clickgui.fdp.FDPClickGui.INSTANCE.rebuild();
-            }
         } catch (Exception exception) {
             System.err.println(
                 "[scriptmanager] could not refresh clickGUIs: "
