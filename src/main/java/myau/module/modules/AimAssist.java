@@ -94,7 +94,7 @@ public class AimAssist extends Module {
 
     // ==================== Normal 模式 ====================
     private void tickNormal() {
-        if (this.weaponOnly.getValue() && !ItemUtil.isHoldingSword() && !(this.allowTools.getValue() && ItemUtil.isHoldingTool())) return;
+        if (this.weaponOnly.getValue() && !ItemUtil.hasRawUnbreakingEnchant() && !(this.allowTools.getValue() && ItemUtil.isHoldingTool())) return;
         boolean attacking = PlayerUtil.isAttacking();
         if (!attacking || !this.isLookingAtBlock()) {
             if (attacking || !this.timer.hasTimeElapsed(350L)) {
@@ -120,7 +120,7 @@ public class AimAssist extends Module {
     private void tickLockOn() {
         if (!mc.gameSettings.keyBindAttack.isKeyDown()) return;
         if (isLookingAtBlock()) return;
-        if (this.weaponOnly.getValue() && !ItemUtil.isHoldingSword() && !(this.allowTools.getValue() && ItemUtil.isHoldingTool())) return;
+        if (this.weaponOnly.getValue() && !ItemUtil.hasRawUnbreakingEnchant() && !(this.allowTools.getValue() && ItemUtil.isHoldingTool())) return;
 
         EntityPlayer target = selectTarget();
         if (target == null) return;
