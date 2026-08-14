@@ -820,6 +820,30 @@ public class HUD extends Module {
         return !this.creidaFont.getValue() || this.fontMode.getValue() == 1;
     }
 
+
+    // "Version: x.x.x Username: name" bottom-left line, ported from Miau Client's HUD (Normal mode).
+    private void renderClientInfo() {
+        float fontHeight = this.fontMode.getValue() == 1 ? mcFont.FONT_HEIGHT : fontRenderer.FONT_HEIGHT;
+        ScaledResolution sr = new ScaledResolution(mc);
+        float yCoord = sr.getScaledHeight() - fontHeight - 2.0F;
+        int hudColor = this.getColor(System.currentTimeMillis()).getRGB();
+        int whiteColor = -1;
+
+        float currentX = 2.0F;
+        currentX += this.drawClientInfoText("Version: ", currentX, yCoord, whiteColor);
+
+        String ver = Myau.version;
+        if (ver != null && ver.length() > 0) {
+            String firstChar = ver.substring(0, 1);
+            String restVer = ver.substring(1);
+            currentX += this.drawClientInfoText(firstChar, currentX, yCoord, hudColor);
+            currentX += this.drawClientInfoText(restVer, currentX, yCoord, whiteColor);
+        }
+
+        currentX += this.drawClientInfoText(" Username: ", currentX, yCoord, whiteColor);
+        this.drawClientInfoText(mc.getSession().getUsername(), currentX, yCoord, hudColor);
+    }
+
     private void renderNotifications() {
         if (!this.notifications.getValue()) return;
 
