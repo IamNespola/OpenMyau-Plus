@@ -46,7 +46,7 @@ public class WaterMark2 extends Module {
         HUD hud = (HUD) Myau.moduleManager.modules.get(HUD.class);
 
         int fillColor = 0x80000000;
-        int hudColor = hud.getColor(System.currentTimeMillis()).getRGB();
+        int hudColor = hud.getColor(System.currentTimeMillis());
 
         RenderUtil.drawRoundedGradientOutlinedRectangle(
                 startX, startY, rectRight, rectBottom,

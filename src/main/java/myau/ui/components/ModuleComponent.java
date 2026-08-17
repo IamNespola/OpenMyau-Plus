@@ -91,7 +91,7 @@ public class ModuleComponent implements Component {
     public void draw(AtomicInteger offset) {
         int textColor;
         if (this.mod.isEnabled()) {
-            textColor = ((HUD) Myau.moduleManager.modules.get(HUD.class)).getColor(System.currentTimeMillis(), offset.get()).getRGB();
+            textColor = ((HUD) Myau.moduleManager.modules.get(HUD.class)).getColor(System.currentTimeMillis(), offset.get());
         } else {
             textColor = new Color(102, 102, 102).getRGB();
         }

@@ -69,7 +69,7 @@ public class Tracers extends Module {
                     int teamColor = TeamUtil.isSameTeam(entityPlayer) ? ChatColors.BLUE.toAwtColor() : ChatColors.RED.toAwtColor();
                     return new Color(teamColor & Color.WHITE.getRGB() | (int) (alpha * 255.0F) << 24, true);
                 case 2:
-                    int color = ((HUD) Myau.moduleManager.modules.get(HUD.class)).getColor(System.currentTimeMillis()).getRGB();
+                    int color = ((HUD) Myau.moduleManager.modules.get(HUD.class)).getColor(System.currentTimeMillis());
                     return new Color(color & Color.WHITE.getRGB() | (int) (alpha * 255.0F) << 24, true);
                 default:
                     return new Color(1.0F, 1.0F, 1.0F, alpha);

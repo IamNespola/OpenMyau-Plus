@@ -2,7 +2,7 @@ package myau.ui.impl.clickgui.rise;
 
 import myau.Myau;
 import myau.module.Module;
-import myau.module.modules.RiseClickGUIModule;
+import myau.module.modules.ClickGUIModule;
 import myau.util.AnimationUtil;
 import myau.util.RenderUtil;
 import myau.util.font.FontManager;
@@ -127,7 +127,7 @@ public class RiseClickGUI extends GuiScreen {
 
     public static Color accent() {
         if (Myau.moduleManager == null) return new Color(0x4FC3F7);
-        RiseClickGUIModule module = (RiseClickGUIModule) Myau.moduleManager.getModule("RiseClickGUI");
+        ClickGUIModule module = (ClickGUIModule) Myau.moduleManager.getModule("ClickGUI");
         return module != null ? module.getAccentColor() : new Color(0x4FC3F7);
     }
 
@@ -205,7 +205,7 @@ public class RiseClickGUI extends GuiScreen {
         super.onGuiClosed();
         Keyboard.enableRepeatEvents(false);
         dragging = false;
-        Module gui = Myau.moduleManager.getModule("RiseClickGUI");
+        Module gui = Myau.moduleManager.getModule("ClickGUI");
         if (gui != null) gui.setEnabled(false);
     }
 
@@ -432,17 +432,17 @@ public class RiseClickGUI extends GuiScreen {
             FontManager.productSans12.drawString("Accent palette", x + 7, y + 25, RiseColors.TEXT_TRINARY.getRGB());
         }
 
-        RiseClickGUIModule module = (RiseClickGUIModule) Myau.moduleManager.getModule("RiseClickGUI");
+        ClickGUIModule module = (ClickGUIModule) Myau.moduleManager.getModule("ClickGUI");
         int selected = module == null ? 0 : module.accentColor.getValue();
         float cardW = (w - 21f) / 2f;
         float cardH = 42f;
-        for (int i = 0; i < RiseClickGUIModule.COLOR_NAMES.length; i++) {
+        for (int i = 0; i < ClickGUIModule.COLOR_NAMES.length; i++) {
             int col = i % 2;
             int row = i / 2;
             float cardX = x + 7 + col * (cardW + 7);
             float cardY = y + 47 + row * (cardH + 7);
             boolean hovered = mouseX >= cardX && mouseX <= cardX + cardW && mouseY >= cardY && mouseY <= cardY + cardH;
-            Color color = new Color(RiseClickGUIModule.COLORS[i], true);
+            Color color = new Color(ClickGUIModule.COLORS[i], true);
 
             RenderUtil.drawRoundedRect(cardX, cardY, cardW, cardH, 6,
                     new Color(0, 0, 0, hovered ? 72 : 45).getRGB(), true, true, true, true);
@@ -453,7 +453,7 @@ public class RiseClickGUI extends GuiScreen {
                         true, true, true, true);
             }
             if (FontManager.productSans16 != null) {
-                FontManager.productSans16.drawString(RiseClickGUIModule.COLOR_NAMES[i], cardX + 38, cardY + 13,
+                FontManager.productSans16.drawString(ClickGUIModule.COLOR_NAMES[i], cardX + 38, cardY + 13,
                         RiseColors.TEXT.getRGB());
             }
         }
@@ -583,7 +583,7 @@ public class RiseClickGUI extends GuiScreen {
             return;
         }
 
-        Module clickGUIModule = Myau.moduleManager.getModule("RiseClickGUI");
+        Module clickGUIModule = Myau.moduleManager.getModule("ClickGUI");
         if (keyCode == Keyboard.KEY_ESCAPE || (clickGUIModule != null && keyCode == clickGUIModule.getKey())) {
             if (keyCode != Keyboard.KEY_ESCAPE && System.currentTimeMillis() - openedAt < 250L) {
                 return;
@@ -644,12 +644,12 @@ public class RiseClickGUI extends GuiScreen {
 
     private boolean clickTheme(float x, float y, float w, int mouseX, int mouseY, int button) {
         if (button != 0) return false;
-        RiseClickGUIModule module = (RiseClickGUIModule) Myau.moduleManager.getModule("RiseClickGUI");
+        ClickGUIModule module = (ClickGUIModule) Myau.moduleManager.getModule("ClickGUI");
         if (module == null) return false;
 
         float cardW = (w - 21f) / 2f;
         float cardH = 42f;
-        for (int i = 0; i < RiseClickGUIModule.COLOR_NAMES.length; i++) {
+        for (int i = 0; i < ClickGUIModule.COLOR_NAMES.length; i++) {
             int col = i % 2;
             int row = i / 2;
             float cardX = x + 7 + col * (cardW + 7);

@@ -109,13 +109,11 @@ public class ClickGuiScreen extends GuiScreen {
                 Myau.moduleManager.getModule(HitParticleEffects.class),
                 Myau.moduleManager.getModule(DynamicIsland.class),
                 Myau.moduleManager.getModule(ESP2D.class),
-                Myau.moduleManager.getModule(RiseClickGUIModule.class),
                 Myau.moduleManager.getModule(TeamHealthDisplay.class),
                 Myau.moduleManager.getModule(Statistics.class),
                 Myau.moduleManager.getModule(Capes.class),
                 Myau.moduleManager.getModule(Animations.class),
                 Myau.moduleManager.getModule(Ambience.class),
-                Myau.moduleManager.getModule(GuiModule.class),
                 Myau.moduleManager.getModule(RenderFixes.class),
                 Myau.moduleManager.getModule(FreeLook.class),
                 Myau.moduleManager.getModule(ItemPhysics.class),
@@ -166,11 +164,6 @@ public class ClickGuiScreen extends GuiScreen {
         );
 
         Comparator<Module> comparator = Comparator.comparing(m -> m.getName().toLowerCase());
-        combatModules.sort(comparator);
-        movementModules.sort(comparator);
-        renderModules.sort(comparator);
-        playerModules.sort(comparator);
-        miscModules.sort(comparator);
 
         int currentX = 20;
         int currentY = 20;
@@ -179,6 +172,7 @@ public class ClickGuiScreen extends GuiScreen {
 
         List<Module> combat = new ArrayList<>(combatModules);
         combat.removeIf(m -> m == null);
+        combat.sort(comparator);
         if (!combat.isEmpty()) {
             frames.add(new Frame("Combat", combat, currentX, currentY, frameWidth, frameHeight));
             currentX += (frameWidth + 15);
@@ -186,6 +180,7 @@ public class ClickGuiScreen extends GuiScreen {
 
         List<Module> movement = new ArrayList<>(movementModules);
         movement.removeIf(m -> m == null);
+        movement.sort(comparator);
         if (!movement.isEmpty()) {
             frames.add(new Frame("Movement", movement, currentX, currentY, frameWidth, frameHeight));
             currentX += (frameWidth + 15);
@@ -193,6 +188,7 @@ public class ClickGuiScreen extends GuiScreen {
 
         List<Module> render = new ArrayList<>(renderModules);
         render.removeIf(m -> m == null);
+        render.sort(comparator);
         if (!render.isEmpty()) {
             frames.add(new Frame("Render", render, currentX, currentY, frameWidth, frameHeight));
             currentX += (frameWidth + 15);
@@ -200,6 +196,7 @@ public class ClickGuiScreen extends GuiScreen {
 
         List<Module> player = new ArrayList<>(playerModules);
         player.removeIf(m -> m == null);
+        player.sort(comparator);
         if (!player.isEmpty()) {
             frames.add(new Frame("Player", player, currentX, currentY, frameWidth, frameHeight));
             currentX += (frameWidth + 15);
@@ -207,6 +204,7 @@ public class ClickGuiScreen extends GuiScreen {
 
         List<Module> misc = new ArrayList<>(miscModules);
         misc.removeIf(m -> m == null);
+        misc.sort(comparator);
         if (!misc.isEmpty()) {
             frames.add(new Frame("Misc", misc, currentX, currentY, frameWidth, frameHeight));
         }

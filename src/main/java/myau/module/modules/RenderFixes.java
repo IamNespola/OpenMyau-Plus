@@ -219,10 +219,12 @@ public class RenderFixes extends Module {
             return;
         }
 
+        float hotbarLeft = (width / 2.0F) - 91.0F;
+        float maxRight = hotbarLeft - 2.0F;
         float x = 2.0F;
-        float y = height - 14.0F;
-        float boxWidth = width - 4.0F;
-        drawGlassPanel(x, y, boxWidth, 12.0F, 5.0F, 96);
+        float boxWidth = Math.max(160.0F, maxRight - x);
+        float y = height - 15.0F;
+        drawGlassPanel(x, y, boxWidth, 14.0F, 5.0F, 96);
     }
 
     public static boolean renderScoreboard(ScoreObjective objective, ScaledResolution scaledRes) {
@@ -345,7 +347,9 @@ public class RenderFixes extends Module {
         float defaultY = sr.getScaledHeight() - 28.0F - chatGui.getLineCount() * 9.0F * scale - 4.0F;
         float x = defaultX + getChatRenderOffsetX();
         float y = defaultY + getChatRenderOffsetY();
-        return new Bounds(x, y, width + 6.0F, height, defaultX, defaultY);
+        float maxHistoryWidth = ((sr.getScaledWidth() / 2.0F) - 91.0F) - 2.0F - x;
+        float finalWidth = Math.min(width + 6.0F, Math.max(160.0F, maxHistoryWidth));
+        return new Bounds(x, y, finalWidth, height, defaultX, defaultY);
     }
 
     private static Bounds getLiveScoreboardBounds() {

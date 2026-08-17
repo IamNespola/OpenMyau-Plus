@@ -209,7 +209,7 @@ public class RoundedUtils {
         roundedRectRiseShader.setUniformf("u_size", width, height);
         roundedRectRiseShader.setUniformf("u_radius", radius);
         roundedRectRiseShader.setUniformf("u_color", getRed(color), getGreen(color), getBlue(color), getAlpha(color));
-        roundedRectRiseShader.setUniformf("u_edges", leftTop ? 1.0F : 0.0F, rightTop ? 1.0F : 0.0F, rightBottom ? 1.0F : 0.0F, leftBottom ? 1.0F : 0.0F);
+        roundedRectRiseShader.setUniformf("u_edges", leftBottom ? 1.0F : 0.0F, rightBottom ? 1.0F : 0.0F, rightTop ? 1.0F : 0.0F, leftTop ? 1.0F : 0.0F);
         GlStateManager.enableBlend();
         GlStateManager.blendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
         ShaderUtils.drawQuads(x, y, width, height);

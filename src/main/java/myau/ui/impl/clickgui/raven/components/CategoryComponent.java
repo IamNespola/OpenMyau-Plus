@@ -206,8 +206,8 @@ public class CategoryComponent {
         GL11.glEnable(GL11.GL_SCISSOR_TEST);
         RenderUtil.scissor(this.x - 12, this.y - 12, this.width + 24, extra - this.y + 24);
         HUD hud = (HUD) Myau.moduleManager.modules.get(HUD.class);
-        int hudColor1 = hud.getColor(System.currentTimeMillis()).getRGB();
-        int hudColor2 = hud.getColor(System.currentTimeMillis() + 500).getRGB();
+        int hudColor1 = hud.getColor(System.currentTimeMillis());
+        int hudColor2 = hud.getColor(System.currentTimeMillis() + 500);
 
         RenderUtil.drawRoundedGradientOutlinedRectangle(this.x - 2, this.y, this.x + this.width + 2, extra, 10, translucentBackground,
                 hudColor1, hudColor2);

@@ -166,10 +166,10 @@ public class LagRange extends Module {
                     && this.hasTarget
                     && this.lastPosition != null
                     && this.currentPosition != null) {
-                Color color = new Color(-1);
+                int color = -1;
                 switch (this.showPosition.getValue()) {
                     case 1:
-                        color = TeamUtil.getTeamColor(mc.thePlayer, 1.0F);
+                        color = TeamUtil.getTeamColor(mc.thePlayer, 1.0F).getRGB();
                         break;
                     case 2:
                         color = ((HUD) Myau.moduleManager.modules.get(HUD.class)).getColor(System.currentTimeMillis());
@@ -193,7 +193,7 @@ public class LagRange extends Module {
                                 -((IAccessorRenderManager) mc.getRenderManager()).getRenderPosZ()
                         );
                 RenderUtil.enableRenderState();
-                RenderUtil.drawFilledBox(aabb, color.getRed(), color.getGreen(), color.getBlue());
+                RenderUtil.drawFilledBox(aabb, (color >> 16 & 0xFF), (color >> 8 & 0xFF), (color & 0xFF));
                 RenderUtil.disableRenderState();
             }
         }

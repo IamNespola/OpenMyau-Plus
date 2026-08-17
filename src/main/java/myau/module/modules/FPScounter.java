@@ -88,7 +88,19 @@ public class FPScounter
         GlStateManager.scale(scaleFactor, scaleFactor, 1.0f);
         float drawX = baseX / scaleFactor;
         float drawY = baseY / scaleFactor;
-        BlurShadowRenderer.renderFrostedGlass(drawX - w / 2.0f, drawY - h / 2.0f, w, h, radius, (Integer)this.blurStrength.getValue(), (Integer)this.backgroundAlpha.getValue());
+        
+        float rectX = drawX - w / 2.0f;
+        float rectY = drawY - h / 2.0f;
+        
+        int alpha = (Integer)this.backgroundAlpha.getValue();
+        int blur = (Integer)this.blurStrength.getValue();
+        
+        if (blur > 0) {
+            myau.util.shader.ShadowShader.drawShadow(rectX, rectY, w, h, radius, blur * 2.0f, ((Math.min(255, alpha)) << 24) | 0x000000);
+        }
+        
+        myau.util.RoundedUtils.drawRoundedRect(rectX, rectY, w, h, radius, ((Math.min(255, alpha)) << 24) | 0x000000);
+        
         int color = (Integer)this.textColor.getValue();
         mc.fontRendererObj.drawString(text, (int)(drawX - (float)textWidth / 2.0f), (int)(drawY - (float)textHeight / 2.0f), color);
         GlStateManager.popMatrix();

@@ -2,7 +2,7 @@ package myau.ui.impl.clickgui.rise;
 
 import myau.Myau;
 import myau.module.Module;
-import myau.module.modules.RiseClickGUIModule;
+import myau.module.modules.ClickGUIModule;
 import myau.property.Property;
 import myau.property.properties.BooleanProperty;
 import myau.property.properties.ColorProperty;
@@ -115,7 +115,7 @@ public class RiseModuleCard {
         boolean visible = !(y + expandAnimation < guiY || y > guiY + guiH);
         if (!visible) return;
 
-        RiseClickGUIModule clickGUI = (RiseClickGUIModule) Myau.moduleManager.getModule("RiseClickGUI");
+        ClickGUIModule clickGUI = (ClickGUIModule) Myau.moduleManager.getModule("ClickGUI");
         Color accent = clickGUI != null ? clickGUI.getAccentColor() : new Color(0x4FC3F7);
         boolean overHeader = mouseX >= x && mouseX <= x + cardWidth && mouseY >= y && mouseY <= y + DEFAULT_HEIGHT;
         float hoverTarget = overHeader ? (mouseDown ? 35f : 20f) : 0f;

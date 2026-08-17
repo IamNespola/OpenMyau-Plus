@@ -78,8 +78,11 @@ public class Frame extends Component {
             ShadowShader.drawShadow(x, scrolledY, width, currentHeight, MaterialTheme.CORNER_RADIUS_FRAME, 12.0f, shadowColor);
         }
 
+        boolean useGlass = clickGUIModule != null && clickGUIModule.glass.getValue();
+
         // Glassmorphism background
-        int frameBgColor = new Color(15, 15, 15, (int)(150 * animationProgress)).getRGB();
+        int alphaFrame = useGlass ? 150 : 220;
+        int frameBgColor = new Color(15, 15, 15, (int)(alphaFrame * animationProgress)).getRGB();
         int outlineColor = new Color(255, 255, 255, (int)(40 * animationProgress)).getRGB();
 
         // Draw translucent background

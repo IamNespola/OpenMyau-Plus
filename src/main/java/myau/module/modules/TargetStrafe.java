@@ -69,7 +69,7 @@ public class TargetStrafe extends Module {
                 }
                 return TeamUtil.getTeamColor((EntityPlayer) entityLivingBase, 1.0F);
             case 2:
-                int color = ((HUD) Myau.moduleManager.modules.get(HUD.class)).getColor(System.currentTimeMillis()).getRGB();
+                int color = ((HUD) Myau.moduleManager.modules.get(HUD.class)).getColor(System.currentTimeMillis());
                 return new Color(color);
             default:
                 return new Color(-1);

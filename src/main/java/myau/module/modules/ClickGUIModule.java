@@ -20,7 +20,7 @@ public class ClickGUIModule extends Module {
     private boolean switchingGuiStyle;
 
     // ── Color palette (same as TargetESP) ────────────────────────────────────
-    private static final int[] COLORS = {
+    public static final int[] COLORS = {
             0xFF4FC3F7, // Sky Blue
             0xFF81C784, // Green
             0xFFFF8A65, // Orange
@@ -30,14 +30,15 @@ public class ClickGUIModule extends Module {
             0xFF4DB6AC, // Teal
             0xFFFFFFFF, // White
     };
-    private static final String[] COLOR_NAMES = {
+    public static final String[] COLOR_NAMES = {
             "Sky Blue", "Green", "Orange", "Purple", "Yellow", "Red", "Teal", "White"
     };
 
     public ModeProperty accentColor = new ModeProperty("Color", 0, COLOR_NAMES);
-    public ModeProperty style = new ModeProperty("Style", 4, new String[]{"Normal", "Raven B3", "Raven B4", "Cheadle", "Modern"});
+    public ModeProperty style = new ModeProperty("Style", 4, new String[]{"Normal", "Raven B3", "Raven B4", "Cheadle", "Modern", "Rise"});
     public BooleanProperty saveGuiState = new BooleanProperty("Save GUI State", true);
     public BooleanProperty shadow = new BooleanProperty("Shadow", true);
+    public BooleanProperty glass = new BooleanProperty("Glass", true);
 
     public IntProperty windowWidth = new IntProperty("Window Width", 600, 300, 1200);
     public IntProperty windowHeight = new IntProperty("Window Height", 400, 200, 800);
@@ -88,6 +89,9 @@ public class ClickGUIModule extends Module {
         if (style.getValue() == 4) {
             return ModernClickGui.getInstance();
         }
+        if (style.getValue() == 5) {
+            return myau.ui.impl.clickgui.rise.RiseClickGUI.getInstance();
+        }
         return ClickGuiScreen.getInstance();
     }
 
@@ -97,7 +101,7 @@ public class ClickGUIModule extends Module {
             Minecraft mc = Minecraft.getMinecraft();
             if (mc.currentScreen instanceof ClickGui || mc.currentScreen instanceof ClickGuiScreen
                     || mc.currentScreen instanceof RavenClickGui || mc.currentScreen instanceof CheadleClickGui
-                    || mc.currentScreen instanceof ModernClickGui) {
+                    || mc.currentScreen instanceof ModernClickGui || mc.currentScreen instanceof myau.ui.impl.clickgui.rise.RiseClickGUI) {
                 openSelectedGui();
             }
         }

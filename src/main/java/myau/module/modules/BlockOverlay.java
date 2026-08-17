@@ -110,8 +110,8 @@ public class BlockOverlay extends Module {
     private Color getOverlayColor() {
         if (this.colorMode.getValue() == 0) {
             HUD hud = (HUD) Myau.moduleManager.modules.get(HUD.class);
-            Color hudColor = hud != null ? hud.getColor(System.currentTimeMillis()) : Color.WHITE;
-            return new Color(hudColor.getRed(), hudColor.getGreen(), hudColor.getBlue(), this.alpha.getValue());
+            int hudColor = hud != null ? hud.getColor(System.currentTimeMillis()) : Color.WHITE.getRGB();
+            return new Color((hudColor >> 16 & 0xFF), (hudColor >> 8 & 0xFF), (hudColor & 0xFF), this.alpha.getValue());
         }
         return new Color(this.red.getValue(), this.green.getValue(), this.blue.getValue(), this.alpha.getValue());
     }

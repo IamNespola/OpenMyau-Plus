@@ -120,7 +120,7 @@ public class AntiFireball extends Module {
     public void onRender(Render3DEvent event) {
         if (this.isEnabled()) {
             if (this.showTarget.getValue() != 0 && TeamUtil.isEntityLoaded(this.target)) {
-                Color color = new Color(-1);
+                int color = -1;
                 switch (this.showTarget.getValue()) {
                     case 1:
                         double dist = (this.target.posX - this.target.lastTickPosX) * (mc.thePlayer.posX - this.target.posX)
@@ -128,16 +128,16 @@ public class AntiFireball extends Module {
                                 * (mc.thePlayer.posY + (double) mc.thePlayer.getEyeHeight() - this.target.posY - (double) this.target.height / 2.0)
                                 + (this.target.posZ - this.target.lastTickPosZ) * (mc.thePlayer.posZ - this.target.posZ);
                         if (dist < 0.0) {
-                            color = new Color(16733525);
+                            color = 16733525;
                         } else {
-                            color = new Color(5635925);
+                            color = 5635925;
                         }
                         break;
                     case 2:
                         color = ((HUD) Myau.moduleManager.modules.get(HUD.class)).getColor(System.currentTimeMillis());
                 }
                 RenderUtil.enableRenderState();
-                RenderUtil.drawEntityBox(this.target, color.getRed(), color.getGreen(), color.getBlue());
+                RenderUtil.drawEntityBox(this.target, (color >> 16 & 0xFF), (color >> 8 & 0xFF), (color & 0xFF));
                 RenderUtil.disableRenderState();
             }
         }

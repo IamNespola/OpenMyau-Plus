@@ -33,14 +33,14 @@ public class BedESP extends Module {
     public final BooleanProperty outline;
     public final BooleanProperty obsidian;
 
-    private Color getColor() {
+    private int getColor() {
         switch (this.color.getValue()) {
             case 0:
-                return new Color(this.customColor.getValue());
+                return this.customColor.getValue();
             case 1:
                 return ((HUD) Myau.moduleManager.modules.get(HUD.class)).getColor(System.currentTimeMillis());
             default:
-                return new Color(-1);
+                return -1;
         }
     }
 
@@ -124,15 +124,15 @@ public class BedESP extends Module {
                                         -((IAccessorRenderManager) mc.getRenderManager()).getRenderPosY(),
                                         -((IAccessorRenderManager) mc.getRenderManager()).getRenderPosZ()
                                 );
-                        Color color = this.getColor();
+                        int color = this.getColor();
                         if (this.outline.getValue()) {
-                            RenderUtil.drawBoundingBox(aabb, color.getRed(), color.getGreen(), color.getBlue(), 255, 1.5F);
+                            RenderUtil.drawBoundingBox(aabb, (color >> 16 & 0xFF), (color >> 8 & 0xFF), (color & 0xFF), 255, 1.5F);
                         }
                         RenderUtil.drawFilledBox(
                                 aabb,
-                                color.getRed(),
-                                color.getGreen(),
-                                color.getBlue()
+                                (color >> 16 & 0xFF),
+                                (color >> 8 & 0xFF),
+                                (color & 0xFF)
                         );
                     }
                 } else {

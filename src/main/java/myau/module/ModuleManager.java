@@ -5,7 +5,7 @@ import myau.event.EventTarget;
 import myau.event.types.EventType;
 import myau.events.KeyEvent;
 import myau.events.TickEvent;
-import myau.module.modules.GuiModule;
+import myau.module.modules.ClickGUIModule;
 import myau.module.modules.HUD;
 import myau.util.ChatUtil;
 import myau.util.SoundUtil;
@@ -39,7 +39,7 @@ public class ModuleManager {
             if (hud != null && shouldNotify) {
                 shouldNotify = hud.toggleAlerts.getValue();
             }
-            if(module instanceof GuiModule){
+            if(module instanceof ClickGUIModule){
                 shouldNotify = false;
             }
             if (shouldNotify) {

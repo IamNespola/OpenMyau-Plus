@@ -77,7 +77,7 @@ public class ESP extends Module {
                     int teamColor = TeamUtil.isSameTeam(entityPlayer) ? ChatColors.BLUE.toAwtColor() : ChatColors.RED.toAwtColor();
                     return new Color(teamColor);
                 case 2:
-                    int hudColor = ((HUD) Myau.moduleManager.modules.get(HUD.class)).getColor(System.currentTimeMillis()).getRGB();
+                    int hudColor = ((HUD) Myau.moduleManager.modules.get(HUD.class)).getColor(System.currentTimeMillis());
                     return new Color(hudColor);
                 default:
                     return new Color(-1);

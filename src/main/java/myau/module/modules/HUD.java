@@ -50,7 +50,7 @@ public class HUD extends Module {
     private static final Set<Class<?>> RENDER_MODULES = new HashSet<>(Arrays.<Class<?>>asList(
             ESP.class, Chams.class, FullBright.class, Tracers.class, NameTags.class, Xray.class,
             TargetESP.class, TargetHUD.class, Indicators.class, BedESP.class, ItemESP.class,
-            ViewClip.class, NoHurtCam.class, HUD.class, GuiModule.class, RiseClickGUIModule.class,
+            ViewClip.class, NoHurtCam.class, HUD.class, ClickGUIModule.class,
             ChestESP.class, Trajectories.class, Radar.class, RenderFixes.class, FPScounter.class,
             WaterMark.class, WaterMark2.class, HitParticleEffects.class, DynamicIsland.class,
             ESP2D.class, TeamHealthDisplay.class, Statistics.class, Animations.class, Hotbar.class
@@ -261,52 +261,84 @@ public class HUD extends Module {
     }
 
 
-    public Color getColor(long time) {
+    public int getColor(long time) {
         return this.getColor(time, 0L);
     }
 
-    public Color getColor(long time, long offset) {
-        Color color = Color.white;
+    public int getColor(long time, long offset) {
+        float hue = 0.0f;
+        float sat = 1.0f;
+        float bri = 1.0f;
+        
         switch (this.colorMode.getValue()) {
             case 0:
-                color = ColorUtil.fromHSB(this.getColorCycle(time, offset), 1.0F, 1.0F);
+                hue = this.getColorCycle(time, offset);
                 break;
             case 1:
-                color = ColorUtil.fromHSB(this.getColorCycle(time / 3L, 0L), 1.0F, 1.0F);
+                hue = this.getColorCycle(time / 3L, 0L);
                 break;
             case 2:
                 float cycle = this.getColorCycle(time, offset);
                 if (cycle % 1.0F < 0.5F) {
                     cycle = 1.0F - cycle % 1.0F;
                 }
-                color = ColorUtil.fromHSB(cycle, 1.0F, 1.0F);
+                hue = cycle;
                 break;
             case 3:
-                color = new Color(this.custom1.getValue());
-                break;
+                return applySaturationBrightness(this.custom1.getValue());
             case 4:
                 double cycle1 = this.getColorCycle(time, offset);
-                color = ColorUtil.interpolate(
+                int c4 = interpolateInt(
                         (float) (2.0 * Math.abs(cycle1 - Math.floor(cycle1 + 0.5))),
-                        new Color(this.custom1.getValue()),
-                        new Color(this.custom2.getValue())
+                        this.custom1.getValue(),
+                        this.custom2.getValue()
                 );
-                break;
+                return applySaturationBrightness(c4);
             case 5:
                 double cycle2 = this.getColorCycle(time, offset);
                 float floor = (float) (2.0 * Math.abs(cycle2 - Math.floor(cycle2 + 0.5)));
+                int c5;
                 if (floor <= 0.5F) {
-                    color = ColorUtil.interpolate(floor * 2.0F, new Color(this.custom1.getValue()), new Color(this.custom2.getValue()));
+                    c5 = interpolateInt(floor * 2.0F, this.custom1.getValue(), this.custom2.getValue());
                 } else {
-                    color = ColorUtil.interpolate((floor - 0.5F) * 2.0F, new Color(this.custom2.getValue()), new Color(this.custom3.getValue()));
+                    c5 = interpolateInt((floor - 0.5F) * 2.0F, this.custom2.getValue(), this.custom3.getValue());
                 }
+                return applySaturationBrightness(c5);
         }
-        float[] hsb = Color.RGBtoHSB(color.getRed(), color.getGreen(), color.getBlue(), null);
-        return Color.getHSBColor(
-                hsb[0],
-                hsb[1] * (this.colorSaturation.getValue().floatValue() / 100.0F),
-                hsb[2] * (this.colorBrightness.getValue().floatValue() / 100.0F)
-        );
+        
+        sat *= (this.colorSaturation.getValue().floatValue() / 100.0F);
+        bri *= (this.colorBrightness.getValue().floatValue() / 100.0F);
+        return Color.HSBtoRGB(hue, sat, bri);
+    }
+
+    private int interpolateInt(float amount, int color1, int color2) {
+        amount = Math.min(1.0f, Math.max(0.0f, amount));
+        int r1 = (color1 >> 16) & 0xFF;
+        int g1 = (color1 >> 8) & 0xFF;
+        int b1 = color1 & 0xFF;
+        int a1 = (color1 >> 24) & 0xFF;
+        
+        int r2 = (color2 >> 16) & 0xFF;
+        int g2 = (color2 >> 8) & 0xFF;
+        int b2 = color2 & 0xFF;
+        int a2 = (color2 >> 24) & 0xFF;
+        
+        int r = (int) (r1 + (r2 - r1) * amount);
+        int g = (int) (g1 + (g2 - g1) * amount);
+        int b = (int) (b1 + (b2 - b1) * amount);
+        int a = (int) (a1 + (a2 - a1) * amount);
+        
+        return ((a & 0xFF) << 24) | ((r & 0xFF) << 16) | ((g & 0xFF) << 8) | (b & 0xFF);
+    }
+
+    private int applySaturationBrightness(int color) {
+        int r = (color >> 16) & 0xFF;
+        int g = (color >> 8) & 0xFF;
+        int b = color & 0xFF;
+        float[] hsb = Color.RGBtoHSB(r, g, b, null);
+        hsb[1] *= (this.colorSaturation.getValue().floatValue() / 100.0F);
+        hsb[2] *= (this.colorBrightness.getValue().floatValue() / 100.0F);
+        return Color.HSBtoRGB(hsb[0], hsb[1], hsb[2]);
     }
 
     @EventTarget
@@ -418,7 +450,7 @@ public class HUD extends Module {
                         (float) (mc.currentScreen.height - 2),
                         1.5F,
                         0,
-                        this.getColor(System.currentTimeMillis()).getRGB()
+                        this.getColor(System.currentTimeMillis())
                 );
                 RenderUtil.disableRenderState();
             }
@@ -441,82 +473,15 @@ public class HUD extends Module {
                 y = (float) new ScaledResolution(mc).getScaledHeight() - y - height * this.scale.getValue();
             }
             GlStateManager.pushMatrix();
-            GlStateManager.scale(this.scale.getValue(), this.scale.getValue(), 0.0F);
+            GlStateManager.scale(this.scale.getValue(), this.scale.getValue(), 1.0F);
 
             long l = System.currentTimeMillis();
-
-            if (this.glow.getValue() || this.blur.getValue()) {
-                if (this.glow.getValue()) {
-                    myau.util.shader.BlurUtils.prepareBloom();
-                    long offset = 0L;
-                    float currentY = y;
-                    for (Module module : this.activeModules) {
-                        float totalWidth = this.getModuleRenderWidth(module);
-                        float pad = this.padding.getValue();
-                        float bgX1 = x / this.scale.getValue() - 1.0F - pad - (this.posX.getValue() == 0 ? 0.0F : totalWidth);
-                        float bgY1 = currentY / this.scale.getValue() - pad - (this.posY.getValue() == 0 ? (offset == 0L ? 1.0F : 0.0F) : (this.shadow.getValue() ? 1.0F : 0.0F));
-                        float bgX2 = x / this.scale.getValue() + 1.0F + pad + (this.posX.getValue() == 0 ? totalWidth : 0.0F);
-                        float bgY2 = currentY / this.scale.getValue() + height + pad + (this.posY.getValue() == 0 ? (this.shadow.getValue() ? 1.0F : 0.0F) : (offset == 0L ? 1.0F : 0.0F));
-                        int glowColor = new Color(0, 0, 0, 150).getRGB(); // Glassmorphic drop shadow instead of gradient
-                        glowColor = RenderUtil.mergeAlpha(glowColor, this.glowAlpha.getValue());
-                        if (this.rounded.getValue()) {
-                            float bgW = bgX2 - bgX1;
-                            float bgH = bgY2 - bgY1;
-                            float rad = this.cornerRadius.getValue();
-                            boolean isFirst = (offset == 0L);
-                            boolean isLast = (offset == this.activeModules.size() - 1);
-                            boolean sideLeft = this.posX.getValue() == 1;
-                            boolean sideRight = this.posX.getValue() == 0;
-                            boolean isTopEntry = (this.posY.getValue() == 0) ? isFirst : isLast;
-                            boolean isBottomEntry = (this.posY.getValue() == 0) ? isLast : isFirst;
-                            RenderUtil.drawRoundedRect(bgX1, bgY1, bgW, bgH, rad, glowColor, sideLeft && isTopEntry, sideRight && isTopEntry, sideLeft && isBottomEntry, sideRight && isBottomEntry);
-                        } else {
-                            RenderUtil.drawRect(bgX1, bgY1, bgX2, bgY2, glowColor);
-                        }
-                        currentY += (height + (this.shadow.getValue() ? 1.0F : 0.0F) + this.padding.getValue() * 2.0F) * this.scale.getValue() * (this.posY.getValue() == 0 ? 1.0F : -1.0F);
-                        offset++;
-                    }
-                    myau.util.shader.BlurUtils.bloomEnd(3, this.glowRadius.getValue());
-                }
-                if (this.blur.getValue()) {
-                    myau.util.shader.BlurUtils.prepareBlur();
-                    long offset = 0L;
-                    float currentY = y;
-                    for (Module module : this.activeModules) {
-                        float totalWidth = this.getModuleRenderWidth(module);
-                        float pad = this.padding.getValue();
-                        float bgX1 = x / this.scale.getValue() - 1.0F - pad - (this.posX.getValue() == 0 ? 0.0F : totalWidth);
-                        float bgY1 = currentY / this.scale.getValue() - pad - (this.posY.getValue() == 0 ? (offset == 0L ? 1.0F : 0.0F) : (this.shadow.getValue() ? 1.0F : 0.0F));
-                        float bgX2 = x / this.scale.getValue() + 1.0F + pad + (this.posX.getValue() == 0 ? totalWidth : 0.0F);
-                        float bgY2 = currentY / this.scale.getValue() + height + pad + (this.posY.getValue() == 0 ? (this.shadow.getValue() ? 1.0F : 0.0F) : (offset == 0L ? 1.0F : 0.0F));
-                        int blurColor = 0xFFFFFFFF; // White mask for blur
-                        if (this.rounded.getValue()) {
-                            float bgW = bgX2 - bgX1;
-                            float bgH = bgY2 - bgY1;
-                            float rad = this.cornerRadius.getValue();
-                            boolean isFirst = (offset == 0L);
-                            boolean isLast = (offset == this.activeModules.size() - 1);
-                            boolean sideLeft = this.posX.getValue() == 1;
-                            boolean sideRight = this.posX.getValue() == 0;
-                            boolean isTopEntry = (this.posY.getValue() == 0) ? isFirst : isLast;
-                            boolean isBottomEntry = (this.posY.getValue() == 0) ? isLast : isFirst;
-                            RenderUtil.drawRoundedRect(bgX1, bgY1, bgW, bgH, rad, blurColor, sideLeft && isTopEntry, sideRight && isTopEntry, sideLeft && isBottomEntry, sideRight && isBottomEntry);
-                        } else {
-                            RenderUtil.drawRect(bgX1, bgY1, bgX2, bgY2, blurColor);
-                        }
-                        currentY += (height + (this.shadow.getValue() ? 1.0F : 0.0F) + this.padding.getValue() * 2.0F) * this.scale.getValue() * (this.posY.getValue() == 0 ? 1.0F : -1.0F);
-                        offset++;
-                    }
-                    myau.util.shader.BlurUtils.blurEnd(2, this.blurRadius.getValue());
-                }
-            }
-
             long offset = 0L;
             for (Module module : this.activeModules) {
                 String moduleName = this.getModuleName(module);
                 String[] moduleSuffix = this.getModuleSuffix(module);
                 float totalWidth = this.getModuleRenderWidth(module);
-                int color = this.getColor(l, offset).getRGB();
+                int color = this.getColor(l, offset);
                 float pad = this.padding.getValue();
                 float bgX1 = x / this.scale.getValue() - 1.0F - pad - (this.posX.getValue() == 0 ? 0.0F : totalWidth);
                 float bgY1 = y / this.scale.getValue() - pad - (this.posY.getValue() == 0 ? (offset == 0L ? 1.0F : 0.0F) : (this.shadow.getValue() ? 1.0F : 0.0F));
@@ -524,8 +489,7 @@ public class HUD extends Module {
                 float bgY2 = y / this.scale.getValue() + height + pad + (this.posY.getValue() == 0 ? (this.shadow.getValue() ? 1.0F : 0.0F) : (offset == 0L ? 1.0F : 0.0F));
                 RenderUtil.enableRenderState();
                 if (this.background.getValue() > 0) {
-                    int alpha = (int) (255 * (this.background.getValue().floatValue() / 100.0F));
-                    int bgColor = new Color(15, 15, 15, alpha).getRGB(); // Glassmorphic dark background
+                    int bgColor = rgba(0, 0, 0, (int) (this.background.getValue() * 2.55f));
                     if (this.rounded.getValue()) {
                         float bgW = bgX2 - bgX1;
                         float bgH = bgY2 - bgY1;
@@ -536,25 +500,31 @@ public class HUD extends Module {
                         boolean sideRight = this.posX.getValue() == 0;
                         boolean isTopEntry = (this.posY.getValue() == 0) ? isFirst : isLast;
                         boolean isBottomEntry = (this.posY.getValue() == 0) ? isLast : isFirst;
+                        
+                        boolean roundTopLeft = sideLeft;
+                        boolean roundBottomLeft = sideLeft;
+                        boolean roundTopRight = sideRight;
+                        boolean roundBottomRight = sideRight;
+                        
+                        if (isTopEntry) {
+                            if (sideLeft) roundTopRight = true;
+                            if (sideRight) roundTopLeft = true;
+                        }
+                        if (isBottomEntry) {
+                            if (sideLeft) roundBottomRight = true;
+                            if (sideRight) roundBottomLeft = true;
+                        }
+
                         RenderUtil.drawRoundedRect(
                                 bgX1, bgY1, bgW, bgH, rad, bgColor,
-                                sideLeft && isTopEntry, sideRight && isTopEntry,
-                                sideLeft && isBottomEntry, sideRight && isBottomEntry
+                                roundTopLeft, roundTopRight,
+                                roundBottomLeft, roundBottomRight
                         );
                     } else {
                         RenderUtil.drawRect(bgX1, bgY1, bgX2, bgY2, bgColor);
                     }
                 }
-                
-                // Draw a subtle white edge for glassmorphism instead of a colored sidebar
-                if (this.showBar.getValue()) {
-                    int edgeColor = new Color(255, 255, 255, 40).getRGB();
-                    if (this.posX.getValue() == 0) { // Right side
-                        RenderUtil.drawRect(bgX2 - 1.0F, bgY1, bgX2, bgY2, edgeColor);
-                    } else { // Left side
-                        RenderUtil.drawRect(bgX1, bgY1, bgX1 + 1.0F, bgY2, edgeColor);
-                    }
-                }
+                renderSidebar(module, (int) offset, bgX1, bgY1, bgX2, bgY2, color);
 
                 RenderUtil.disableRenderState();
                 GlStateManager.disableDepth();
@@ -649,7 +619,7 @@ public class HUD extends Module {
                                     (float) new ScaledResolution(mc).getScaledWidth() / 2.0F / this.scale.getValue()
                                             - (float) mcFont.getStringWidth(String.valueOf(movementPacketSize)) / 2.0F,
                                     (float) new ScaledResolution(mc).getScaledHeight() / 5.0F * 3.0F / this.scale.getValue(),
-                                    this.getColor(l, offset).getRGB() & 16777215 | -1090519040,
+                                    this.getColor(l, offset) & 16777215 | -1090519040,
                                     this.shadow.getValue()
                             );
                         } else {
@@ -658,7 +628,7 @@ public class HUD extends Module {
                                     (float) new ScaledResolution(mc).getScaledWidth() / 2.0F / this.scale.getValue()
                                             - (float) fontRenderer.getStringWidth(String.valueOf(movementPacketSize)) / 2.0F,
                                     (float) new ScaledResolution(mc).getScaledHeight() / 5.0F * 3.0F / this.scale.getValue(),
-                                    this.getColor(l, offset).getRGB() & 16777215 | -1090519040,
+                                    this.getColor(l, offset) & 16777215 | -1090519040,
                                     this.shadow.getValue()
                             );
                         }
@@ -711,9 +681,9 @@ public class HUD extends Module {
         float boxHeight = entryHeight;
         float x = right - boxWidth;
         float textY = y + getCreidaTextOffset(entryHeight);
-        int accent = this.getColor(time, offset).getRGB();
-        int backgroundColor = new Color(0, 0, 0, 110).getRGB();
-        int depthColor = new Color(0, 0, 0, 65).getRGB();
+        int accent = this.getColor(time, offset);
+        int backgroundColor = rgba(0, 0, 0, 110);
+        int depthColor = rgba(0, 0, 0, 65);
 
         RenderUtil.enableRenderState();
         RenderUtil.drawRect(x - 1.0F, y, x + boxWidth, y + boxHeight, depthColor);
@@ -743,7 +713,7 @@ public class HUD extends Module {
         float y = 3.0F;
 
         RenderUtil.drawRoundedRect(x, y, boxWidth, boxHeight, 4.0F,
-                new Color(0, 0, 0, 100).getRGB(), true, true, true, true);
+                rgba(0, 0, 0, 100), true, true, true, true);
 
         GlStateManager.resetColor();
         GlStateManager.disableDepth();
@@ -752,7 +722,7 @@ public class HUD extends Module {
         float textY = y + (boxHeight - getCreidaTextHeight()) / 2.0F + 1.0F;
         for (int i = 0; i < text.length(); i++) {
             String character = String.valueOf(text.charAt(i));
-            int color = this.getColor(time, (long) (i * this.colorDistance.getValue())).getRGB();
+            int color = this.getColor(time, (long) (i * this.colorDistance.getValue()));
             drawCreidaStringWithShadow(character, currentX, textY, color);
             currentX += getCreidaTextWidth(character);
         }
@@ -825,7 +795,7 @@ public class HUD extends Module {
         float fontHeight = this.fontMode.getValue() == 1 ? mcFont.FONT_HEIGHT : fontRenderer.FONT_HEIGHT;
         ScaledResolution sr = new ScaledResolution(mc);
         float yCoord = sr.getScaledHeight() - fontHeight - 2.0F;
-        int hudColor = this.getColor(System.currentTimeMillis()).getRGB();
+        int hudColor = this.getColor(System.currentTimeMillis());
         int whiteColor = -1;
 
         float currentX = 2.0F;
@@ -841,6 +811,9 @@ public class HUD extends Module {
 
         currentX += this.drawClientInfoText(" Username: ", currentX, yCoord, whiteColor);
         this.drawClientInfoText(mc.getSession().getUsername(), currentX, yCoord, hudColor);
+        
+        GlStateManager.resetColor();
+        GlStateManager.color(1.0F, 1.0F, 1.0F, 1.0F);
     }
 
     private float drawClientInfoText(String text, float x, float y, int color) {
@@ -903,28 +876,27 @@ public class HUD extends Module {
         float slide = (1.0F - motion) * 14.0F + (1.0F - alpha) * 5.0F;
         float renderX = x + slide;
         int statusColor = notificationStatusColor(text, alpha);
-        int glass = new Color(10, 12, 16, (int) (92 * alpha)).getRGB();
-        int hoverLayer = new Color(255, 255, 255, (int) (9 * alpha)).getRGB();
-        int border = new Color(255, 255, 255, (int) (24 * alpha)).getRGB();
-        int depth = new Color(0, 0, 0, (int) (28 * alpha)).getRGB();
-        int neutralText = new Color(238, 241, 245, (int) (242 * alpha)).getRGB();
-        float radius = 6.0F;
+        
+        int glass = rgba(0, 0, 0, (int) (130 * alpha));
+        int border = rgba(255, 255, 255, (int) (18 * alpha));
+        int neutralText = rgba(255, 255, 255, (int) (255 * alpha));
+        float radius = 8.0F;
 
-        RenderUtil.drawRoundedRect(renderX + 1.0F, y + 1.5F, boxWidth, boxHeight, radius + 1.0F,
-                depth, true, true, true, true);
-        RenderUtil.drawRoundedRect(renderX, y, boxWidth, boxHeight, radius,
-                glass, true, true, true, true);
-        RenderUtil.drawRoundedRect(renderX + 1.0F, y + 1.0F, boxWidth - 2.0F, boxHeight - 2.0F, radius - 1.0F,
-                hoverLayer, true, true, true, true);
-        RenderUtil.drawRoundedRectOutline(renderX + 0.5F, y + 0.5F, boxWidth - 1.0F, boxHeight - 1.0F,
-                radius, 1.0F, border, true, true, true, true);
+        if (alpha > 0.05F && this.blur.getValue()) {
+            myau.util.shader.BlurUtils.prepareBlur();
+            RenderUtil.drawRoundedRect(renderX, y, boxWidth, boxHeight, radius, 0xFFFFFFFF, true, true, true, true);
+            myau.util.shader.BlurUtils.blurEnd(2, 4.0F * alpha);
+        }
+
+        RenderUtil.drawRoundedRect(renderX, y, boxWidth, boxHeight, radius, glass, true, true, true, true);
+        RenderUtil.drawRoundedRect(renderX + 0.5F, y + 0.5F, boxWidth - 1.0F, boxHeight - 1.0F, radius - 0.5F, border, true, true, true, true);
 
         float progress = notificationProgress(entry);
         float progressX = renderX + 8.0F;
-        float progressY = y + boxHeight - 2.0F;
+        float progressY = y + boxHeight - 3.0F;
         float progressW = boxWidth - 16.0F;
         RenderUtil.drawRoundedRect(progressX, progressY, progressW, 1.0F, 0.5F,
-                new Color(255, 255, 255, (int) (10 * alpha)).getRGB(), true, true, true, true);
+                rgba(255, 255, 255, (int) (20 * alpha)), true, true, true, true);
         RenderUtil.drawRoundedRect(progressX, progressY, Math.max(1.0F, progressW * progress), 1.0F, 0.5F,
                 statusColor, true, true, true, true);
 
@@ -983,24 +955,24 @@ public class HUD extends Module {
     }
 
     private int colorWithAlpha(int rgb, int alpha) {
-        return new Color((rgb >> 16) & 0xFF, (rgb >> 8) & 0xFF, rgb & 0xFF,
-                Math.max(0, Math.min(255, alpha))).getRGB();
+        alpha = Math.max(0, Math.min(255, alpha));
+        return (rgb & 0xFFFFFF) | (alpha << 24);
+    }
+
+    private int rgba(int r, int g, int b, int a) {
+        return ((a & 0xFF) << 24) | ((r & 0xFF) << 16) | ((g & 0xFF) << 8) | (b & 0xFF);
     }
 
     private float getHudTextWidth(String text) {
-        return fontMode.getValue() == 1 ? mcFont.getStringWidth(text) : fontRenderer.getStringWidth(text);
+        return fontRenderer.getStringWidth(text);
     }
 
     private float getHudTextHeight() {
-        return fontMode.getValue() == 1 ? mcFont.FONT_HEIGHT : fontRenderer.FONT_HEIGHT;
+        return fontRenderer.FONT_HEIGHT;
     }
 
     private void drawHudText(String text, float x, float y, int color) {
-        if (fontMode.getValue() == 1) {
-            mcFont.drawString(text, x, y, color, false);
-        } else {
-            fontRenderer.drawString(text, x, y, color, false);
-        }
+        fontRenderer.drawStringWithShadow(text, (int) x, (int) y, color);
     }
 
     private void drawNotificationText(String text, float x, float y, int neutralColor, int statusColor) {
