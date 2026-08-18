@@ -231,7 +231,7 @@ public class WaterMark extends Module {
             int color = 0xFFFFFFFF;
             if (hud != null) {
                 long offset = (long) (i * hud.colorDistance.getValue());
-                color = hud.getColor(time, offset).getRGB();
+                color = hud.getColor(time, offset);
             }
 
             if (customFont) {
@@ -278,7 +278,7 @@ public class WaterMark extends Module {
         GlStateManager.pushMatrix();
 
         long time = System.currentTimeMillis();
-        int rainbowColor = hud != null ? hud.getColor(time).getRGB() : 0xFFFFFFFF;
+        int rainbowColor = hud != null ? hud.getColor(time) : 0xFFFFFFFF;
 
         drawStringWithShadow(exhibitionText, x, y, rainbowColor);
         float currentX = x + getStringWidth(exhibitionText);

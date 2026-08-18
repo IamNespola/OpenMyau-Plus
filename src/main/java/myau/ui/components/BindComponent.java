@@ -1,7 +1,7 @@
 package myau.ui.components;
 
 import myau.Myau;
-import myau.module.modules.GuiModule;
+import myau.module.modules.ClickGUIModule;
 import myau.module.modules.HUD;
 import myau.ui.Component;
 import myau.ui.dataset.BindStage;
@@ -31,7 +31,7 @@ public class BindComponent implements Component {
         GL11.glPushMatrix();
         GL11.glScaled(0.5D, 0.5D, 0.5D);
         String displayText = this.isBinding ? BindStage.binding : BindStage.bind + ": " + KeyBindUtil.getKeyName(this.parentModule.mod.getKey());
-        this.renderText(displayText, ((HUD) Myau.moduleManager.modules.get(HUD.class)).getColor(System.currentTimeMillis(), offset.get()).getRGB());
+        this.renderText(displayText, ((HUD) Myau.moduleManager.modules.get(HUD.class)).getColor(System.currentTimeMillis(), offset.get()));
         GL11.glPopMatrix();
     }
 
@@ -72,7 +72,7 @@ public class BindComponent implements Component {
             }
             
             if (keyCode == 11) { 
-                if (this.parentModule.mod instanceof GuiModule) {
+                if (this.parentModule.mod instanceof ClickGUIModule) {
                     this.parentModule.mod.setKey(54);
                 } else {
                     this.parentModule.mod.setKey(0);

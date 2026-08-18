@@ -21,7 +21,7 @@ public class Animations extends Module {
             "Yamato", "SlideSwing", "SmallPush", "Reverse", "Invent", "Leaked",
             "Aqua", "Astro", "Fadeaway", "Astolfo", "AstolfoSpin", "Moon",
             "MoonPush", "Smooth", "Tap1", "Tap2", "Sigma3", "Sigma4",
-            "1.8", "Slide", "Swank", "Swang", "Avatar", "Jigsaw"};
+            "1.8"};
 
     public final ModeProperty mode = new ModeProperty("Mode", 0, MODES);
     public final ModeProperty render = new ModeProperty("Render", 1, new String[]{"BLOCKING", "ALWAYS"});

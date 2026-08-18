@@ -18,6 +18,7 @@ import net.minecraft.block.Block;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.ScaledResolution;
 import net.minecraft.client.renderer.GlStateManager;
+import net.minecraft.client.renderer.RenderHelper;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemBlock;
 import net.minecraft.item.ItemStack;
@@ -1064,6 +1065,7 @@ public class Scaffold extends Module {
         if (this.isEnabled()) {
             if (this.blockCounter.getValue()) {
                 int count = 0;
+                ItemStack currentBlock = null;
                 for (int i = 0; i < 9; i++) {
                     ItemStack stack = mc.thePlayer.inventory.getStackInSlot(i);
                     if (stack != null && stack.stackSize > 0) {
@@ -1072,28 +1074,71 @@ public class Scaffold extends Module {
                             Block block = ((ItemBlock) item).getBlock();
                             if (!BlockUtil.isInteractable(block) && BlockUtil.isSolid(block)) {
                                 count += stack.stackSize;
+                                if (currentBlock == null) {
+                                    currentBlock = stack;
+                                }
                             }
                         }
                     }
                 }
+                
+                ItemStack heldItem = mc.thePlayer.getHeldItem();
+                if (heldItem != null && heldItem.getItem() instanceof ItemBlock) {
+                    Block block = ((ItemBlock) heldItem.getItem()).getBlock();
+                    if (!BlockUtil.isInteractable(block) && BlockUtil.isSolid(block)) {
+                        currentBlock = heldItem;
+                    }
+                }
+
+                if (currentBlock == null) {
+                    currentBlock = new ItemStack(net.minecraft.init.Blocks.stone);
+                }
+
+                ScaledResolution sr = new ScaledResolution(mc);
+                String labelText = "Amount: ";
+                String countText = String.valueOf(count);
+
                 HUD hud = (HUD) Myau.moduleManager.modules.get(HUD.class);
-                float scale = hud.scale.getValue();
+                myau.font.CFontRenderer fr = (hud != null && hud.fontRenderer != null) ? hud.fontRenderer : null;
+
+                float labelWidth = fr != null ? fr.getStringWidth(labelText) : mc.fontRendererObj.getStringWidth(labelText);
+                float countWidth = fr != null ? fr.getStringWidth(countText) : mc.fontRendererObj.getStringWidth(countText);
+                float totalTextWidth = labelWidth + countWidth;
+                
+                float bgWidth = 4f + 16f + 4f + totalTextWidth + 8f; 
+                float bgHeight = 22f; 
+                float x = (sr.getScaledWidth() - bgWidth) / 2f;
+                float y = sr.getScaledHeight() - 65f; 
+
+                if (hud != null && hud.blur.getValue()) {
+                    myau.util.shader.BlurUtils.prepareBlur();
+                    myau.util.RoundedUtils.drawRoundedRect(x, y, bgWidth, bgHeight, 8f, 0xFFFFFFFF);
+                    myau.util.shader.BlurUtils.blurEnd(2, 4.0f);
+                }
+
+                myau.util.RoundedUtils.drawRoundedRect(x, y, bgWidth, bgHeight, 8f, 0x82000000); // new Color(0, 0, 0, 130)
+                myau.util.RoundedUtils.drawRoundedRect(x + 0.5f, y + 0.5f, bgWidth - 1f, bgHeight - 1f, 7.5f, 0x12FFFFFF); // new Color(255, 255, 255, 18)
+                
+                ItemStack iconStack = new ItemStack(currentBlock.getItem(), 1, currentBlock.getMetadata());
+                
                 GlStateManager.pushMatrix();
-                GlStateManager.scale(scale, scale, 0.0F);
-                GlStateManager.disableDepth();
-                GlStateManager.enableBlend();
-                GlStateManager.blendFunc(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA);
-                mc.fontRendererObj
-                        .drawString(
-                                String.format("%d block%s left", count, count != 1 ? "s" : ""),
-                                ((float) new ScaledResolution(mc).getScaledWidth() / 2.0F + (float) mc.fontRendererObj.FONT_HEIGHT * 1.5F) / scale,
-                                (float) new ScaledResolution(mc).getScaledHeight() / 2.0F / scale - (float) mc.fontRendererObj.FONT_HEIGHT / 2.0F + 1.0F,
-                                (count > 0 ? Color.WHITE.getRGB() : new Color(255, 85, 85).getRGB()) | -1090519040,
-                                hud.shadow.getValue()
-                        );
-                GlStateManager.disableBlend();
-                GlStateManager.enableDepth();
+                GlStateManager.clear(256);
+                RenderHelper.enableGUIStandardItemLighting();
+                myau.util.RenderUtil.renderItemInGUI(iconStack, (int)(x + 4f), (int)(y + 3f));
+                RenderHelper.disableStandardItemLighting();
                 GlStateManager.popMatrix();
+
+                float textX = x + 4f + 16f + 4f;
+                float textY = y + (bgHeight - (fr != null ? fr.getHeight() : mc.fontRendererObj.FONT_HEIGHT)) / 2f;
+                
+                int countColor = 0xFF87CEEB; // new Color(135, 206, 235)
+                if (fr != null) {
+                    fr.drawString(labelText, textX, textY, -1);
+                    fr.drawString(countText, textX + labelWidth, textY, countColor);
+                } else {
+                    mc.fontRendererObj.drawStringWithShadow(labelText, (int)textX, (int)textY, -1);
+                    mc.fontRendererObj.drawStringWithShadow(countText, (int)(textX + labelWidth), (int)textY, countColor);
+                }
             }
         }
     }
@@ -1115,7 +1160,7 @@ public class Scaffold extends Module {
         int themeColor;
         if (this.espColor.getValue() == 1) {
             HUD hud = (HUD) Myau.moduleManager.modules.get(HUD.class);
-            themeColor = hud.getColor(0L).getRGB();
+            themeColor = hud.getColor(0L);
         } else {
             themeColor = Color.CYAN.getRGB();
         }

@@ -110,15 +110,13 @@ public class ModernClickGui extends GuiScreen {
                 Myau.moduleManager.getModule(HitParticleEffects.class),
                 Myau.moduleManager.getModule(DynamicIsland.class),
                 Myau.moduleManager.getModule(ESP2D.class),
-                Myau.moduleManager.getModule(RiseClickGUIModule.class),
+                Myau.moduleManager.getModule(ClickGUIModule.class),
                 Myau.moduleManager.getModule(TeamHealthDisplay.class),
                 Myau.moduleManager.getModule(Statistics.class),
                 Myau.moduleManager.getModule(Animations.class),
                 Myau.moduleManager.getModule(Hotbar.class),
                 Myau.moduleManager.getModule(Capes.class),
-                Myau.moduleManager.getModule(Animations.class),
                 Myau.moduleManager.getModule(Ambience.class),
-                Myau.moduleManager.getModule(GuiModule.class),
                 Myau.moduleManager.getModule(RenderFixes.class),
                 Myau.moduleManager.getModule(FreeLook.class),
                 Myau.moduleManager.getModule(ItemPhysics.class),
@@ -169,11 +167,6 @@ public class ModernClickGui extends GuiScreen {
         );
 
         Comparator<Module> comparator = Comparator.comparing(m -> m.getName().toLowerCase());
-        combatModules.sort(comparator);
-        movementModules.sort(comparator);
-        renderModules.sort(comparator);
-        playerModules.sort(comparator);
-        miscModules.sort(comparator);
 
         int currentX = 20;
         int currentY = 20;
@@ -182,6 +175,7 @@ public class ModernClickGui extends GuiScreen {
 
         List<Module> combat = new ArrayList<>(combatModules);
         combat.removeIf(m -> m == null);
+        combat.sort(comparator);
         if (!combat.isEmpty()) {
             frames.add(new Frame("Combat", combat, currentX, currentY, frameWidth, frameHeight));
             currentX += (frameWidth + 15);
@@ -189,6 +183,7 @@ public class ModernClickGui extends GuiScreen {
 
         List<Module> movement = new ArrayList<>(movementModules);
         movement.removeIf(m -> m == null);
+        movement.sort(comparator);
         if (!movement.isEmpty()) {
             frames.add(new Frame("Movement", movement, currentX, currentY, frameWidth, frameHeight));
             currentX += (frameWidth + 15);
@@ -196,6 +191,7 @@ public class ModernClickGui extends GuiScreen {
 
         List<Module> render = new ArrayList<>(renderModules);
         render.removeIf(m -> m == null);
+        render.sort(comparator);
         if (!render.isEmpty()) {
             frames.add(new Frame("Render", render, currentX, currentY, frameWidth, frameHeight));
             currentX += (frameWidth + 15);
@@ -203,6 +199,7 @@ public class ModernClickGui extends GuiScreen {
 
         List<Module> player = new ArrayList<>(playerModules);
         player.removeIf(m -> m == null);
+        player.sort(comparator);
         if (!player.isEmpty()) {
             frames.add(new Frame("Player", player, currentX, currentY, frameWidth, frameHeight));
             currentX += (frameWidth + 15);
@@ -210,6 +207,7 @@ public class ModernClickGui extends GuiScreen {
 
         List<Module> misc = new ArrayList<>(miscModules);
         misc.removeIf(m -> m == null);
+        misc.sort(comparator);
         if (!misc.isEmpty()) {
             frames.add(new Frame("Misc", misc, currentX, currentY, frameWidth, frameHeight));
         }
@@ -258,12 +256,17 @@ public class ModernClickGui extends GuiScreen {
         float screenAlpha = isClosing ? (1.0f - Math.min(1.0f, (float) elapsedTime / ANIMATION_DURATION)) : Math.min(1.0f, (float) elapsedTime / ANIMATION_DURATION);
         screenAlpha = (float) (1.0 - Math.pow(1.0 - screenAlpha, 3));
         if (screenAlpha > 0.01f) {
+            Module clickGUI = Myau.moduleManager.getModule("ClickGUI");
+            boolean useGlass = clickGUI instanceof ClickGUIModule && ((ClickGUIModule) clickGUI).glass.getValue();
+
             // Pass 1: Blur Mask
-            BlurUtils.prepareBlur();
-            for (Frame frame : frames) {
-                frame.renderBlurMask(scrollY);
+            if (useGlass) {
+                BlurUtils.prepareBlur();
+                for (Frame frame : frames) {
+                    frame.renderBlurMask(scrollY);
+                }
+                BlurUtils.blurEnd(2, 4.0f);
             }
-            BlurUtils.blurEnd(2, 4.0f);
 
             // Pass 2: Visuals
             for (Frame frame : frames) {

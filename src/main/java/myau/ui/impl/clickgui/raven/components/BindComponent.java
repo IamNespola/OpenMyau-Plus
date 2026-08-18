@@ -3,7 +3,7 @@ package myau.ui.impl.clickgui.raven.components;
 import org.lwjgl.input.Keyboard;
 import org.lwjgl.opengl.GL11;
 import myau.Myau;
-import myau.module.modules.GuiModule;
+import myau.module.modules.ClickGUIModule;
 import myau.module.modules.HUD;
 import myau.ui.impl.clickgui.raven.Component;
 import myau.ui.impl.clickgui.raven.dataset.BindStage;
@@ -29,7 +29,7 @@ public class BindComponent implements Component {
     public void draw(AtomicInteger offset) {
         GL11.glPushMatrix();
         GL11.glScaled(0.5D, 0.5D, 0.5D);
-        this.renderText(this.isBinding ? BindStage.binding : BindStage.bind + ": " + Keyboard.getKeyName(this.parentModule.mod.getKey()), ((HUD) Myau.moduleManager.modules.get(HUD.class)).getColor(System.currentTimeMillis(), offset.get()).getRGB());
+        this.renderText(this.isBinding ? BindStage.binding : BindStage.bind + ": " + Keyboard.getKeyName(this.parentModule.mod.getKey()), ((HUD) Myau.moduleManager.modules.get(HUD.class)).getColor(System.currentTimeMillis(), offset.get()));
         GL11.glPopMatrix();
     }
 
@@ -60,7 +60,7 @@ public class BindComponent implements Component {
     public void keyTyped(char chatTyped, int keyCode) {
         if (this.isBinding) {
             if (keyCode == 1 || keyCode == 14) {
-                if (this.parentModule.mod instanceof GuiModule) {
+                if (this.parentModule.mod instanceof ClickGUIModule) {
                     this.parentModule.mod.setKey(54);
                 } else {
                     this.parentModule.mod.setKey(0);

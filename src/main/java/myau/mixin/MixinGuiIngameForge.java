@@ -30,6 +30,36 @@ public abstract class MixinGuiIngameForge {
         EventManager.call(new Render2DEvent(float1));
     }
 
+    @Inject(method = "renderExperience", at = @At("HEAD"), cancellable = true, remap = false)
+    private void myau$cancelExperienceBar(int width, int height, CallbackInfo callbackInfo) {
+        if (Myau.moduleManager != null) {
+            myau.module.modules.Hotbar hotbar = (myau.module.modules.Hotbar) Myau.moduleManager.modules.get(myau.module.modules.Hotbar.class);
+            if (hotbar != null && hotbar.isEnabled() && hotbar.xpBar.getValue()) {
+                callbackInfo.cancel();
+            }
+        }
+    }
+
+    @Inject(method = "renderHealth", at = @At("HEAD"), remap = false)
+    private void myau$adjustHealthBar(int width, int height, CallbackInfo callbackInfo) {
+        if (Myau.moduleManager != null) {
+            myau.module.modules.Hotbar hotbar = (myau.module.modules.Hotbar) Myau.moduleManager.modules.get(myau.module.modules.Hotbar.class);
+            if (hotbar != null && hotbar.isEnabled() && hotbar.healthYOffset.getValue() != 0) {
+                GuiIngameForge.left_height += hotbar.healthYOffset.getValue();
+            }
+        }
+    }
+
+    @Inject(method = "renderFood", at = @At("HEAD"), remap = false)
+    private void myau$adjustFoodBar(int width, int height, CallbackInfo callbackInfo) {
+        if (Myau.moduleManager != null) {
+            myau.module.modules.Hotbar hotbar = (myau.module.modules.Hotbar) Myau.moduleManager.modules.get(myau.module.modules.Hotbar.class);
+            if (hotbar != null && hotbar.isEnabled() && hotbar.healthYOffset.getValue() != 0) {
+                GuiIngameForge.right_height += hotbar.healthYOffset.getValue();
+            }
+        }
+    }
+
     @Redirect(
             method = {"renderExperience"},
             at = @At(

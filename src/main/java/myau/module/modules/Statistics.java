@@ -49,12 +49,12 @@ public class Statistics extends Module {
         super("Statistics", false, false);
     }
 
-    private Color getAccentColor() {
+    private int getAccentColor() {
         if (colorMode.getValue() == 0) {
             HUD hud = (HUD) Myau.moduleManager.modules.get(HUD.class);
             return hud.getColor(System.currentTimeMillis(), 0);
         }
-        return new Color(customColor.getValue());
+        return customColor.getValue();
     }
 
     @EventTarget
@@ -99,7 +99,7 @@ public class Statistics extends Module {
             BlurUtils.blurEnd(2, 3);
         }
 
-        Color c1 = applyOpacity(getAccentColor(), 0.8f);
+        Color c1 = applyOpacity(new Color(getAccentColor(), true), 0.8f);
         RoundedUtils.drawRoundOutline(x, y, width, height, 6, 1.0f, new Color(0, 0, 0, 100), c1);
 
         CFontRenderer font18 = FontProcess.getFont("sans");
@@ -112,7 +112,7 @@ public class Statistics extends Module {
                 title,
                 x + width / 2F - font18.getStringWidth(title) / 2F,
                 (float) (y + padding),
-                getAccentColor().getRGB());
+                getAccentColor());
 
         // Time
         font18.drawString(

@@ -337,7 +337,7 @@ public class BedNuker extends Module {
                 }
                 return ColorUtil.interpolate((progress - 0.5F) / 0.5F, this.colorYellow, this.colorGreen);
             case 2:
-                return ((HUD) Myau.moduleManager.modules.get(HUD.class)).getColor(System.currentTimeMillis());
+                return new Color(((HUD) Myau.moduleManager.modules.get(HUD.class)).getColor(System.currentTimeMillis()), true);
             default:
                 return new Color(-1);
         }
@@ -556,13 +556,13 @@ public class BedNuker extends Module {
             mc.theWorld.sendBlockBreakProgress(mc.thePlayer.getEntityId(), this.targetBed, (int) (this.calcProgress() * 10.0F) - 1);
             if (this.showTarget.getValue() != 0) {
                 BedESP bedESP = (BedESP) Myau.moduleManager.modules.get(BedESP.class);
-                Color color = this.getProgressColor(this.showTarget.getValue());
+                int color = this.getProgressColor(this.showTarget.getValue()).getRGB();
                 RenderUtil.enableRenderState();
                 BlockPos target = this.targetBed;
                 double newHeight = this.isBed ? bedESP.getHeight() : 1.0;
-                int r = color.getRed();
-                int g = color.getBlue();
-                int b = color.getGreen();
+                int r = (color >> 16 & 0xFF);
+                int g = (color & 0xFF);
+                int b = (color >> 8 & 0xFF);
                 RenderUtil.drawBlockBox(target, newHeight, r, b, g);
                 RenderUtil.disableRenderState();
             }

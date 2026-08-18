@@ -70,7 +70,7 @@ public class RavenClickGui extends GuiScreen {
         List<Module> renderModules = collect(
                 ESP.class, Chams.class, FullBright.class, Tracers.class, NameTags.class, Xray.class, TargetESP.class,
                 TargetHUD.class, Indicators.class, BedESP.class, ItemESP.class, BreakProgress.class, ViewClip.class,
-                NoHurtCam.class, HUD.class, GuiModule.class, RiseClickGUIModule.class, ClickGUIModule.class,
+                NoHurtCam.class, HUD.class, ClickGUIModule.class, ClickGUIModule.class,
                 ChestESP.class, Trajectories.class, Radar.class, RenderFixes.class, FPScounter.class, WaterMark.class,
                 WaterMark2.class, HitParticleEffects.class, DynamicIsland.class, ESP2D.class, TeamHealthDisplay.class,
                 Statistics.class, Animations.class, BlockOverlay.class, Ambience.class, Capes.class, FreeLook.class, ItemPhysics.class);
@@ -150,7 +150,7 @@ public class RavenClickGui extends GuiScreen {
         // Update cached HUD color every 50ms
         if (System.currentTimeMillis() - lastHudColorUpdate > 50) {
             HUD hud = (HUD) Myau.moduleManager.modules.get(HUD.class);
-            hudColorCached = hud.getColor(System.currentTimeMillis()).getRGB();
+            hudColorCached = hud.getColor(System.currentTimeMillis());
             lastHudColorUpdate = System.currentTimeMillis();
         }
 
@@ -159,12 +159,12 @@ public class RavenClickGui extends GuiScreen {
         int w_c = 30 - this.logoSmoothWidth.getValueInt(0, 30, 3);
 
         HUD hud = (HUD) Myau.moduleManager.modules.get(HUD.class);
-        int hudColor1 = hud.getColor(System.currentTimeMillis()).getRGB();
-        int hudColor2 = hud.getColor(System.currentTimeMillis() + 300).getRGB();
-        int hudColor3 = hud.getColor(System.currentTimeMillis() + 600).getRGB();
-        int hudColor4 = hud.getColor(System.currentTimeMillis() + 900).getRGB();
-        int hudColor5 = hud.getColor(System.currentTimeMillis() + 1200).getRGB();
-        int hudColor6 = hud.getColor(System.currentTimeMillis() + 1500).getRGB();
+        int hudColor1 = hud.getColor(System.currentTimeMillis());
+        int hudColor2 = hud.getColor(System.currentTimeMillis() + 300);
+        int hudColor3 = hud.getColor(System.currentTimeMillis() + 600);
+        int hudColor4 = hud.getColor(System.currentTimeMillis() + 900);
+        int hudColor5 = hud.getColor(System.currentTimeMillis() + 1200);
+        int hudColor6 = hud.getColor(System.currentTimeMillis() + 1500);
 
         this.drawCenteredString(this.fontRendererObj, "M", wd + 1 - w_c, h - 24, hudColor6);
         this.drawCenteredString(this.fontRendererObj, "y", wd - w_c, h - 12, hudColor5);

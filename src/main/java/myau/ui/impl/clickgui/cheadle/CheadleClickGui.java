@@ -1,12 +1,12 @@
 package myau.ui.impl.clickgui.cheadle;
 
 import com.google.gson.GsonBuilder;
+import myau.module.modules.ClickGUIModule;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import myau.Myau;
 import myau.font.impl.UFontRenderer;
 import myau.module.Module;
-import myau.module.modules.GuiModule;
 import myau.module.modules.HUD;
 import myau.property.Property;
 import myau.property.properties.*;
@@ -50,7 +50,7 @@ public class CheadleClickGui extends GuiScreen {
             "NoSlow", "KeepSprint", "Eagle", "NoJumpDelay", "AntiVoid", "Timer");
     private static final Set<String> RENDER = set(
             "ESP", "Chams", "FullBright", "Tracers", "NameTags", "Xray", "TargetESP", "TargetHUD", "Indicators",
-            "BedESP", "ItemESP", "BreakProgress", "ViewClip", "NoHurtCam", "HUD", "GuiModule", "RiseClickGUI",
+            "BedESP", "ItemESP", "BreakProgress", "ViewClip", "NoHurtCam", "HUD", "RiseClickGUI",
             "ClickGUI", "ChestESP", "Trajectories", "Radar", "RenderFixes", "FPScounter", "WaterMark", "WaterMark2",
             "HitParticleEffects", "DynamicIsland", "ESP2D", "TeamHealthDisplay", "Statistics", "Animations",
             "BlockOverlay", "Ambience", "Capes", "FreeLook", "ItemPhysics");
@@ -103,51 +103,54 @@ public class CheadleClickGui extends GuiScreen {
         }
 
         Comparator<Module> comparator = Comparator.comparing(m -> m.getName().toLowerCase());
-        combatModules.sort(comparator);
-        movementModules.sort(comparator);
-        renderModules.sort(comparator);
-        playerModules.sort(comparator);
-        miscModules.sort(comparator);
-        scriptModules.sort(comparator);
 
         this.categoryList = new ArrayList<>();
         int xOffset = 105;
         int spacing = 105;
 
-        CategoryComponent combat = new CategoryComponent("combat", combatModules);
-        combat.setX(xOffset);
-        combat.setY(25);
-        categoryList.add(combat);
+        List<Module> combat = new ArrayList<>(combatModules);
+        combat.removeIf(m -> m == null);
+        combat.sort(comparator);
+        CategoryComponent combatCat = new CategoryComponent("combat", combat);
+        combatCat.setX(xOffset);
+        combatCat.setY(25);
+        categoryList.add(combatCat);
         xOffset += spacing;
 
-        CategoryComponent movement = new CategoryComponent("movement", movementModules);
-        movement.setX(xOffset);
-        movement.setY(25);
-        categoryList.add(movement);
+        List<Module> movement = new ArrayList<>(movementModules);
+        movement.removeIf(m -> m == null);
+        movement.sort(comparator);
+        CategoryComponent movementCat = new CategoryComponent("movement", movement);
+        movementCat.setX(xOffset);
+        movementCat.setY(25);
+        categoryList.add(movementCat);
         xOffset += spacing;
 
-        CategoryComponent render = new CategoryComponent("render", renderModules);
-        render.setX(xOffset);
-        render.setY(25);
-        categoryList.add(render);
+        List<Module> render = new ArrayList<>(renderModules);
+        render.removeIf(m -> m == null);
+        render.sort(comparator);
+        CategoryComponent renderCat = new CategoryComponent("render", render);
+        renderCat.setX(xOffset);
+        renderCat.setY(25);
+        categoryList.add(renderCat);
         xOffset += spacing;
 
-        CategoryComponent player = new CategoryComponent("player", playerModules);
-        player.setX(xOffset);
-        player.setY(25);
-        categoryList.add(player);
+        List<Module> player = new ArrayList<>(playerModules);
+        player.removeIf(m -> m == null);
+        player.sort(comparator);
+        CategoryComponent playerCat = new CategoryComponent("player", player);
+        playerCat.setX(xOffset);
+        playerCat.setY(25);
+        categoryList.add(playerCat);
         xOffset += spacing;
 
-        CategoryComponent misc = new CategoryComponent("misc", miscModules);
-        misc.setX(xOffset);
-        misc.setY(25);
-        categoryList.add(misc);
-        xOffset += spacing;
-
-        CategoryComponent scripts = new CategoryComponent("scripts", scriptModules);
-        scripts.setX(xOffset);
-        scripts.setY(25);
-        categoryList.add(scripts);
+        List<Module> misc = new ArrayList<>(miscModules);
+        misc.removeIf(m -> m == null);
+        misc.sort(comparator);
+        CategoryComponent miscCat = new CategoryComponent("misc", misc);
+        miscCat.setX(xOffset);
+        miscCat.setY(25);
+        categoryList.add(miscCat);
 
         loadPositions();
     }
@@ -763,7 +766,7 @@ public class CheadleClickGui extends GuiScreen {
             GL11.glPushMatrix();
             GL11.glScaled(0.5D, 0.5D, 0.5D);
             this.renderText(this.isBinding ? "Press a key..." : "Bind" + ": " + Keyboard.getKeyName(this.parentModule.mod.getKey()),
-                    ((HUD) Myau.moduleManager.modules.get(HUD.class)).getColor(System.currentTimeMillis(), offset.get()).getRGB());
+                    ((HUD) Myau.moduleManager.modules.get(HUD.class)).getColor(System.currentTimeMillis(), offset.get()));
             GL11.glPopMatrix();
         }
 
@@ -784,7 +787,7 @@ public class CheadleClickGui extends GuiScreen {
         public void keyTyped(char chatTyped, int keyCode) {
             if (this.isBinding) {
                 if (keyCode == 11) {
-                    if (this.parentModule.mod instanceof GuiModule) {
+                    if (this.parentModule.mod instanceof ClickGUIModule) {
                         this.parentModule.mod.setKey(54);
                     } else {
                         this.parentModule.mod.setKey(0);
@@ -1166,8 +1169,9 @@ public class CheadleClickGui extends GuiScreen {
             }
 
             if (changeAnimation > 0.01F) {
-                Color accentColor = ((HUD) Myau.moduleManager.modules.get(HUD.class))
+                int accentColorInt = ((HUD) Myau.moduleManager.modules.get(HUD.class))
                         .getColor(System.currentTimeMillis(), offset.get());
+                Color accentColor = new Color(accentColorInt, true);
                 int flashAlpha = (int) (50 * changeAnimation);
                 Gui.drawRect(this.parentModule.category.getX() + 2, this.parentModule.category.getY() + this.offsetY,
                         this.parentModule.category.getX() + this.parentModule.category.getWidth() - 2,
@@ -1186,8 +1190,9 @@ public class CheadleClickGui extends GuiScreen {
             font().drawString(label, this.parentModule.category.getX() + 5,
                     this.parentModule.category.getY() + this.offsetY + 4, labelColor.getRGB());
 
-            Color accentColor = ((HUD) Myau.moduleManager.modules.get(HUD.class))
+            int accentColorInt = ((HUD) Myau.moduleManager.modules.get(HUD.class))
                     .getColor(System.currentTimeMillis(), offset.get());
+            Color accentColor = new Color(accentColorInt, true);
 
             int modeR = accentColor.getRed();
             int modeG = accentColor.getGreen();
@@ -1329,8 +1334,9 @@ public class CheadleClickGui extends GuiScreen {
             }
 
             if (sliderEnd > sliderStart) {
-                Color accentColor = ((HUD) Myau.moduleManager.modules.get(HUD.class))
+                int accentColorInt = ((HUD) Myau.moduleManager.modules.get(HUD.class))
                         .getColor(System.currentTimeMillis(), offset.get());
+                Color accentColor = new Color(accentColorInt, true);
 
                 int brightBoost = (int) (30 * Math.max(hoverAnimation, dragAnimation));
                 Color brightColor = new Color(
@@ -1468,8 +1474,9 @@ public class CheadleClickGui extends GuiScreen {
             int iconY = this.module.category.getY() + this.offsetY + 3;
             int iconSize = 8;
 
-            Color accentColor = ((HUD) Myau.moduleManager.modules.get(HUD.class))
+            int accentColorInt = ((HUD) Myau.moduleManager.modules.get(HUD.class))
                     .getColor(System.currentTimeMillis(), offset.get());
+            Color accentColor = new Color(accentColorInt, true);
 
             int iconAlpha = 150 + (int) (50 * hoverAnimation);
             Gui.drawRect(iconX, iconY, iconX + iconSize, iconY + iconSize, new Color(40, 40, 50, iconAlpha).getRGB());

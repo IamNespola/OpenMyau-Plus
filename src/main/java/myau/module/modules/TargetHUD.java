@@ -159,7 +159,7 @@ public class TargetHUD extends Module {
                 return TeamUtil.getTeamColor((EntityPlayer) entityLivingBase, 1.0F);
             case 1:
                 HUD hud = (HUD) Myau.moduleManager.modules.get(HUD.class);
-                return hud != null ? hud.getColor(System.currentTimeMillis()) : new Color(-1);
+                return hud != null ? new Color(hud.getColor(System.currentTimeMillis()), true) : new Color(-1);
             default:
                 return new Color(-1);
         }
@@ -393,8 +393,8 @@ public class TargetHUD extends Module {
         int maxAlphaBackground = Math.min(alpha, 210);
 
         HUD hud = (HUD) Myau.moduleManager.modules.get(HUD.class);
-        int gradientLeft = hud != null ? hud.getColor(System.currentTimeMillis()).getRGB() : Color.WHITE.getRGB();
-        int gradientRight = hud != null ? hud.getColor(System.currentTimeMillis() + 500).getRGB() : Color.WHITE.getRGB();
+        int gradientLeft = hud != null ? hud.getColor(System.currentTimeMillis()) : Color.WHITE.getRGB();
+        int gradientRight = hud != null ? hud.getColor(System.currentTimeMillis() + 500) : Color.WHITE.getRGB();
 
         switch (mode) {
             case 0:
@@ -868,7 +868,7 @@ public class TargetHUD extends Module {
         HUD hud = (HUD) Myau.moduleManager.modules.get(HUD.class);
         if (hud != null && hud.isEnabled()) {
             if (hud.glowColorMode.getValue() == 0) {
-                return hud.getColor(System.currentTimeMillis(), 0);
+                return new Color(hud.getColor(System.currentTimeMillis(), 0), true);
             }
             return new Color(hud.glowCustomColor.getValue());
         }
@@ -1214,7 +1214,7 @@ public class TargetHUD extends Module {
         switch (colorMode.getValue()) {
             case 0:
                 HUD hud = (HUD) Myau.moduleManager.modules.get(HUD.class);
-                return hud != null ? hud.getColor(System.currentTimeMillis(), offset) : new Color(0, 150, 255);
+                return hud != null ? new Color(hud.getColor(System.currentTimeMillis(), offset), true) : new Color(0, 150, 255);
             case 1:
                 return new Color(customColor.getValue());
             case 2:

@@ -272,7 +272,7 @@ public class ESP2D extends Module {
             case 1: return ColorUtil.rainbow(2, 0, saturationValue.getValue(), brightnessValue.getValue());
             case 2: return ColorUtil.rainbow(2, 180, saturationValue.getValue(), brightnessValue.getValue());
             case 3: return ColorUtil.fade(new Color(colorRedValue.getValue(), colorGreenValue.getValue(), colorBlueValue.getValue()), 1, 100);
-            case 4: return ((HUD) Myau.moduleManager.modules.get(HUD.class)).getColor(System.currentTimeMillis());
+            case 4: return new Color(((HUD) Myau.moduleManager.modules.get(HUD.class)).getColor(System.currentTimeMillis()), true);
             default: return Color.WHITE;
         }
     }

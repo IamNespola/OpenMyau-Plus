@@ -163,8 +163,8 @@ public class Hotbar extends Module {
                 case 1: { // HUD Theme
                     HUD hud = (HUD) Myau.moduleManager.modules.get(HUD.class);
                     if (hud != null) {
-                        c1 = new Color(hud.getColor(currentTime), true);
-                        c2 = new Color(hud.getColor(currentTime + 500), true);
+                        c1 = hud.getColor(currentTime);
+                        c2 = hud.getColor(currentTime + 500);
                     } else {
                         c1 = new Color(0x00F2FE);
                         c2 = new Color(0x4FACFE);

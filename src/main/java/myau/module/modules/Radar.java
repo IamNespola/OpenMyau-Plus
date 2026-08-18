@@ -71,7 +71,7 @@ public class Radar extends Module {
                     int teamColor = TeamUtil.isSameTeam(entityPlayer) ? ChatColors.BLUE.toAwtColor() : ChatColors.RED.toAwtColor();
                     return new Color(teamColor | 255 << 24, true);
                 case 2:
-                    int color = ((HUD) Myau.moduleManager.modules.get(HUD.class)).getColor(System.currentTimeMillis()).getRGB();
+                    int color = ((HUD) Myau.moduleManager.modules.get(HUD.class)).getColor(System.currentTimeMillis());
                     return new Color(color | 255 << 24, true);
                 default:
                     return Color.WHITE;
@@ -214,7 +214,7 @@ public class Radar extends Module {
             GlStateManager.enableTexture2D();
             GlStateManager.blendFunc(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA);
             HUD hud = (HUD) Myau.moduleManager.modules.get(HUD.class);
-            int color = hud.getColor(System.currentTimeMillis()).getRGB();
+            int color = hud.getColor(System.currentTimeMillis());
             mc.fontRendererObj.drawString("N",
                     (float) (x - dx1 * (radius + 5)) - mc.fontRendererObj.getStringWidth("N") / 2.0F,
                     (float) (y - dy1 * (radius + 5)) - mc.fontRendererObj.FONT_HEIGHT / 2.0F,

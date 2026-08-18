@@ -1,7 +1,7 @@
 package myau.ui.impl.clickgui.rise;
 
 import myau.Myau;
-import myau.module.modules.RiseClickGUIModule;
+import myau.module.modules.ClickGUIModule;
 import myau.property.Property;
 import myau.property.properties.BooleanProperty;
 import myau.property.properties.ColorProperty;
@@ -48,7 +48,7 @@ public abstract class RiseValueEditor {
     }
 
     protected Color accent() {
-        RiseClickGUIModule clickGUI = (RiseClickGUIModule) Myau.moduleManager.getModule("RiseClickGUI");
+        ClickGUIModule clickGUI = (ClickGUIModule) Myau.moduleManager.getModule("ClickGUI");
         return clickGUI != null ? clickGUI.getAccentColor() : new Color(0x4FC3F7);
     }
 
