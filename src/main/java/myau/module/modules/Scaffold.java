@@ -42,6 +42,7 @@ public class Scaffold extends Module {
     private static final int ROTATION_SNAP = 7;
     private static final int ROTATION_THREE_FMC = 8;
     private static final int ROTATION_SNAP2 = 9;
+    private static final int ROTATION_HPYX2 = 10;
     private static final double[] placeOffsets = new double[]{
             0.03125,
             0.09375,
@@ -87,7 +88,7 @@ public class Scaffold extends Module {
     private int threeFmcPlaceCooldown = 0;
     private float lastSnapPlaceYaw = Float.NaN;
     private float lastSnapPlacePitch = Float.NaN;
-    public final ModeProperty rotationMode = new ModeProperty("rotations", 2, new String[]{"NONE", "DEFAULT", "BACKWARDS", "SIDEWAYS", "GODBIRGDE", "SMOOTH", "Hypixel", "SNAP", "3FMC", "SNAP2"});
+    public final ModeProperty rotationMode = new ModeProperty("rotations", 2, new String[]{"NONE", "DEFAULT", "BACKWARDS", "SIDEWAYS", "GODBIRGDE", "SMOOTH", "Hypixel", "SNAP", "3FMC", "SNAP2", "Hpyx2"});
     public final FloatProperty tellystartrotationminspeed = new FloatProperty("telly-start-rotation-min-speed", 90.0F, 1.0F, 180.0F, () -> this.keepY.getValue() == 3 || this.keepY.getValue() == 4);
     public final FloatProperty tellystartrotationmaxspeed = new FloatProperty("telly-start-rotation-max-speed", 95.0F, 1.0F, 180.0F, () -> this.keepY.getValue() == 3 || this.keepY.getValue() == 4);
     public final FloatProperty tellynormalrotationminspeed = new FloatProperty("telly-normal-rotation-min-speed", 30.0F, 1.0F, 180.0F, () -> this.keepY.getValue() == 3 || this.keepY.getValue() == 4);
@@ -542,6 +543,7 @@ public class Scaffold extends Module {
                             }
                             break;
                         case 2:
+                        case ROTATION_HPYX2:
                             if (this.yaw == -180.0F && this.pitch == 0.0F) {
                                 this.yaw = RotationUtil.quantizeAngle(yawDiffTo180);
                                 this.pitch = RotationUtil.quantizeAngle(85.0F);
@@ -716,6 +718,7 @@ public class Scaffold extends Module {
                 if (this.canRotate && MoveUtil.isForwardPressed() && Math.abs(MathHelper.wrapAngleTo180_float(yawDiffTo180 - this.yaw)) < 90.0F) {
                     switch (this.rotationMode.getValue()) {
                         case 2:
+                        case ROTATION_HPYX2:
                             this.yaw = RotationUtil.quantizeAngle(yawDiffTo180);
                             break;
                         case 3:
@@ -744,6 +747,30 @@ public class Scaffold extends Module {
                         }
                         this.rotationTick = 3;
                         this.towering = true;
+                    }
+
+                    if (this.rotationMode.getValue() == ROTATION_HPYX2 && !towerRotating) {
+                        // Keep Backwards' target, but approach it with a fast, staged Hypixel-style turn.
+                        float yawSpeed = this.rotationTick >= 2
+                                ? RandomUtil.nextFloat(75.0F, 90.0F)
+                                : RandomUtil.nextFloat(32.0F, 45.0F);
+                        float pitchSpeed = this.rotationTick >= 2
+                                ? RandomUtil.nextFloat(35.0F, 45.0F)
+                                : RandomUtil.nextFloat(17.0F, 27.0F);
+                        float yawDelta = MathHelper.wrapAngleTo180_float(targetYaw - event.getYaw());
+                        float pitchDelta = MathHelper.clamp_float(targetPitch - event.getPitch(), -90.0F, 90.0F);
+                        targetYaw = RotationUtil.quantizeAngle(event.getYaw() + RotationUtil.clampAngle(yawDelta, yawSpeed));
+                        targetPitch = RotationUtil.quantizeAngle(MathHelper.clamp_float(
+                                event.getPitch() + RotationUtil.clampAngle(pitchDelta, pitchSpeed), -90.0F, 90.0F));
+
+                        if (blockData != null && hitVec != null) {
+                            MovingObjectPosition hpyx2Mop = this.getPlacementMop(blockData, targetYaw, targetPitch);
+                            if (hpyx2Mop == null) {
+                                snapCanPlace = false;
+                            } else {
+                                hitVec = hpyx2Mop.hitVec;
+                            }
+                        }
                     }
                     placeYaw = targetYaw;
                     placePitch = targetPitch;

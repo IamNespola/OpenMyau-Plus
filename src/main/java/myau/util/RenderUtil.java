@@ -163,7 +163,6 @@ public class RenderUtil {
         GlStateManager.depthMask(true);
         GlStateManager.clear(256);
         RenderHelper.enableGUIStandardItemLighting();
-        GL11.glDisable(GL11.GL_LIGHTING);
         GlStateManager.pushMatrix();
         GlStateManager.scale(1.0f, 1.0f, -0.01f);
         RenderUtil.mc.getRenderItem().zLevel = -150.0f;
@@ -507,7 +506,7 @@ public class RenderUtil {
         prepareGuiItemRenderState();
         GlStateManager.depthMask(true);
         GlStateManager.clear(GL11.GL_DEPTH_BUFFER_BIT);
-        RenderHelper.enableStandardItemLighting();
+        RenderHelper.enableGUIStandardItemLighting();
         GlStateManager.pushMatrix();
         GlStateManager.scale(1.0f, 1.0f, -0.01f);
         mc.getRenderItem().zLevel = -150.0f;

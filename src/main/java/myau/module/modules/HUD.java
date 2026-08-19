@@ -125,8 +125,11 @@ public class HUD extends Module {
 
     CFontRenderer fontRenderer;
     private CFontRenderer nunitoFontRenderer;
+    private CFontRenderer scaledHudFontRenderer;
     private final net.minecraft.client.gui.FontRenderer mcFont = mc.fontRendererObj;
     private int lastFontMode = -1; // Cache to prevent unnecessary updates
+    private int scaledHudFontMode = -1;
+    private float scaledHudFontScale = Float.NaN;
 
     private String[] getModuleSuffix(Module module) {
         String[] moduleSuffix = module.getSuffix();
@@ -149,33 +152,13 @@ public class HUD extends Module {
     }
 
     private int calculateStringWidth(String string, String[] arr) {
-        int width;
-        switch (fontMode.getValue()) {
-            case 0: // SANS
-                width = fontRenderer.getStringWidth(string);
-                break;
-            case 1: // MINECRAFT
-                width = mcFont.getStringWidth(string);
-                break;
-            default:
-                width = fontRenderer.getStringWidth(string);
-                break;
-        }
+        float width = this.getArraylistTextWidth(string);
         if (this.suffixes.getValue()) {
             for (String str : arr) {
-                width += getStringWidth(this.formatSuffix(str));
+                width += this.getArraylistTextWidth(this.formatSuffix(str));
             }
         }
-        return width;
-    }
-
-    private int getStringWidth(String string) {
-        switch (fontMode.getValue()) {
-            case 1:
-                return mcFont.getStringWidth(string);
-            default:
-                return fontRenderer.getStringWidth(string);
-        }
+        return Math.round(width);
     }
 
     private String formatSuffix(String suffix) {
@@ -212,6 +195,8 @@ public class HUD extends Module {
         if (lastFontMode == fontMode.getValue()) {
             return;
         }
+
+        this.clearScaledHudFont();
 
         CFontRenderer selectedFont;
         switch (fontMode.getValue()) {
@@ -250,6 +235,69 @@ public class HUD extends Module {
 
         fontRenderer = selectedFont;
         lastFontMode = fontMode.getValue();
+    }
+
+    private float getHudScale() {
+        return Math.max(0.5F, Math.min(1.5F, this.scale.getValue()));
+    }
+
+    private void clearScaledHudFont() {
+        if (this.scaledHudFontRenderer != null) {
+            this.scaledHudFontRenderer.disposeTexture();
+            this.scaledHudFontRenderer = null;
+        }
+        this.scaledHudFontMode = -1;
+        this.scaledHudFontScale = Float.NaN;
+    }
+
+    private CFontRenderer getArraylistFontRenderer() {
+        if (this.fontMode.getValue() == 1) {
+            return null;
+        }
+
+        float hudScale = this.getHudScale();
+        if (Math.abs(hudScale - 1.0F) < 0.001F) {
+            this.clearScaledHudFont();
+            return this.fontRenderer;
+        }
+
+        if (this.scaledHudFontRenderer != null
+                && this.scaledHudFontMode == this.fontMode.getValue()
+                && Math.abs(this.scaledHudFontScale - hudScale) < 0.001F) {
+            return this.scaledHudFontRenderer;
+        }
+
+        this.clearScaledHudFont();
+        this.scaledHudFontRenderer = new CFontRenderer(
+                this.fontRenderer.getNameFontTTF(),
+                this.fontRenderer.getFont().getSize2D() * hudScale,
+                Font.PLAIN,
+                true,
+                false
+        );
+        this.scaledHudFontMode = this.fontMode.getValue();
+        this.scaledHudFontScale = hudScale;
+        return this.scaledHudFontRenderer;
+    }
+
+    private float getArraylistTextWidth(String text) {
+        if (this.fontMode.getValue() == 1) {
+            return mcFont.getStringWidth(text) * this.getHudScale();
+        }
+        return this.getArraylistFontRenderer().getStringWidth(text);
+    }
+
+    private float getArraylistTextHeight() {
+        float baseHeight = this.fontMode.getValue() == 1 ? mcFont.FONT_HEIGHT : fontRenderer.FONT_HEIGHT - 1.0F;
+        return baseHeight * this.getHudScale();
+    }
+
+    private void drawArraylistText(String text, float x, float y, int color, boolean shadow) {
+        if (this.fontMode.getValue() == 1) {
+            mcFont.drawString(text, x, y, color, shadow);
+            return;
+        }
+        this.getArraylistFontRenderer().drawString(text, x, y, color, shadow);
     }
 
     private CFontRenderer getNunitoFontRenderer() {
@@ -372,7 +420,7 @@ public class HUD extends Module {
             return;
         }
 
-        float thickness = 1.0F;
+        float thickness = this.getHudScale();
         boolean first = index == 0;
         boolean last = index == this.activeModules.size() - 1;
         boolean topList = this.posY.getValue() == 0;
@@ -413,7 +461,7 @@ public class HUD extends Module {
 
         Module previous = this.activeModules.get(index - 1);
         float previousWidth = this.getModuleRenderWidth(previous);
-        float rectExtraWidth = 2.0F + this.padding.getValue() * 2.0F;
+        float rectExtraWidth = (2.0F + this.padding.getValue() * 2.0F) * this.getHudScale();
         float boundaryY1 = this.posY.getValue() == 0 ? bgY1 - thickness : bgY2;
         float boundaryY2 = this.posY.getValue() == 0 ? bgY1 : bgY2 + thickness;
 
@@ -462,18 +510,18 @@ public class HUD extends Module {
             if (this.interfaceMode.getValue() == 1) {
                 renderCreidaInterface();
             } else {
-            float height = (float) fontRenderer.FONT_HEIGHT - 1.0F;
+            float hudScale = this.getHudScale();
+            float height = this.getArraylistTextHeight();
+            float scaledPadding = this.padding.getValue() * hudScale;
             float x = (float) this.offsetX.getValue()
-                    + (1.0F + (this.hasSidebar() ? 1.0F : 0.0F)) * this.scale.getValue();
-            float y = (float) this.offsetY.getValue() + 1.0F * this.scale.getValue();
+                    + (1.0F + (this.hasSidebar() ? 1.0F : 0.0F)) * hudScale;
+            float y = (float) this.offsetY.getValue() + hudScale;
             if (this.posX.getValue() == 1) {
                 x = (float) new ScaledResolution(mc).getScaledWidth() - x;
             }
             if (this.posY.getValue() == 1) {
-                y = (float) new ScaledResolution(mc).getScaledHeight() - y - height * this.scale.getValue();
+                y = (float) new ScaledResolution(mc).getScaledHeight() - y - height;
             }
-            GlStateManager.pushMatrix();
-            GlStateManager.scale(this.scale.getValue(), this.scale.getValue(), 1.0F);
 
             long l = System.currentTimeMillis();
             long offset = 0L;
@@ -482,18 +530,17 @@ public class HUD extends Module {
                 String[] moduleSuffix = this.getModuleSuffix(module);
                 float totalWidth = this.getModuleRenderWidth(module);
                 int color = this.getColor(l, offset);
-                float pad = this.padding.getValue();
-                float bgX1 = x / this.scale.getValue() - 1.0F - pad - (this.posX.getValue() == 0 ? 0.0F : totalWidth);
-                float bgY1 = y / this.scale.getValue() - pad - (this.posY.getValue() == 0 ? (offset == 0L ? 1.0F : 0.0F) : (this.shadow.getValue() ? 1.0F : 0.0F));
-                float bgX2 = x / this.scale.getValue() + 1.0F + pad + (this.posX.getValue() == 0 ? totalWidth : 0.0F);
-                float bgY2 = y / this.scale.getValue() + height + pad + (this.posY.getValue() == 0 ? (this.shadow.getValue() ? 1.0F : 0.0F) : (offset == 0L ? 1.0F : 0.0F));
+                float bgX1 = x - hudScale - scaledPadding - (this.posX.getValue() == 0 ? 0.0F : totalWidth);
+                float bgY1 = y - scaledPadding - (this.posY.getValue() == 0 ? (offset == 0L ? hudScale : 0.0F) : (this.shadow.getValue() ? hudScale : 0.0F));
+                float bgX2 = x + hudScale + scaledPadding + (this.posX.getValue() == 0 ? totalWidth : 0.0F);
+                float bgY2 = y + height + scaledPadding + (this.posY.getValue() == 0 ? (this.shadow.getValue() ? hudScale : 0.0F) : (offset == 0L ? hudScale : 0.0F));
                 RenderUtil.enableRenderState();
                 if (this.background.getValue() > 0) {
                     int bgColor = rgba(0, 0, 0, (int) (this.background.getValue() * 2.55f));
                     if (this.rounded.getValue()) {
                         float bgW = bgX2 - bgX1;
                         float bgH = bgY2 - bgY1;
-                        float rad = this.cornerRadius.getValue();
+                        float rad = this.cornerRadius.getValue() * hudScale;
                         boolean isFirst = (offset == 0L);
                         boolean isLast = (offset == this.activeModules.size() - 1);
                         boolean sideLeft = this.posX.getValue() == 1;
@@ -529,81 +576,32 @@ public class HUD extends Module {
                 RenderUtil.disableRenderState();
                 GlStateManager.disableDepth();
                 if (this.shadow.getValue()) {
-                    if (fontMode.getValue() == 1) { // MINECRAFT
-                        mcFont.drawStringWithShadow(moduleName, x / this.scale.getValue() - (this.posX.getValue() == 1 ? totalWidth : 0.0F), y / this.scale.getValue(), color);
-                    } else {
-                        fontRenderer.drawStringWithShadow(moduleName, x / this.scale.getValue() - (this.posX.getValue() == 1 ? totalWidth : 0.0F), y / this.scale.getValue(), color);
-                    }
+                    this.drawArraylistText(moduleName,
+                            x - (this.posX.getValue() == 1 ? totalWidth : 0.0F), y, color, true);
                 } else {
-                    if (fontMode.getValue() == 1) { // MINECRAFT
-                        mcFont.drawString(
-                                moduleName,
-                                x / this.scale.getValue() - (this.posX.getValue() == 1 ? totalWidth : 0.0F),
-                                y / this.scale.getValue() + (this.posY.getValue() == 1 ? 1.0F : 0.0F),
-                                color,
-                                false
-                        );
-                    } else {
-                        fontRenderer.drawString(
-                                moduleName,
-                                x / this.scale.getValue() - (this.posX.getValue() == 1 ? totalWidth : 0.0F),
-                                y / this.scale.getValue() + (this.posY.getValue() == 1 ? 1.0F : 0.0F),
-                                color,
-                                false
-                        );
-                    }
+                    this.drawArraylistText(moduleName,
+                            x - (this.posX.getValue() == 1 ? totalWidth : 0.0F),
+                            y + (this.posY.getValue() == 1 ? hudScale : 0.0F), color, false);
                 }
                 if (this.suffixes.getValue() && moduleSuffix.length > 0) {
-                    float width;
-                    switch (fontMode.getValue()) {
-                        case 1: // MINECRAFT
-                            width = (float) mcFont.getStringWidth(moduleName);
-                            break;
-                        default:
-                            width = (float) fontRenderer.getStringWidth(moduleName);
-                            break;
-                    }
+                    float width = this.getArraylistTextWidth(moduleName);
                     for (String suffix : moduleSuffix) {
                         String string = this.formatSuffix(suffix);
                         if (this.shadow.getValue()) {
-                            if (fontMode.getValue() == 1) { // MINECRAFT
-                                mcFont.drawStringWithShadow(
-                                        string,
-                                        x / this.scale.getValue() - (this.posX.getValue() == 1 ? totalWidth : 0.0F) + width,
-                                        y / this.scale.getValue(),
-                                        ChatColors.GRAY.toAwtColor()
-                                );
-                            } else {
-                                fontRenderer.drawStringWithShadow(
-                                        string,
-                                        x / this.scale.getValue() - (this.posX.getValue() == 1 ? totalWidth : 0.0F) + width,
-                                        y / this.scale.getValue(),
-                                        ChatColors.GRAY.toAwtColor()
-                                );
-                            }
+                            this.drawArraylistText(string,
+                                    x - (this.posX.getValue() == 1 ? totalWidth : 0.0F) + width,
+                                    y, ChatColors.GRAY.toAwtColor(), true);
                         } else {
-                            if (fontMode.getValue() == 1) { // MINECRAFT
-                                mcFont.drawString(
-                                        string,
-                                        x / this.scale.getValue() - (this.posX.getValue() == 1 ? totalWidth : 0.0F) + width,
-                                        y / this.scale.getValue() + (this.posY.getValue() == 1 ? 1.0F : 0.0F),
-                                        ChatColors.GRAY.toAwtColor(),
-                                        false
-                                );
-                            } else {
-                                fontRenderer.drawString(
-                                        string,
-                                        x / this.scale.getValue() - (this.posX.getValue() == 1 ? totalWidth : 0.0F) + width,
-                                        y / this.scale.getValue() + (this.posY.getValue() == 1 ? 1.0F : 0.0F),
-                                        ChatColors.GRAY.toAwtColor(),
-                                        false
-                                );
-                            }
+                            this.drawArraylistText(string,
+                                    x - (this.posX.getValue() == 1 ? totalWidth : 0.0F) + width,
+                                    y + (this.posY.getValue() == 1 ? hudScale : 0.0F),
+                                    ChatColors.GRAY.toAwtColor(), false);
                         }
-                        width += this.getStringWidth(string);
+                        width += this.getArraylistTextWidth(string);
                     }
                 }
-                y += (height + (this.shadow.getValue() ? 1.0F : 0.0F) + this.padding.getValue() * 2.0F) * this.scale.getValue() * (this.posY.getValue() == 0 ? 1.0F : -1.0F);
+                y += (height + (this.shadow.getValue() ? hudScale : 0.0F) + scaledPadding * 2.0F)
+                        * (this.posY.getValue() == 0 ? 1.0F : -1.0F);
                 offset++;
             }
             if (this.blinkTimer.getValue()) {
@@ -613,32 +611,20 @@ public class HUD extends Module {
                     if (movementPacketSize > 0L) {
                         GlStateManager.enableBlend();
                         GlStateManager.blendFunc(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA);
-                        if (fontMode.getValue() == 1) { // MINECRAFT
-                            mcFont.drawString(
-                                    String.valueOf(movementPacketSize),
-                                    (float) new ScaledResolution(mc).getScaledWidth() / 2.0F / this.scale.getValue()
-                                            - (float) mcFont.getStringWidth(String.valueOf(movementPacketSize)) / 2.0F,
-                                    (float) new ScaledResolution(mc).getScaledHeight() / 5.0F * 3.0F / this.scale.getValue(),
-                                    this.getColor(l, offset) & 16777215 | -1090519040,
-                                    this.shadow.getValue()
-                            );
-                        } else {
-                            fontRenderer.drawString(
-                                    String.valueOf(movementPacketSize),
-                                    (float) new ScaledResolution(mc).getScaledWidth() / 2.0F / this.scale.getValue()
-                                            - (float) fontRenderer.getStringWidth(String.valueOf(movementPacketSize)) / 2.0F,
-                                    (float) new ScaledResolution(mc).getScaledHeight() / 5.0F * 3.0F / this.scale.getValue(),
-                                    this.getColor(l, offset) & 16777215 | -1090519040,
-                                    this.shadow.getValue()
-                            );
-                        }
+                        String movementText = String.valueOf(movementPacketSize);
+                        this.drawArraylistText(
+                                movementText,
+                                (float) new ScaledResolution(mc).getScaledWidth() / 2.0F
+                                        - this.getArraylistTextWidth(movementText) / 2.0F,
+                                (float) new ScaledResolution(mc).getScaledHeight() / 5.0F * 3.0F,
+                                this.getColor(l, offset) & 16777215 | -1090519040,
+                                this.shadow.getValue()
+                        );
                         GlStateManager.disableBlend();
                     }
                 }
             }
             GlStateManager.enableDepth();
-            GlStateManager.popMatrix();
-
 
             }
         }
@@ -647,16 +633,12 @@ public class HUD extends Module {
 
     private void renderCreidaInterface() {
         ScaledResolution sr = new ScaledResolution(mc);
-        float hudScale = Math.max(0.5F, Math.min(1.5F, this.scale.getValue()));
-        float scaledWidth = sr.getScaledWidth() / hudScale;
+        float hudScale = this.getHudScale();
         float edgeOffset = Math.max(3.0F, this.offsetX.getValue());
-        float right = scaledWidth - edgeOffset;
-        float y = Math.max(3.0F, this.offsetY.getValue() + 1.0F);
+        float right = sr.getScaledWidth() - edgeOffset * hudScale;
+        float y = Math.max(3.0F, this.offsetY.getValue() + 1.0F) * hudScale;
         float entryHeight = getCreidaEntryHeight();
         long time = System.currentTimeMillis();
-
-        GlStateManager.pushMatrix();
-        GlStateManager.scale(hudScale, hudScale, 1.0F);
 
         if (this.creidaWatermark.getValue()) {
             renderCreidaWatermark(time);
@@ -668,8 +650,6 @@ public class HUD extends Module {
             y += entryHeight;
             offset++;
         }
-
-        GlStateManager.popMatrix();
     }
 
     private void renderCreidaModule(Module module, float right, float y, long time, long offset, float entryHeight) {
@@ -677,7 +657,8 @@ public class HUD extends Module {
         String[] moduleSuffix = this.getModuleSuffix(module);
         float nameWidth = this.getCreidaTextWidth(moduleName);
         float tagWidth = this.getCreidaTagWidth(moduleSuffix);
-        float boxWidth = nameWidth + tagWidth + 7.0F;
+        float hudScale = this.getHudScale();
+        float boxWidth = nameWidth + tagWidth + 7.0F * hudScale;
         float boxHeight = entryHeight;
         float x = right - boxWidth;
         float textY = y + getCreidaTextOffset(entryHeight);
@@ -686,40 +667,41 @@ public class HUD extends Module {
         int depthColor = rgba(0, 0, 0, 65);
 
         RenderUtil.enableRenderState();
-        RenderUtil.drawRect(x - 1.0F, y, x + boxWidth, y + boxHeight, depthColor);
-        RenderUtil.drawRect(x - 1.0F, y, x + boxWidth, y + boxHeight, backgroundColor);
-        RenderUtil.drawRect(x + boxWidth - 1.0F, y, x + boxWidth, y + boxHeight, accent);
+        RenderUtil.drawRect(x - hudScale, y, x + boxWidth, y + boxHeight, depthColor);
+        RenderUtil.drawRect(x - hudScale, y, x + boxWidth, y + boxHeight, backgroundColor);
+        RenderUtil.drawRect(x + boxWidth - hudScale, y, x + boxWidth, y + boxHeight, accent);
         RenderUtil.disableRenderState();
 
         GlStateManager.disableDepth();
-        drawCreidaStringWithShadow(moduleName, x + 1.0F, textY, accent);
+        drawCreidaStringWithShadow(moduleName, x + hudScale, textY, accent);
 
         if (this.suffixes.getValue() && moduleSuffix.length > 0) {
-            float suffixX = x + 1.0F + nameWidth + 4.0F;
+            float suffixX = x + hudScale + nameWidth + 4.0F * hudScale;
             for (String suffix : moduleSuffix) {
                 drawCreidaStringWithShadow(suffix, suffixX, textY, 0xFFCCCCCC);
-                suffixX += this.getCreidaTextWidth(suffix) + 3.0F;
+                suffixX += this.getCreidaTextWidth(suffix) + 3.0F * hudScale;
             }
         }
         GlStateManager.enableDepth();
     }
 
     private void renderCreidaWatermark(long time) {
+        float hudScale = this.getHudScale();
         String text = getCreidaWatermarkText();
         float textWidth = getCreidaTextWidth(text);
-        float boxWidth = textWidth + 8.0F;
-        float boxHeight = Math.max(15.0F, getCreidaTextHeight() + 6.0F);
-        float x = 2.0F;
-        float y = 3.0F;
+        float boxWidth = textWidth + 8.0F * hudScale;
+        float boxHeight = Math.max(15.0F * hudScale, getCreidaTextHeight() + 6.0F * hudScale);
+        float x = 2.0F * hudScale;
+        float y = 3.0F * hudScale;
 
-        RenderUtil.drawRoundedRect(x, y, boxWidth, boxHeight, 4.0F,
+        RenderUtil.drawRoundedRect(x, y, boxWidth, boxHeight, 4.0F * hudScale,
                 rgba(0, 0, 0, 100), true, true, true, true);
 
         GlStateManager.resetColor();
         GlStateManager.disableDepth();
 
-        float currentX = x + 4.0F;
-        float textY = y + (boxHeight - getCreidaTextHeight()) / 2.0F + 1.0F;
+        float currentX = x + 4.0F * hudScale;
+        float textY = y + (boxHeight - getCreidaTextHeight()) / 2.0F + hudScale;
         for (int i = 0; i < text.length(); i++) {
             String character = String.valueOf(text.charAt(i));
             int color = this.getColor(time, (long) (i * this.colorDistance.getValue()));
@@ -738,41 +720,43 @@ public class HUD extends Module {
     }
 
     private float getCreidaModuleWidth(Module module) {
-        return getCreidaTextWidth(this.getModuleName(module)) + getCreidaTagWidth(this.getModuleSuffix(module)) + 7.0F;
+        return getCreidaTextWidth(this.getModuleName(module)) + getCreidaTagWidth(this.getModuleSuffix(module))
+                + 7.0F * this.getHudScale();
     }
 
     private float getCreidaTagWidth(String[] suffixes) {
         if (!this.suffixes.getValue() || suffixes.length == 0) {
-            return 1.0F;
+            return this.getHudScale();
         }
 
         float width = 0.0F;
+        float hudScale = this.getHudScale();
         for (String suffix : suffixes) {
-            width += this.getCreidaTextWidth(suffix) + 3.0F;
+            width += this.getCreidaTextWidth(suffix) + 3.0F * hudScale;
         }
-        return width + 1.0F;
+        return width + hudScale;
     }
 
     private float getCreidaEntryHeight() {
-        return Math.max(14.0F, this.getCreidaTextHeight() + 5.0F);
+        return Math.max(14.0F * this.getHudScale(), this.getCreidaTextHeight() + 5.0F * this.getHudScale());
     }
 
     private float getCreidaTextOffset(float entryHeight) {
-        return Math.max(2.0F, (entryHeight - this.getCreidaTextHeight()) / 2.0F);
+        return Math.max(2.0F * this.getHudScale(), (entryHeight - this.getCreidaTextHeight()) / 2.0F);
     }
 
     private float getCreidaTextWidth(String text) {
         if (isCreidaMinecraftFont()) {
-            return mcFont.getStringWidth(text);
+            return mcFont.getStringWidth(text) * this.getHudScale();
         }
-        return fontRenderer.getStringWidth(text);
+        return this.getArraylistFontRenderer().getStringWidth(text);
     }
 
     private float getCreidaTextHeight() {
         if (isCreidaMinecraftFont()) {
-            return mcFont.FONT_HEIGHT;
+            return mcFont.FONT_HEIGHT * this.getHudScale();
         }
-        return fontRenderer.FONT_HEIGHT;
+        return this.getArraylistTextHeight();
     }
 
     private void drawCreidaStringWithShadow(String text, float x, float y, int color) {
@@ -781,7 +765,7 @@ public class HUD extends Module {
         if (isCreidaMinecraftFont()) {
             mcFont.drawStringWithShadow(text, x, y, color);
         } else {
-            fontRenderer.drawStringWithShadow(text, x, y, color);
+            this.getArraylistFontRenderer().drawStringWithShadow(text, x, y, color);
         }
         GlStateManager.disableBlend();
     }
@@ -834,18 +818,14 @@ public class HUD extends Module {
             java.util.List<myau.management.NotificationManager.NotificationEntry> entries = Myau.notificationManager.getActive();
             if (entries.isEmpty()) return;
 
-            float notificationScale = Math.max(0.5F, Math.min(1.5F, this.scale.getValue()));
             ScaledResolution sr = new ScaledResolution(mc);
-            float scaledWidth = sr.getScaledWidth() / notificationScale;
-            float scaledHeight = sr.getScaledHeight() / notificationScale;
+            float scaledWidth = sr.getScaledWidth();
+            float scaledHeight = sr.getScaledHeight();
             float margin = 8.0F;
             float paddingX = 8.0F;
             float paddingY = 5.0F;
             float spacing = 4.0F;
             float y = scaledHeight - margin;
-
-            GlStateManager.pushMatrix();
-            GlStateManager.scale(notificationScale, notificationScale, 1.0F);
 
             for (int i = entries.size() - 1; i >= 0; i--) {
                 myau.management.NotificationManager.NotificationEntry entry = entries.get(i);
@@ -864,7 +844,6 @@ public class HUD extends Module {
                 y -= spacing;
             }
 
-            GlStateManager.popMatrix();
         } catch (Exception ignored) {
         }
     }
@@ -877,26 +856,28 @@ public class HUD extends Module {
         float renderX = x + slide;
         int statusColor = notificationStatusColor(text, alpha);
         
-        int glass = rgba(0, 0, 0, (int) (130 * alpha));
-        int border = rgba(255, 255, 255, (int) (18 * alpha));
-        int neutralText = rgba(255, 255, 255, (int) (255 * alpha));
-        float radius = 8.0F;
+        int glass = new Color(10, 12, 16, (int) (92 * alpha)).getRGB();
+        int hoverLayer = new Color(255, 255, 255, (int) (9 * alpha)).getRGB();
+        int border = new Color(255, 255, 255, (int) (24 * alpha)).getRGB();
+        int depth = new Color(0, 0, 0, (int) (28 * alpha)).getRGB();
+        int neutralText = new Color(238, 241, 245, (int) (242 * alpha)).getRGB();
+        float radius = 6.0F;
 
-        if (alpha > 0.05F && this.blur.getValue()) {
-            myau.util.shader.BlurUtils.prepareBlur();
-            RenderUtil.drawRoundedRect(renderX, y, boxWidth, boxHeight, radius, 0xFFFFFFFF, true, true, true, true);
-            myau.util.shader.BlurUtils.blurEnd(2, 4.0F * alpha);
-        }
-
-        RenderUtil.drawRoundedRect(renderX, y, boxWidth, boxHeight, radius, glass, true, true, true, true);
-        RenderUtil.drawRoundedRect(renderX + 0.5F, y + 0.5F, boxWidth - 1.0F, boxHeight - 1.0F, radius - 0.5F, border, true, true, true, true);
+        RenderUtil.drawRoundedRect(renderX + 1.0F, y + 1.5F, boxWidth, boxHeight, radius + 1.0F,
+                depth, true, true, true, true);
+        RenderUtil.drawRoundedRect(renderX, y, boxWidth, boxHeight, radius,
+                glass, true, true, true, true);
+        RenderUtil.drawRoundedRect(renderX + 1.0F, y + 1.0F, boxWidth - 2.0F, boxHeight - 2.0F, radius - 1.0F,
+                hoverLayer, true, true, true, true);
+        RenderUtil.drawRoundedRectOutline(renderX + 0.5F, y + 0.5F, boxWidth - 1.0F, boxHeight - 1.0F,
+                radius, 1.0F, border, true, true, true, true);
 
         float progress = notificationProgress(entry);
         float progressX = renderX + 8.0F;
-        float progressY = y + boxHeight - 3.0F;
+        float progressY = y + boxHeight - 2.0F;
         float progressW = boxWidth - 16.0F;
         RenderUtil.drawRoundedRect(progressX, progressY, progressW, 1.0F, 0.5F,
-                rgba(255, 255, 255, (int) (20 * alpha)), true, true, true, true);
+                new Color(255, 255, 255, (int) (10 * alpha)).getRGB(), true, true, true, true);
         RenderUtil.drawRoundedRect(progressX, progressY, Math.max(1.0F, progressW * progress), 1.0F, 0.5F,
                 statusColor, true, true, true, true);
 

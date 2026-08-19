@@ -7,7 +7,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
 import javax.imageio.ImageIO;
 import myau.Myau;
 import myau.module.Module;
@@ -20,7 +19,7 @@ import net.minecraft.util.ResourceLocation;
 
 public class Capes extends Module {
     public static final List<ResourceLocation> LOADED_CAPES = new ArrayList<>();
-    public static String[] CAPES_NAME = getBuiltinCapes().toArray(new String[0]);
+    public static String[] CAPES_NAME = new String[]{"Myau"};
 
     public final ModeProperty capeMode = new ModeProperty("Cape", 0, CAPES_NAME);
 
@@ -56,9 +55,6 @@ public class Capes extends Module {
             }
         } catch (Exception e) {
             e.printStackTrace();
-        }
-        if (capes.isEmpty()) {
-            capes.add("anime");
         }
         return capes;
     }
@@ -101,64 +97,83 @@ public class Capes extends Module {
     }
 
     public void loadCapes() {
-        final File[] files;
-        try {
-            files = Objects.requireNonNull(directory.listFiles());
-        } catch (NullPointerException e) {
+        final File[] files = directory.listFiles();
+        if (files == null) {
             ChatUtil.display("&cFail to load custom capes.");
             return;
         }
 
         final String[] builtinCapes = getBuiltinCapes().toArray(new String[0]);
-
-        CAPES_NAME = new String[files.length + builtinCapes.length];
-        LOADED_CAPES.clear();
-        System.arraycopy(builtinCapes, 0, CAPES_NAME, 0, builtinCapes.length);
+        final List<String> capeNames = new ArrayList<>();
+        final List<ResourceLocation> capeLocations = new ArrayList<>();
 
         for (String s : builtinCapes) {
             String name = s.toLowerCase();
-            try {
-                InputStream stream =
-                        Myau.class.getResourceAsStream("/assets/myau/capes/" + name + ".png");
-                if (stream == null) {
-                    stream =
-                            Myau.class.getResourceAsStream("/assets/myau/capes/" + s + ".png");
+            InputStream stream = Myau.class.getResourceAsStream("/assets/myau/capes/" + name + ".png");
+            if (stream == null) {
+                stream = Myau.class.getResourceAsStream("/assets/myau/capes/" + s + ".png");
+            }
+            if (stream == null) {
+                continue;
+            }
+            try (InputStream input = stream) {
+                BufferedImage bufferedImage = ImageIO.read(input);
+                if (bufferedImage != null) {
+                    capeNames.add(s);
+                    capeLocations.add(Minecraft.getMinecraft().renderEngine
+                            .getDynamicTextureLocation(name, new DynamicTexture(bufferedImage)));
                 }
-                if (stream == null) {
-                    continue;
-                }
-                BufferedImage bufferedImage = ImageIO.read(stream);
-                LOADED_CAPES.add(
-                        Minecraft.getMinecraft()
-                                .renderEngine
-                                .getDynamicTextureLocation(name, new DynamicTexture(bufferedImage)));
-                stream.close();
             } catch (Exception e) {
                 ChatUtil.display("&cFailed to load cape '&r" + s + "&c'");
             }
         }
 
-        for (int i = 0, filesLength = files.length; i < filesLength; i++) {
-            File file = files[i];
+        for (File file : files) {
             if (!file.exists() || !file.isFile()) continue;
             if (!file.getName().endsWith(".png")) continue;
             String fileName = file.getName().substring(0, file.getName().length() - 4);
 
-            CAPES_NAME[builtinCapes.length + i] = fileName;
-
             try {
                 BufferedImage bufferedImage = ImageIO.read(file);
-                LOADED_CAPES.add(
-                        Minecraft.getMinecraft()
-                                .renderEngine
-                                .getDynamicTextureLocation(fileName, new DynamicTexture(bufferedImage)));
+                if (bufferedImage != null) {
+                    capeNames.add(fileName);
+                    capeLocations.add(Minecraft.getMinecraft().renderEngine
+                            .getDynamicTextureLocation(fileName, new DynamicTexture(bufferedImage)));
+                }
             } catch (IOException e) {
                 ChatUtil.display("&cFailed to load cape '&r" + fileName + "&c'");
             }
         }
 
+        if (capeLocations.isEmpty()) {
+            capeNames.add("Myau");
+            capeLocations.add(Minecraft.getMinecraft().renderEngine
+                    .getDynamicTextureLocation("myau_cape", new DynamicTexture(createDefaultCape())));
+        }
+
+        LOADED_CAPES.clear();
+        LOADED_CAPES.addAll(capeLocations);
+        CAPES_NAME = capeNames.toArray(new String[0]);
         capeMode.setModes(CAPES_NAME);
         ChatUtil.display("&aLoaded &r" + CAPES_NAME.length + "&a capes.");
+    }
+
+    private BufferedImage createDefaultCape() {
+        BufferedImage cape = new BufferedImage(64, 32, BufferedImage.TYPE_INT_ARGB);
+        for (int y = 0; y < cape.getHeight(); y++) {
+            for (int x = 0; x < cape.getWidth(); x++) {
+                int blue = 110 + (x * 80 / cape.getWidth());
+                int green = 55 + (y * 45 / cape.getHeight());
+                int red = 20 + ((x + y) * 20 / (cape.getWidth() + cape.getHeight()));
+                if ((x + y) % 16 < 3) {
+                    red = Math.min(255, red + 35);
+                    green = Math.min(255, green + 65);
+                    blue = Math.min(255, blue + 75);
+                }
+                cape.setRGB(x, y, 0xFF000000 | red << 16 | green << 8 | blue);
+            }
+        }
+        return cape;
     }
 
     public ResourceLocation getCape() {

@@ -16,6 +16,7 @@ import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityLivingBase;
 import net.minecraft.item.ItemStack;
 import net.minecraft.potion.Potion;
+import net.minecraft.util.MathHelper;
 import net.minecraft.util.Vec3;
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
@@ -41,6 +42,12 @@ public abstract class MixinEntityRenderer {
     private Minecraft mc;
     @Shadow
     private float thirdPersonDistance;
+    @Shadow private float thirdPersonDistanceTemp;
+    @Unique private boolean myau$freeLookRestoreRotation;
+    @Unique private float myau$freeLookYaw;
+    @Unique private float myau$freeLookPitch;
+    @Unique private float myau$freeLookPrevYaw;
+    @Unique private float myau$freeLookPrevPitch;
 
     @Inject(
             method = {"updateCameraAndRender"},
@@ -268,6 +275,45 @@ public abstract class MixinEntityRenderer {
             }
         }
         return ((IAccessorEntityLivingBase) entityLivingBase).getActivePotionsMap().containsKey(potion.id);
+    }
+
+    @Inject(
+            method = {"orientCamera"},
+            at = {@At("HEAD")})
+    private void orientFreeLook(float partialTicks, CallbackInfo callbackInfo) {
+        if (Myau.moduleManager == null || this.mc.thePlayer == null) {
+            return;
+        }
+        FreeLook freeLook = (FreeLook) Myau.moduleManager.modules.get(FreeLook.class);
+        if (freeLook != null && freeLook.isFreeLooking()) {
+            EntityPlayerSP player = this.mc.thePlayer;
+            this.myau$freeLookYaw = player.rotationYaw;
+            this.myau$freeLookPitch = player.rotationPitch;
+            this.myau$freeLookPrevYaw = player.prevRotationYaw;
+            this.myau$freeLookPrevPitch = player.prevRotationPitch;
+            this.myau$freeLookRestoreRotation = true;
+            player.prevRotationYaw = player.rotationYaw = freeLook.getCameraYaw();
+            player.prevRotationPitch =
+                    player.rotationPitch = MathHelper.clamp_float(freeLook.getCameraPitch(), -90.0F, 90.0F);
+            if (this.mc.gameSettings.thirdPersonView == 0) {
+                this.mc.gameSettings.thirdPersonView = 1;
+            }
+            this.thirdPersonDistanceTemp = this.thirdPersonDistance;
+        }
+    }
+
+    @Inject(
+            method = {"orientCamera"},
+            at = {@At("RETURN")})
+    private void restoreFreeLook(float partialTicks, CallbackInfo callbackInfo) {
+        if (this.myau$freeLookRestoreRotation && this.mc.thePlayer != null) {
+            EntityPlayerSP player = this.mc.thePlayer;
+            player.rotationYaw = this.myau$freeLookYaw;
+            player.rotationPitch = this.myau$freeLookPitch;
+            player.prevRotationYaw = this.myau$freeLookPrevYaw;
+            player.prevRotationPitch = this.myau$freeLookPrevPitch;
+            this.myau$freeLookRestoreRotation = false;
+        }
     }
 
     @Redirect(

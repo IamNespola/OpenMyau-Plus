@@ -193,6 +193,15 @@ public class CFont
         tex = setupTexture(font, this.antiAlias, this.fractionalMetrics, this.charData);
     }
 
+    public void disposeTexture()
+    {
+        if (this.tex != null)
+        {
+            this.tex.deleteGlTexture();
+            this.tex = null;
+        }
+    }
+
     protected class CharData
     {
         public int width;
