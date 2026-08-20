@@ -50,7 +50,7 @@ public class CheadleClickGui extends GuiScreen {
             "NoSlow", "KeepSprint", "Eagle", "NoJumpDelay", "AntiVoid", "Timer");
     private static final Set<String> RENDER = set(
             "ESP", "Chams", "FullBright", "Tracers", "NameTags", "Xray", "TargetESP", "TargetHUD", "Indicators",
-            "BedESP", "ItemESP", "BreakProgress", "ViewClip", "NoHurtCam", "HUD", "RiseClickGUI",
+            "BedESP", "ItemESP", "BreakProgress", "ViewClip", "NoHurtCam", "HUD", "Notifications", "RiseClickGUI",
             "ClickGUI", "ChestESP", "Trajectories", "Radar", "RenderFixes", "FPScounter", "WaterMark", "WaterMark2",
             "HitParticleEffects", "DynamicIsland", "ESP2D", "TeamHealthDisplay", "Statistics", "Animations",
             "BlockOverlay", "Ambience", "Capes", "FreeLook", "ItemPhysics");

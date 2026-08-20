@@ -70,7 +70,7 @@ public class RiseClickGUI extends GuiScreen {
                 "AutoGapple", "Gapple", "ThrowAura", "InventoryClicker", "PacketConsume");
         map(Tab.RENDER, "ESP", "Chams", "FullBright", "Fullbright", "Tracers", "NameTags", "Xray",
                 "TargetESP", "TargetHUD", "Indicators", "BedESP", "ItemESP", "ViewClip", "NoHurtCam",
-                "HUD", "ChestESP", "Trajectories", "Radar", "FPScounter", "Fpscounter", "WaterMark",
+                "HUD", "Notifications", "ChestESP", "Trajectories", "Radar", "FPScounter", "Fpscounter", "WaterMark",
                 "HitParticleEffects", "DynamicIsland", "ESP2D", "TeamHealthDisplay", "Statistics",
                 "Animations", "RenderFixes", "ClickGUI", "ClickGui", "FreeLook");
         map(Tab.EXPLOIT, "Disabler", "ClientSpoofer", "NoRotate", "AntiObfuscate", "Blink", "Timer",

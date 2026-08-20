@@ -110,6 +110,7 @@ public class Myau {
         moduleManager.modules.put(HitSelect.class, new HitSelect());
         moduleManager.modules.put(AutoHypixel.class, new AutoHypixel());
         moduleManager.modules.put(HUD.class, new HUD());
+        moduleManager.modules.put(Notifications.class, new Notifications());
         moduleManager.modules.put(Hotbar.class, new Hotbar());
         moduleManager.modules.put(MoreKB.class, new MoreKB());
         moduleManager.modules.put(Indicators.class, new Indicators());

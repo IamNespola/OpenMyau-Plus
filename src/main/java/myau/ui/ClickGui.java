@@ -97,6 +97,7 @@ public class ClickGui extends GuiScreen {
         renderModules.add(Myau.moduleManager.getModule(ViewClip.class));
         renderModules.add(Myau.moduleManager.getModule(NoHurtCam.class));
         renderModules.add(Myau.moduleManager.getModule(HUD.class));
+        renderModules.add(Myau.moduleManager.getModule(Notifications.class));
         renderModules.add(Myau.moduleManager.getModule(ClickGUIModule.class));
         renderModules.add(Myau.moduleManager.getModule(ClickGUIModule.class));
         renderModules.add(Myau.moduleManager.getModule(ChestESP.class));

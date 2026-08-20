@@ -70,7 +70,7 @@ public class RavenClickGui extends GuiScreen {
         List<Module> renderModules = collect(
                 ESP.class, Chams.class, FullBright.class, Tracers.class, NameTags.class, Xray.class, TargetESP.class,
                 TargetHUD.class, Indicators.class, BedESP.class, ItemESP.class, BreakProgress.class, ViewClip.class,
-                NoHurtCam.class, HUD.class, ClickGUIModule.class, ClickGUIModule.class,
+                NoHurtCam.class, HUD.class, Notifications.class, ClickGUIModule.class, ClickGUIModule.class,
                 ChestESP.class, Trajectories.class, Radar.class, RenderFixes.class, FPScounter.class, WaterMark.class,
                 WaterMark2.class, HitParticleEffects.class, DynamicIsland.class, ESP2D.class, TeamHealthDisplay.class,
                 Statistics.class, Animations.class, BlockOverlay.class, Ambience.class, Capes.class, FreeLook.class, ItemPhysics.class);

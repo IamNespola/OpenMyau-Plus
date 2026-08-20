@@ -52,7 +52,7 @@ public class HUD extends Module {
             TargetESP.class, TargetHUD.class, Indicators.class, BedESP.class, ItemESP.class,
             ViewClip.class, NoHurtCam.class, HUD.class, ClickGUIModule.class,
             ChestESP.class, Trajectories.class, Radar.class, RenderFixes.class, FPScounter.class,
-            WaterMark.class, WaterMark2.class, HitParticleEffects.class, DynamicIsland.class,
+            WaterMark.class, WaterMark2.class, HitParticleEffects.class, DynamicIsland.class, Notifications.class,
             ESP2D.class, TeamHealthDisplay.class, Statistics.class, Animations.class, Hotbar.class
     ));
     private static final Set<Class<?>> PLAYER_MODULES = new HashSet<>(Arrays.<Class<?>>asList(
@@ -104,7 +104,6 @@ public class HUD extends Module {
     public final BooleanProperty hideMisc = new BooleanProperty("hide-misc", false);
     public final BooleanProperty chatOutline = new BooleanProperty("chat-outline", true);
     public final BooleanProperty blinkTimer = new BooleanProperty("blink-timer", true);
-    public final BooleanProperty notifications = new BooleanProperty("notifications", true);
     public final BooleanProperty toggleSound = new BooleanProperty("toggle-sounds", true);
     public final BooleanProperty toggleAlerts = new BooleanProperty("toggle-alerts", false);
     public final ModeProperty fontMode = new ModeProperty("font-mode", 6, new String[]{"SANS", "MINECRAFT", "NUNITO", "TENACITY", "TENACITY_BOLD", "SF_PRO", "GOOGLE_SANS"});
@@ -628,7 +627,6 @@ public class HUD extends Module {
 
             }
         }
-        renderNotifications();
     }
 
     private void renderCreidaInterface() {
@@ -809,168 +807,8 @@ public class HUD extends Module {
         return fontRenderer.getStringWidth(text);
     }
 
-    private void renderNotifications() {
-        if (!this.notifications.getValue()) return;
-
-        try {
-            if (Myau.notificationManager == null) return;
-
-            java.util.List<myau.management.NotificationManager.NotificationEntry> entries = Myau.notificationManager.getActive();
-            if (entries.isEmpty()) return;
-
-            ScaledResolution sr = new ScaledResolution(mc);
-            float scaledWidth = sr.getScaledWidth();
-            float scaledHeight = sr.getScaledHeight();
-            float margin = 8.0F;
-            float paddingX = 8.0F;
-            float paddingY = 5.0F;
-            float spacing = 4.0F;
-            float y = scaledHeight - margin;
-
-            for (int i = entries.size() - 1; i >= 0; i--) {
-                myau.management.NotificationManager.NotificationEntry entry = entries.get(i);
-                float alpha = notificationAlpha(entry);
-                if (alpha <= 0.01F) continue;
-
-                String text = modernNotificationText(entry.message);
-                float textWidth = getHudTextWidth(text);
-                float textHeight = getHudTextHeight();
-                float boxWidth = Math.max(86.0F, textWidth + paddingX * 2.0F + 2.0F);
-                float boxHeight = textHeight + paddingY * 2.0F + 3.0F;
-                float x = scaledWidth - margin - boxWidth;
-                y -= boxHeight;
-
-                drawModernNotification(entry, text, x, y, boxWidth, boxHeight, paddingX, paddingY, alpha);
-                y -= spacing;
-            }
-
-        } catch (Exception ignored) {
-        }
-    }
-
-    private void drawModernNotification(myau.management.NotificationManager.NotificationEntry entry, String text,
-                                        float x, float y, float boxWidth, float boxHeight,
-                                        float paddingX, float paddingY, float alpha) {
-        float motion = notificationMotion(entry);
-        float slide = (1.0F - motion) * 14.0F + (1.0F - alpha) * 5.0F;
-        float renderX = x + slide;
-        int statusColor = notificationStatusColor(text, alpha);
-        
-        int glass = new Color(10, 12, 16, (int) (92 * alpha)).getRGB();
-        int hoverLayer = new Color(255, 255, 255, (int) (9 * alpha)).getRGB();
-        int border = new Color(255, 255, 255, (int) (24 * alpha)).getRGB();
-        int depth = new Color(0, 0, 0, (int) (28 * alpha)).getRGB();
-        int neutralText = new Color(238, 241, 245, (int) (242 * alpha)).getRGB();
-        float radius = 6.0F;
-
-        RenderUtil.drawRoundedRect(renderX + 1.0F, y + 1.5F, boxWidth, boxHeight, radius + 1.0F,
-                depth, true, true, true, true);
-        RenderUtil.drawRoundedRect(renderX, y, boxWidth, boxHeight, radius,
-                glass, true, true, true, true);
-        RenderUtil.drawRoundedRect(renderX + 1.0F, y + 1.0F, boxWidth - 2.0F, boxHeight - 2.0F, radius - 1.0F,
-                hoverLayer, true, true, true, true);
-        RenderUtil.drawRoundedRectOutline(renderX + 0.5F, y + 0.5F, boxWidth - 1.0F, boxHeight - 1.0F,
-                radius, 1.0F, border, true, true, true, true);
-
-        float progress = notificationProgress(entry);
-        float progressX = renderX + 8.0F;
-        float progressY = y + boxHeight - 2.0F;
-        float progressW = boxWidth - 16.0F;
-        RenderUtil.drawRoundedRect(progressX, progressY, progressW, 1.0F, 0.5F,
-                new Color(255, 255, 255, (int) (10 * alpha)).getRGB(), true, true, true, true);
-        RenderUtil.drawRoundedRect(progressX, progressY, Math.max(1.0F, progressW * progress), 1.0F, 0.5F,
-                statusColor, true, true, true, true);
-
-        drawNotificationText(text, renderX + paddingX + 1.0F, y + paddingY + 1.0F, neutralText, statusColor);
-    }
-
-    private float notificationAlpha(myau.management.NotificationManager.NotificationEntry entry) {
-        if (entry.durationMillis <= 0) return 1.0F;
-
-        float age = entry.getAge();
-        float remaining = entry.durationMillis - age;
-        float fade = Math.min(220.0F, entry.durationMillis / 3.0F);
-        float alpha = Math.min(1.0F, Math.min(age / fade, remaining / fade));
-        alpha = Math.max(0.0F, Math.min(1.0F, alpha));
-        return alpha * alpha * (3.0F - 2.0F * alpha);
-    }
-
-    private float notificationProgress(myau.management.NotificationManager.NotificationEntry entry) {
-        if (entry.durationMillis <= 0) return 1.0F;
-        return Math.max(0.0F, Math.min(1.0F, 1.0F - entry.getAge() / (float) entry.durationMillis));
-    }
-
-    private float notificationMotion(myau.management.NotificationManager.NotificationEntry entry) {
-        if (entry.durationMillis <= 0) return 1.0F;
-
-        float age = entry.getAge();
-        float remaining = entry.durationMillis - age;
-        float in = Math.max(0.0F, Math.min(1.0F, age / 260.0F));
-        float out = Math.max(0.0F, Math.min(1.0F, remaining / 220.0F));
-        float motion = Math.min(in, out);
-        return motion * motion * (3.0F - 2.0F * motion);
-    }
-
-    private String modernNotificationText(String message) {
-        if (message == null) return "";
-        return message
-                .replace(" was toggled successfully", " enabled")
-                .replace(" was untoggled successfully", " disabled");
-    }
-
-    private int softenColor(int rgb, float amount) {
-        amount = Math.max(0.0F, Math.min(1.0F, amount));
-        int r = (rgb >> 16) & 0xFF;
-        int g = (rgb >> 8) & 0xFF;
-        int b = rgb & 0xFF;
-        r += (int) ((255 - r) * amount);
-        g += (int) ((255 - g) * amount);
-        b += (int) ((255 - b) * amount);
-        return (r << 16) | (g << 8) | b;
-    }
-
-    private int notificationStatusColor(String text, float alpha) {
-        String lower = text.toLowerCase(Locale.ROOT);
-        int rgb = lower.endsWith(" enabled") ? 0x41D982 : lower.endsWith(" disabled") ? 0xFF5C6C : 0xE5E9F0;
-        return colorWithAlpha(rgb, (int) (245 * alpha));
-    }
-
-    private int colorWithAlpha(int rgb, int alpha) {
-        alpha = Math.max(0, Math.min(255, alpha));
-        return (rgb & 0xFFFFFF) | (alpha << 24);
-    }
-
     private int rgba(int r, int g, int b, int a) {
         return ((a & 0xFF) << 24) | ((r & 0xFF) << 16) | ((g & 0xFF) << 8) | (b & 0xFF);
-    }
-
-    private float getHudTextWidth(String text) {
-        return fontRenderer.getStringWidth(text);
-    }
-
-    private float getHudTextHeight() {
-        return fontRenderer.FONT_HEIGHT;
-    }
-
-    private void drawHudText(String text, float x, float y, int color) {
-        fontRenderer.drawStringWithShadow(text, (int) x, (int) y, color);
-    }
-
-    private void drawNotificationText(String text, float x, float y, int neutralColor, int statusColor) {
-        String lower = text.toLowerCase(Locale.ROOT);
-        if (lower.endsWith(" enabled")) {
-            drawSplitNotificationText(text, " enabled", x, y, neutralColor, statusColor);
-        } else if (lower.endsWith(" disabled")) {
-            drawSplitNotificationText(text, " disabled", x, y, neutralColor, statusColor);
-        } else {
-            drawHudText(text, x, y, neutralColor);
-        }
-    }
-
-    private void drawSplitNotificationText(String text, String suffix, float x, float y, int neutralColor, int statusColor) {
-        String main = text.substring(0, text.length() - suffix.length());
-        drawHudText(main, x, y, neutralColor);
-        drawHudText(suffix.trim(), x + getHudTextWidth(main + " "), y, statusColor);
     }
 
     @Override

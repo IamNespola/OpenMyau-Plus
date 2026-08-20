@@ -101,6 +101,7 @@ public class ModernClickGui extends GuiScreen {
                 Myau.moduleManager.getModule(ViewClip.class),
                 Myau.moduleManager.getModule(NoHurtCam.class),
                 Myau.moduleManager.getModule(HUD.class),
+                Myau.moduleManager.getModule(Notifications.class),
                 Myau.moduleManager.getModule(ChestESP.class),
                 Myau.moduleManager.getModule(Trajectories.class),
                 Myau.moduleManager.getModule(Radar.class),
