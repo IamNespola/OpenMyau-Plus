@@ -50,7 +50,7 @@ public class ModuleCommand extends Command {
                 );
             }
         } else {
-            List<Property<?>> properties = Myau.propertyManager.properties.get(module.getClass());
+            List<Property<?>> properties = Myau.propertyManager.properties.get(module);
             if (properties != null) {
                 List<Property<?>> visible = properties.stream().filter(Property::isVisible).collect(Collectors.toList());
                 if (!visible.isEmpty()) {

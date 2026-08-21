@@ -391,7 +391,7 @@ public class HUD extends Module {
     @EventTarget
     public void onTick(TickEvent event) {
         if (this.isEnabled() && event.getType() == EventType.POST) {
-            this.activeModules = Myau.moduleManager.modules.values().stream().filter(this::shouldShowInArraylist).sorted(Comparator.comparingInt(this::getModuleWidth).reversed()).collect(Collectors.<Module>toList());
+            this.activeModules = Myau.moduleManager.allModules().stream().filter(this::shouldShowInArraylist).sorted(Comparator.comparingInt(this::getModuleWidth).reversed()).collect(Collectors.<Module>toList());
         }
     }
 

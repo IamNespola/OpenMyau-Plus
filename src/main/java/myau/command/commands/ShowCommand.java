@@ -31,7 +31,7 @@ public class ShowCommand extends Command {
                 ChatUtil.sendFormatted(String.format("%s&o%s&r is no longer hidden in HUD&r", Myau.clientName, module.getName()));
             }
         } else {
-            for (Module module : Myau.moduleManager.modules.values()) {
+            for (Module module : Myau.moduleManager.allModules()) {
                 module.setHidden(false);
             }
             ChatUtil.sendFormatted(String.format("%sAll modules are no longer hidden in HUD&r", Myau.clientName));

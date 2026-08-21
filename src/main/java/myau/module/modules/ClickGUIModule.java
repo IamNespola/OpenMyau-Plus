@@ -62,7 +62,7 @@ public class ClickGUIModule extends Module {
                 || mc.currentScreen instanceof ClickGuiScreen
                 || mc.currentScreen instanceof RavenClickGui
                 || mc.currentScreen instanceof CheadleClickGui
-                || mc.currentScreen instanceof ModernClickGui;
+                || mc.currentScreen instanceof myau.ui.impl.clickgui.modern.ModernClickGui;
         try {
             mc.displayGuiScreen(screen);
         } finally {
@@ -87,7 +87,8 @@ public class ClickGUIModule extends Module {
             return cheadle != null ? cheadle : new CheadleClickGui();
         }
         if (style.getValue() == 4) {
-            return ModernClickGui.getInstance();
+            myau.ui.impl.clickgui.modern.ModernClickGui modern = myau.ui.impl.clickgui.modern.ModernClickGui.getInstance();
+            return modern != null ? modern : new myau.ui.impl.clickgui.modern.ModernClickGui();
         }
         if (style.getValue() == 5) {
             return myau.ui.impl.clickgui.rise.RiseClickGUI.getInstance();
