@@ -56,43 +56,12 @@ public class RavenClickGui extends GuiScreen {
         instance = this;
         categories = new ArrayList<>();
         int y = 5;
-
-        List<Module> combatModules = collect(
-                AimAssist.class, MoveFix.class, AutoClicker.class, KillAura.class, Wtap.class, Velocity.class, ServerLag.class,
-                Reach.class, TargetStrafe.class, NoHitDelay.class, AntiFireball.class, KnockbackDelay.class,
-                LagRange.class, HitBox.class, MoreKB.class, Refill.class, HitSelect.class, BackTrack.class,
-                Hitflick.class, TimerRange.class, ClickAssits.class, Criticals.class, BlockHit.class,
-                SprintReset.class, Displace.class, TickBase.class, Piercing.class, Stasis.class);
-        List<Module> movementModules = collect(
-                AntiAFK.class, Fly.class, FastBow.class, myau.module.modules.Timer.class, Speed.class, LongJump.class,
-                Sprint.class, SafeWalk.class, Jesus.class, Blink.class, NoFall.class, NoSlow.class, KeepSprint.class,
-                Eagle.class, NoJumpDelay.class, AntiVoid.class);
-        List<Module> renderModules = collect(
-                ESP.class, Chams.class, FullBright.class, Tracers.class, NameTags.class, Xray.class, TargetESP.class,
-                TargetHUD.class, Indicators.class, BedESP.class, ItemESP.class, BreakProgress.class, ViewClip.class,
-                NoHurtCam.class, HUD.class, Notifications.class, ClickGUIModule.class, ClickGUIModule.class,
-                ChestESP.class, Trajectories.class, Radar.class, RenderFixes.class, FPScounter.class, WaterMark.class,
-                WaterMark2.class, HitParticleEffects.class, DynamicIsland.class, ESP2D.class, TeamHealthDisplay.class,
-                Statistics.class, Animations.class, BlockOverlay.class, Ambience.class, Capes.class, FreeLook.class, ItemPhysics.class);
-        List<Module> playerModules = collect(
-                AutoHeal.class, FakeLag.class, AutoTool.class, ChestStealer.class, AutoBedDef.class, InvManager.class,
-                InvWalk.class, Scaffold.class, AutoBlockIn.class, AutoSwap.class, SpeedMine.class, FastPlace.class,
-                GhostHand.class, MCF.class, AntiDebuff.class, FlagDetector.class, AutoGapple.class, ChestAura.class,
-                AutoHeadHitter.class, ThrowAura.class);
-        List<Module> miscModules = collect(
-                Spammer.class, BedNuker.class, AntiBot.class, BedTracker.class, LightningTracker.class, NoRotate.class,
-                NickHider.class, AntiObbyTrap.class, AntiObfuscate.class, AutoAnduril.class, InventoryClicker.class,
-                Disabler.class, ClientSpoofer.class, AutoHypixel.class, MouseRawInput.class, BedwarUtils.class, AutoAuth.class);
-
-        String[] names = {"Combat", "Movement", "Render", "Player", "Misc"};
-        List<List<Module>> groups = Arrays.asList(combatModules, movementModules, renderModules, playerModules, miscModules);
-        for (int i = 0; i < names.length; i++) {
-            CategoryComponent categoryComponent = new CategoryComponent(names[i], groups.get(i));
-            categoryComponent.setY(y, false);
-            categories.add(categoryComponent);
+        for (String category : myau.module.ModuleCatalog.CATEGORIES) {
+            CategoryComponent component = new CategoryComponent(category, myau.module.ModuleCatalog.modules(category));
+            component.setY(y, false);
+            categories.add(component);
             y += 20;
         }
-
         loadPositions();
     }
 

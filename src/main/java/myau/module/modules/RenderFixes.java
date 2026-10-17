@@ -40,8 +40,6 @@ public class RenderFixes extends Module {
     public final BooleanProperty shader = new BooleanProperty("shader", true);
     public final BooleanProperty chat = new BooleanProperty("chat", true);
     public final BooleanProperty scoreboard = new BooleanProperty("scoreboard", true);
-    public final IntProperty chatX = new IntProperty("chat-x", 0, -DRAG_LIMIT, DRAG_LIMIT);
-    public final IntProperty chatY = new IntProperty("chat-y", 0, -DRAG_LIMIT, DRAG_LIMIT);
     public final IntProperty scoreboardX = new IntProperty("scoreboard-x", 0, -DRAG_LIMIT, DRAG_LIMIT);
     public final IntProperty scoreboardY = new IntProperty("scoreboard-y", 0, -DRAG_LIMIT, DRAG_LIMIT);
 
@@ -102,129 +100,23 @@ public class RenderFixes extends Module {
         return module != null && module.isEnabled() && module.scoreboard.getValue();
     }
 
-    public static int getChatOffsetX() {
-        RenderFixes module = get();
-        return module == null ? 0 : module.chatX.getValue();
-    }
-
-    public static int getChatOffsetY() {
-        RenderFixes module = get();
-        return module == null ? 0 : module.chatY.getValue();
-    }
-
-    private static int getChatRenderOffsetX() {
-        return isChatScreenOpen() ? 0 : getChatOffsetX();
-    }
-
-    private static int getChatRenderOffsetY() {
-        return isChatScreenOpen() ? 0 : getChatOffsetY();
-    }
-
-    public static void translateChat() {
-        GlStateManager.translate((float) getChatOffsetX(), (float) getChatOffsetY(), 0.0F);
-    }
-
-    public static int adjustChatMouseX(int mouseX) {
-        if (!isChatActive() || !isChatScreenOpen()) {
-            return mouseX;
-        }
-        ScaledResolution sr = new ScaledResolution(mc);
-        return mouseX - getChatRenderOffsetX() * sr.getScaleFactor();
-    }
-
-    public static int adjustChatMouseY(int mouseY) {
-        if (!isChatActive() || !isChatScreenOpen()) {
-            return mouseY;
-        }
-        ScaledResolution sr = new ScaledResolution(mc);
-        return mouseY + getChatRenderOffsetY() * sr.getScaleFactor();
-    }
-
-    public static void renderChatHistoryBackground(GuiNewChat chatGui) {
-        if (!isChatActive()) {
+    public static void drawChatBackground(int left, int top, int right, int bottom, int color) {
+        if (!isChatActive() || Math.abs(right - left) <= 3 || Math.abs(bottom - top) <= 3) {
+            Gui.drawRect(left, top, right, bottom, color);
             return;
         }
-
-        Bounds bounds = getChatHistoryBounds(chatGui);
-        if (bounds == null) {
-            return;
-        }
-
-        ScaledResolution sr = new ScaledResolution(mc);
-        GlStateManager.pushMatrix();
-        GlStateManager.translate(0.0F, -(sr.getScaledHeight() - 48.0F), 0.0F);
-        drawGlassPanel(bounds.x, bounds.y, bounds.width, bounds.height, 7.0F, 92);
-        GlStateManager.popMatrix();
-    }
-
-    public static boolean renderChat(GuiNewChat chatGui, int updateCounter, List<ChatLine> drawnChatLines, int scrollPos, boolean isScrolled) {
-        if (!isChatActive() || chatGui == null || mc.gameSettings == null || mc.fontRendererObj == null) {
-            return false;
-        }
-        if (mc.gameSettings.chatVisibility == EntityPlayer.EnumChatVisibility.HIDDEN) {
-            return false;
-        }
-
-        int lineCount = chatGui.getLineCount();
-        int totalLines = drawnChatLines.size();
-        if (totalLines <= 0) {
-            return true;
-        }
-
-        float scale = Math.max(0.1F, chatGui.getChatScale());
-        int chatWidth = MathHelper.ceiling_float_int((float) chatGui.getChatWidth() / scale);
-        renderChatHistoryBackground(chatGui);
-
-        GlStateManager.pushMatrix();
-        GlStateManager.translate((float) getChatRenderOffsetX(), (float) getChatRenderOffsetY(), 0.0F);
-        GlStateManager.translate(2.0F, 20.0F, 0.0F);
-        GlStateManager.scale(scale, scale, 1.0F);
-
-        int renderedLines = 0;
-        for (int i = 0; i + scrollPos < totalLines && i < lineCount; ++i) {
-            ChatLine chatLine = drawnChatLines.get(i + scrollPos);
-            if (chatLine != null) {
-                ++renderedLines;
-                int y = -i * 9;
-                String text = chatLine.getChatComponent().getFormattedText();
-                GlStateManager.enableBlend();
-                mc.fontRendererObj.drawStringWithShadow(text, 0.0F, (float) (y - 8), 16777215 + (255 << 24));
-                GlStateManager.disableAlpha();
-                GlStateManager.disableBlend();
-            }
-        }
-
-        if (isChatScreenOpen()) {
-            int fontHeight = mc.fontRendererObj.FONT_HEIGHT;
-            int totalHeight = totalLines * fontHeight + totalLines;
-            int visibleHeight = renderedLines * fontHeight + renderedLines;
-            int scrollBarY = scrollPos * visibleHeight / totalLines;
-            int scrollBarHeight = visibleHeight * visibleHeight / totalHeight;
-
-            if (totalHeight != visibleHeight) {
-                int trackAlpha = scrollBarY > 0 ? 170 : 96;
-                int railColor = isScrolled ? 13382451 : 3355562;
-                Gui.drawRect(0, -scrollBarY, 2, -scrollBarY - scrollBarHeight, railColor + (trackAlpha << 24));
-                Gui.drawRect(2, -scrollBarY, 1, -scrollBarY - scrollBarHeight, 13421772 + (trackAlpha << 24));
-            }
-        }
-
-        GlStateManager.popMatrix();
-        GlStateManager.color(1.0F, 1.0F, 1.0F, 1.0F);
-        return true;
+        float x = Math.min(left, right), y = Math.min(top, bottom);
+        RenderUtil.drawRoundedRect(x, y, Math.abs(right - left), Math.abs(bottom - top), 2,
+                color, true, true, true, true);
+        GlStateManager.enableTexture2D();
+        GlStateManager.enableBlend();
     }
 
     public static void renderChatInputBackground(int width, int height) {
-        if (!isChatActive()) {
-            return;
+        if (isChatActive()) {
+            RenderUtil.drawRoundedRect(2, height - 15, Math.max(0, width - 4), 14, 3,
+                    0xB0181B22, true, true, true, true);
         }
-
-        float hotbarLeft = (width / 2.0F) - 91.0F;
-        float maxRight = hotbarLeft - 2.0F;
-        float x = 2.0F;
-        float boxWidth = Math.max(160.0F, maxRight - x);
-        float y = height - 15.0F;
-        drawGlassPanel(x, y, boxWidth, 14.0F, 5.0F, 96);
     }
 
     public static boolean renderScoreboard(ScoreObjective objective, ScaledResolution scaledRes) {
@@ -331,25 +223,6 @@ public class RenderFixes extends Module {
         }
 
         wasMouseDown = mouseDown;
-    }
-
-    private static Bounds getChatHistoryBounds(GuiNewChat chatGui) {
-        if (chatGui == null || mc.gameSettings == null || mc.gameSettings.chatVisibility == EntityPlayer.EnumChatVisibility.HIDDEN) {
-            return null;
-        }
-
-        ScaledResolution sr = new ScaledResolution(mc);
-        float scale = Math.max(0.1F, chatGui.getChatScale());
-        float rawWidth = (float) Math.ceil(chatGui.getChatWidth() / scale) + 4.0F;
-        float width = rawWidth * scale;
-        float height = chatGui.getLineCount() * 9.0F * scale + 8.0F;
-        float defaultX = 2.0F - 3.0F;
-        float defaultY = sr.getScaledHeight() - 28.0F - chatGui.getLineCount() * 9.0F * scale - 4.0F;
-        float x = defaultX + getChatRenderOffsetX();
-        float y = defaultY + getChatRenderOffsetY();
-        float maxHistoryWidth = ((sr.getScaledWidth() / 2.0F) - 91.0F) - 2.0F - x;
-        float finalWidth = Math.min(width + 6.0F, Math.max(160.0F, maxHistoryWidth));
-        return new Bounds(x, y, finalWidth, height, defaultX, defaultY);
     }
 
     private static Bounds getLiveScoreboardBounds() {

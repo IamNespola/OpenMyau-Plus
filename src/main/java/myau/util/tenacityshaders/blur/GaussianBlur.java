@@ -15,7 +15,7 @@ import static org.lwjgl.opengl.GL20.glUniform1;
  */
 public class GaussianBlur implements Utils {
 
-    private static final ShaderUtil gaussianBlur = new ShaderUtil("assets/Shaders/gaussian.frag");
+    private static final ShaderUtil gaussianBlur = new ShaderUtil("myau:shaders/gaussian.frag");
 
     private static Framebuffer framebuffer = new Framebuffer(1, 1, false);
 

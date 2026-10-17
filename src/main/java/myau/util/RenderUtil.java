@@ -236,7 +236,7 @@ public class RenderUtil {
     }
 
     public static void bindTexture(int texture) {
-        GL11.glBindTexture(GL11.GL_TEXTURE_2D, texture);
+        GlStateManager.bindTexture(texture);
     }
 
     public static void setAlphaLimit(float limit) {

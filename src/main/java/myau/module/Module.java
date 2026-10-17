@@ -35,7 +35,8 @@ public abstract class Module {
     }
 
     public String getDescription() {
-        return this.description;
+        String catalog = ModuleCatalog.description(this.name);
+        return catalog.isEmpty() ? this.description : catalog;
     }
 
     public String formatModule() {

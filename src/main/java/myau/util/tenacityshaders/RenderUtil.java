@@ -256,7 +256,7 @@ public class RenderUtil implements Utils {
      * @see org.lwjgl.opengl.GL13 for more information about texture bindings
      */
     public static void bindTexture(int texture) {
-        glBindTexture(GL_TEXTURE_2D, texture);
+        GlStateManager.bindTexture(texture);
     }
 
     // Sometimes colors get messed up in for loops, so we use this method to reset it to allow new colors to be used

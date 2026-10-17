@@ -131,6 +131,7 @@ public class NoSlow extends Module {
     }
 
     public boolean isAnyActive() {
+        if (mc.thePlayer == null || mc.theWorld == null) return false;
         if (this.swordMode.getValue() != 2) {
             return mc.thePlayer.isUsingItem() && (this.isSwordActive() || this.isFoodActive() || this.isBowActive());
         } else if (this.swordMode.getValue() == 2 && isSwordActive()) {
@@ -160,6 +161,10 @@ public class NoSlow extends Module {
 
     @EventTarget
     public void onUpdate(UpdateEvent event) {
+        if (mc.thePlayer == null || mc.theWorld == null) {
+            this.resetRuntimeState();
+            return;
+        }
         // BadPacketsComponent bookkeeping: save on PRE, reset on POST (runs even while disabled).
         if (mc.thePlayer != null && mc.theWorld != null) {
             if (event.getType() == EventType.PRE) {
@@ -206,7 +211,7 @@ public class NoSlow extends Module {
 
     @EventTarget
     public void onMotion(PostMotionEvent event) {
-        if (!this.isEnabled()) return;
+        if (!this.isEnabled() || mc.thePlayer == null || mc.theWorld == null) return;
         if (!ItemUtil.isHoldingSword() || !mc.thePlayer.isUsingItem()) return;
         if (isSwordActive()) {
             if (this.swordMode.getValue() == 2) {
@@ -231,7 +236,7 @@ public class NoSlow extends Module {
 
     @EventTarget(Priority.LOW)
     public void onPlayerUpdate(PlayerUpdateEvent event) {
-        if (this.isEnabled() && this.isFloatMode()) {
+        if (this.isEnabled() && mc.thePlayer != null && mc.theWorld != null && this.isFloatMode()) {
             int item = mc.thePlayer.inventory.currentItem;
             Myau.floatManager.setFloatState(true, FloatModules.NO_SLOW);
         } else {
@@ -241,6 +246,7 @@ public class NoSlow extends Module {
 
     @EventTarget
     public void onRightClick(RightClickMouseEvent event) {
+        if (mc.thePlayer == null || mc.theWorld == null) return;
         if (this.isEnabled()) {
             if (mc.objectMouseOver != null) {
                 switch (mc.objectMouseOver.typeOfHit) {
@@ -320,16 +326,35 @@ public class NoSlow extends Module {
 
     @Override
     public void onEnabled() {
-        this.newGrimTicks = 0;
+        this.resetRuntimeState();
     }
 
     @Override
     public void onDisabled() {
-        this.newGrimTicks = 0;
-        if (this.isMiauModeUsed(MIAU_OPAL_WATCHDOG) && mc.thePlayer != null) {
+        if (this.opalBlocking && mc.thePlayer != null && mc.theWorld != null) {
             this.opalRelease();
-            this.opalResetCycle();
         }
+        this.resetRuntimeState();
+    }
+
+    @EventTarget
+    public void onWorldLoad(LoadWorldEvent event) {
+        // Never carry slot/use-item state into a different connection or world.
+        this.resetRuntimeState();
+    }
+
+    private void resetRuntimeState() {
+        this.delay = 0;
+        this.post = false;
+        this.newGrimTicks = 0;
+        this.newNcpDisable = this.intaveDisable = this.spartanDisable = 0;
+        this.wdOffGroundTicks = 0;
+        this.wdStop = false;
+        this.wdDisable = false;
+        this.opalBlocking = false;
+        this.opalSlotChangeTick = -1;
+        this.opalResetCycle();
+        this.resetBadPackets();
     }
 
     // ============ Miau Client NoSlow (ported, compacted) ============
@@ -422,8 +447,11 @@ public class NoSlow extends Module {
 
     // Called from MixinEntityPlayerSP to decide whether the vanilla use-item slowdown is skipped.
     public boolean shouldCancelMiauSlowdown() {
-        if (!this.isEnabled()) {
+        if (!this.isEnabled() || mc.thePlayer == null || mc.theWorld == null) {
             return false;
+        }
+        if (this.heldItemMiauMode() == MIAU_WATCHDOG) {
+            return !this.wdDisable;
         }
         if (this.heldItemMiauMode() == MIAU_NEW_GRIM) {
             if (!this.miauAnyActive(MIAU_NEW_GRIM)) {
@@ -558,6 +586,11 @@ public class NoSlow extends Module {
         if (Math.abs(posY - Math.round(posY)) > 0.03 && mc.thePlayer.onGround) {
             this.wdDisable = true;
         }
+        if (!this.miauAnyActive(MIAU_WATCHDOG)) {
+            this.wdOffGroundTicks = 0;
+            this.wdStop = false;
+            return;
+        }
         // offGroundTicks tracking for non-sword items (food/bow/potion).
         if (mc.thePlayer.isUsingItem()
                 && !(mc.thePlayer.getHeldItem() != null && mc.thePlayer.getHeldItem().getItem() instanceof ItemSword)) {
@@ -569,24 +602,16 @@ public class NoSlow extends Module {
             if (this.wdOffGroundTicks >= 2) {
                 this.wdStop = false;
             } else if (mc.thePlayer.onGround && !this.wdDisable) {
-                // PosY anti-flag: offset Y by 1E-14 so Watchdog doesn't detect it.
+                // Legacy position adjustment while beginning grounded item use.
                 mc.thePlayer.posY += 1E-14;
             }
         }
-        // Cancel movement slowdown for food/bow/potion while not disabled.
-        if (!this.wdDisable) {
-            if (this.miauFoodActive(MIAU_WATCHDOG) || this.miauBowActive(MIAU_WATCHDOG) || this.miauPotionActive(MIAU_WATCHDOG)) {
-                mc.thePlayer.movementInput.moveForward *= 5.0f;
-                mc.thePlayer.movementInput.moveStrafe *= 5.0f;
-            }
-        }
-        // Sword NoSlow: C09 swap + cancel slowdown.
-        if (this.miauSwordActive(MIAU_WATCHDOG)) {
+        // MixinEntityPlayerSP already skips the vanilla 0.2 slowdown. Multiplying
+        // input by five here amplified full-speed input a second time.
+        if (!this.wdDisable && this.miauSwordActive(MIAU_WATCHDOG)) {
             int currentSlot = mc.thePlayer.inventory.currentItem;
             PacketUtil.sendPacket(new C09PacketHeldItemChange(currentSlot % 7 + (int) (Math.random() * 2) + 1));
             PacketUtil.sendPacket(new C09PacketHeldItemChange(currentSlot));
-            mc.thePlayer.movementInput.moveForward *= 5.0f;
-            mc.thePlayer.movementInput.moveStrafe *= 5.0f;
         }
     }
 

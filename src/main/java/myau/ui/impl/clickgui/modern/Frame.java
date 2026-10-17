@@ -14,6 +14,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class Frame extends Component {
+    @Getter
     private final String categoryName;
     private final ArrayList<ModuleEntry> moduleEntries;
     private int dragX, dragY;

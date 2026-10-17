@@ -60,7 +60,10 @@ public class FMLLoadingPlugin implements IMixinConfigPlugin {
     }
 
     public void tryAddMixinClass(String className) {
-        String norm = (className.endsWith(".class") ? className.substring(0, className.length() - ".class".length()) : className).replace("\\", "/").replace("/", ".");
+        if (!className.endsWith(".class")) {
+            return;
+        }
+        String norm = className.substring(0, className.length() - ".class".length()).replace("\\", "/").replace("/", ".");
         if (norm.startsWith(this.getMixinPackage() + ".") && !norm.endsWith(".")) {
             this.mixins.add(norm.substring(this.getMixinPackage().length() + 1));
         }

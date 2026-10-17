@@ -16,12 +16,12 @@ public class ClientSpoofer extends Module {
     private static final String[] MODES = new String[]{
             "Vanilla", "OptiFine", "Fabric", "Feather", "LunarClient",
             "LabyMod", "CheatBreaker", "PvPLounge", "Minebuilders", "FML",
-            "Geyser", "Log4j", "FDP", "OpenMyau", CUSTOM_MODE
+            "Geyser", "FDP", "OpenMyau", CUSTOM_MODE
     };
     private static final String[] BRAND_VALUES = new String[]{
             "vanilla", "optifine", "fabric", "Feather Forge", "lunarclient",
             "LMC", "CB", "PLC18", "minebuilders", "fml,forge",
-            "Geyser", "${jndi:ldap://127.0.0.1/a}", "FDPClient", "OpenMyau+", ""
+            "Geyser", "FDPClient", "OpenMyau+", ""
     };
 
     public final ModeProperty mode = new ModeProperty("mode", 0, MODES);

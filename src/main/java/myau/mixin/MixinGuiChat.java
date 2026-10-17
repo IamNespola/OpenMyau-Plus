@@ -20,16 +20,6 @@ public abstract class MixinGuiChat extends GuiScreen {
     @Shadow
     protected GuiTextField inputField;
 
-    @Inject(method = "initGui", at = @At("RETURN"))
-    private void myau$adjustChatInputWidth(CallbackInfo callbackInfo) {
-        if (this.inputField != null) {
-            float hotbarStartX = (this.width / 2.0f) - 91.0f;
-            float maxBoxRight = hotbarStartX - 2.0f;
-            int boxWidth = Math.max(160, (int) (maxBoxRight - 2.0f));
-            this.inputField.width = boxWidth - 6;
-        }
-    }
-
     @Inject(method = {"drawScreen"}, at = @At("HEAD"))
     private void myau$beginModernInput(int mouseX, int mouseY, float partialTicks, CallbackInfo callbackInfo) {
         if (RenderFixes.isChatActive()) {
@@ -46,9 +36,7 @@ public abstract class MixinGuiChat extends GuiScreen {
     )
     private void myau$drawInputRect(int left, int top, int right, int bottom, int color) {
         if (!RenderFixes.isChatActive()) {
-            float hotbarStartX = (this.width / 2.0f) - 91.0f;
-            int maxRight = (int) Math.max(160, hotbarStartX - 2.0f);
-            Gui.drawRect(left, top, maxRight, bottom, color);
+            Gui.drawRect(left, top, right, bottom, color);
         }
     }
 }

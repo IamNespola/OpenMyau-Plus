@@ -17,7 +17,7 @@ import static org.lwjgl.opengl.GL20.glUniform1;
 
 public class BloomUtil implements Utils {
 
-    public static ShaderUtil gaussianBloom = new ShaderUtil("assets/Shaders/bloom.frag");
+    public static ShaderUtil gaussianBloom = new ShaderUtil("myau:shaders/bloom.frag");
 
     public static Framebuffer framebuffer = new Framebuffer(1, 1, false);
 
@@ -51,9 +51,9 @@ public class BloomUtil implements Utils {
 
         gaussianBloom.init();
         setupUniforms(radius, 0, offset, weightBuffer);
-        GL13.glActiveTexture(GL13.GL_TEXTURE16);
+        GlStateManager.setActiveTexture(GL13.GL_TEXTURE2);
         RenderUtil.bindTexture(sourceTexture);
-        GL13.glActiveTexture(GL13.GL_TEXTURE0);
+        GlStateManager.setActiveTexture(GL13.GL_TEXTURE0);
         RenderUtil.bindTexture(framebuffer.framebufferTexture);
         ShaderUtil.drawQuads();
         gaussianBloom.unload();
@@ -66,7 +66,7 @@ public class BloomUtil implements Utils {
 
     public static void setupUniforms(int radius, int directionX, int directionY, FloatBuffer weights) {
         gaussianBloom.setUniformi("inTexture", 0);
-        gaussianBloom.setUniformi("textureToCheck", 16);
+        gaussianBloom.setUniformi("textureToCheck", 2);
         gaussianBloom.setUniformf("radius", radius);
         gaussianBloom.setUniformf("texelSize", 1.0F / (float) mc.displayWidth, 1.0F / (float) mc.displayHeight);
         gaussianBloom.setUniformf("direction", directionX, directionY);

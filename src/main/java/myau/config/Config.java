@@ -10,6 +10,10 @@ import net.minecraft.client.Minecraft;
 
 import java.io.*;
 import java.util.ArrayList;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
+import java.nio.file.AtomicMoveNotSupportedException;
 
 public class Config {
     public static Minecraft mc = Minecraft.getMinecraft();
@@ -17,7 +21,7 @@ public class Config {
     public String name;
     public File file;
 
-    public static String lastConfig;
+    public static String lastConfig = "default";
 
     public Config(String name, boolean newConfig) {
         this.name = name;
@@ -45,7 +49,10 @@ public class Config {
                 return;
             }
 
-            JsonElement parsed = new JsonParser().parse(new BufferedReader(new FileReader(file)));
+            JsonElement parsed;
+            try (BufferedReader reader = new BufferedReader(new FileReader(file))) {
+                parsed = new JsonParser().parse(reader);
+            }
             if (parsed == null || !parsed.isJsonObject()) {
                 ChatUtil.sendFormatted(String.format("%sInvalid config format (&c&o%s&r)&r", Myau.clientName, file.getName()));
                 return;
@@ -70,13 +77,6 @@ public class Config {
                         }
                     }
 
-                    if (object.has("toggled")) {
-                        JsonElement toggled = object.get("toggled");
-                        if (toggled != null && toggled.isJsonPrimitive()) {
-                            module.setEnabled(toggled.getAsBoolean());
-                        }
-                    }
-
                     if (object.has("key")) {
                         JsonElement key = object.get("key");
                         if (key != null && key.isJsonPrimitive()) {
@@ -88,6 +88,13 @@ public class Config {
                         JsonElement hidden = object.get("hidden");
                         if (hidden != null && hidden.isJsonPrimitive()) {
                             module.setHidden(hidden.getAsBoolean());
+                        }
+                    }
+
+                    if (object.has("toggled")) {
+                        JsonElement toggled = object.get("toggled");
+                        if (toggled != null && toggled.isJsonPrimitive()) {
+                            module.setEnabled(toggled.getAsBoolean());
                         }
                     }
                 }
@@ -130,13 +137,29 @@ public class Config {
                 object.add(module.getName(), moduleObject);
             }
 
-            PrintWriter printWriter = new PrintWriter(new FileWriter(file));
-            printWriter.println(gson.toJson(object));
-            printWriter.close();
+            writeJson(file, object);
             ChatUtil.sendFormatted(String.format("%sConfig has been saved (&a&o%s&r)&r", Myau.clientName, file.getName()));
         } catch (IOException e) {
             ((IAccessorMinecraft) mc).getLogger().error("Error saving config: " + e.getMessage());
             ChatUtil.sendFormatted(String.format("%sConfig couldn't be saved (&c&o%s&r)&r", Myau.clientName, file.getName()));
+        }
+    }
+
+    static void writeJson(File destination, JsonObject object) throws IOException {
+        Path target = destination.toPath().toAbsolutePath();
+        Path temporary = Files.createTempFile(target.getParent(), "myau-config-", ".tmp");
+        try {
+            // Writer propagates I/O failures; PrintWriter silently swallowed them.
+            try (Writer writer = new FileWriter(temporary.toFile())) {
+                gson.toJson(object, writer);
+            }
+            try {
+                Files.move(temporary, target, StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING);
+            } catch (AtomicMoveNotSupportedException e) {
+                Files.move(temporary, target, StandardCopyOption.REPLACE_EXISTING);
+            }
+        } finally {
+            Files.deleteIfExists(temporary);
         }
     }
 }

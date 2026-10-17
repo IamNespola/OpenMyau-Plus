@@ -34,8 +34,7 @@ public class RiseClickGUI extends GuiScreen {
         MOVEMENT("Movement", true),
         PLAYER("Player", true),
         RENDER("Render", true),
-        EXPLOIT("Exploit", true),
-        GHOST("Ghost", true),
+        NETWORK("Network", true),
         SCRIPTS("Scripts", true),
         MISC("Misc", true),
         CAS("CaS", false),
@@ -57,27 +56,6 @@ public class RiseClickGUI extends GuiScreen {
     private static final float SIDEBAR_W = 100f;
     private static final float ROUND = 7f;
     private static final long ANIM_DURATION = 300L;
-    private static final Map<String, Tab> MODULE_TABS = new HashMap<String, Tab>();
-
-    static {
-        map(Tab.GHOST, "AimAssist", "AutoClicker", "Reach", "Velocity", "WTap", "Wtap", "HitBox",
-                "HitSelect", "BackTrack", "Hitflick", "MoreKB", "KnockbackDelay", "ClickAssits", "SprintReset", "BlockHit");
-        map(Tab.COMBAT, "KillAura", "TargetStrafe", "NoHitDelay", "AntiFireball", "LagRange", "Refill",
-                "Criticals", "Displace", "ServerLag");
-        map(Tab.MOVEMENT, "AntiAFK", "Fly", "FastBow", "Speed", "LongJump", "Sprint", "SafeWalk",
-                "Jesus", "NoFall", "NoSlow", "KeepSprint", "Eagle", "NoJumpDelay");
-        map(Tab.PLAYER, "AutoHeal", "AutoTool", "ChestStealer", "InvManager", "InvWalk", "Scaffold",
-                "AutoBlockIn", "AutoSwap", "SpeedMine", "FastPlace", "MCF", "AntiDebuff", "FlagDetector",
-                "AutoGapple", "Gapple", "ThrowAura", "InventoryClicker", "PacketConsume");
-        map(Tab.RENDER, "ESP", "Chams", "FullBright", "Fullbright", "Tracers", "NameTags", "Xray",
-                "TargetESP", "TargetHUD", "Indicators", "BedESP", "ItemESP", "ViewClip", "NoHurtCam",
-                "HUD", "Notifications", "ChestESP", "Trajectories", "Radar", "FPScounter", "Fpscounter", "WaterMark",
-                "HitParticleEffects", "DynamicIsland", "ESP2D", "TeamHealthDisplay", "Statistics",
-                "Animations", "RenderFixes", "ClickGUI", "ClickGui", "FreeLook");
-        map(Tab.EXPLOIT, "Disabler", "ClientSpoofer", "NoRotate", "AntiObfuscate", "Blink", "Timer",
-                "TimerRangev999", "AntiVoid", "FakeLag", "GhostHand", "BedNuker", "BedTracker");
-    }
-
     private float windowX = -1f;
     private float windowY = -1f;
     private boolean firstOpen = true;
@@ -136,18 +114,8 @@ public class RiseClickGUI extends GuiScreen {
         return resolveModuleTab(module).label;
     }
 
-    private static void map(Tab tab, String... moduleNames) {
-        for (String moduleName : moduleNames) {
-            MODULE_TABS.put(key(moduleName), tab);
-        }
-    }
-
     private static Tab resolveModuleTab(Module module) {
-        if (module instanceof myau.module.modules.ScriptModule) {
-            return Tab.SCRIPTS;
-        }
-        Tab tab = MODULE_TABS.get(key(module.getName()));
-        return tab == null ? Tab.MISC : tab;
+        return Tab.valueOf(myau.module.ModuleCatalog.category(module).toUpperCase(Locale.ROOT));
     }
 
     private static String key(String input) {
@@ -210,6 +178,7 @@ public class RiseClickGUI extends GuiScreen {
         Keyboard.enableRepeatEvents(false);
         dragging = false;
         Module gui = Myau.moduleManager.getModule("ClickGUI");
+        if (gui instanceof ClickGUIModule && ((ClickGUIModule) gui).isSwitchingGuiStyle()) return;
         if (gui != null) gui.setEnabled(false);
     }
 

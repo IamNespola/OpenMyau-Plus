@@ -40,118 +40,21 @@ public class CheadleClickGui extends GuiScreen {
     private final ArrayList<CategoryComponent> categoryList;
 
     // ── Category name sets (normalized) ───────────────────────────────────────
-    private static final Set<String> COMBAT = set(
-            "AimAssist", "AutoClicker", "KillAura", "Wtap", "Velocity", "Reach", "TargetStrafe", "NoHitDelay",
-            "AntiFireball", "LagRange", "MoveFix", "ServerLag", "KnockbackDelay", "HitBox", "MoreKB", "Refill",
-            "HitSelect", "BackTrack", "Hitflick", "TimerRange", "ClickAssits", "Criticals", "BlockHit",
-            "SprintReset", "Displace", "TickBase", "Piercing", "Stasis");
-    private static final Set<String> MOVEMENT = set(
-            "AntiAFK", "Fly", "FastBow", "Speed", "LongJump", "Sprint", "SafeWalk", "Jesus", "Blink", "NoFall",
-            "NoSlow", "KeepSprint", "Eagle", "NoJumpDelay", "AntiVoid", "Timer");
-    private static final Set<String> RENDER = set(
-            "ESP", "Chams", "FullBright", "Tracers", "NameTags", "Xray", "TargetESP", "TargetHUD", "Indicators",
-            "BedESP", "ItemESP", "BreakProgress", "ViewClip", "NoHurtCam", "HUD", "Notifications", "RiseClickGUI",
-            "ClickGUI", "ChestESP", "Trajectories", "Radar", "RenderFixes", "FPScounter", "WaterMark", "WaterMark2",
-            "HitParticleEffects", "DynamicIsland", "ESP2D", "TeamHealthDisplay", "Statistics", "Animations",
-            "BlockOverlay", "Ambience", "Capes", "FreeLook", "ItemPhysics");
-    private static final Set<String> PLAYER = set(
-            "AutoHeal", "FakeLag", "AutoTool", "ChestStealer", "AutoBedDef", "InvManager", "InvWalk", "Scaffold",
-            "AutoBlockIn", "AutoSwap", "SpeedMine", "FastPlace", "GhostHand", "MCF", "AntiDebuff", "FlagDetector",
-            "AutoGapple", "ChestAura", "AutoHeadHitter", "ThrowAura", "AutoAuth");
-
-    private static Set<String> set(String... names) {
-        Set<String> s = new HashSet<>();
-        for (String n : names) s.add(norm(n));
-        return s;
-    }
-
-    private static String norm(String s) {
-        return s == null ? "" : s.replaceAll("[^A-Za-z0-9]", "").toLowerCase(Locale.ROOT);
-    }
-
     private static UFontRenderer font() {
         return Myau.fontManagers.getFont(16);
     }
 
     public CheadleClickGui() {
         instance = this;
-
-        List<Module> combatModules = new ArrayList<>();
-        List<Module> movementModules = new ArrayList<>();
-        List<Module> renderModules = new ArrayList<>();
-        List<Module> playerModules = new ArrayList<>();
-        List<Module> miscModules = new ArrayList<>();
-        List<Module> scriptModules = new ArrayList<>();
-
-        for (Module module : Myau.moduleManager.allModules()) {
-            if (module instanceof myau.module.modules.ScriptModule) {
-                scriptModules.add(module);
-                continue;
-            }
-            String n = norm(module.getName());
-            if (COMBAT.contains(n)) {
-                combatModules.add(module);
-            } else if (MOVEMENT.contains(n)) {
-                movementModules.add(module);
-            } else if (RENDER.contains(n)) {
-                renderModules.add(module);
-            } else if (PLAYER.contains(n)) {
-                playerModules.add(module);
-            } else {
-                miscModules.add(module);
-            }
-        }
-
-        Comparator<Module> comparator = Comparator.comparing(m -> m.getName().toLowerCase());
-
         this.categoryList = new ArrayList<>();
-        int xOffset = 105;
-        int spacing = 105;
-
-        List<Module> combat = new ArrayList<>(combatModules);
-        combat.removeIf(m -> m == null);
-        combat.sort(comparator);
-        CategoryComponent combatCat = new CategoryComponent("combat", combat);
-        combatCat.setX(xOffset);
-        combatCat.setY(25);
-        categoryList.add(combatCat);
-        xOffset += spacing;
-
-        List<Module> movement = new ArrayList<>(movementModules);
-        movement.removeIf(m -> m == null);
-        movement.sort(comparator);
-        CategoryComponent movementCat = new CategoryComponent("movement", movement);
-        movementCat.setX(xOffset);
-        movementCat.setY(25);
-        categoryList.add(movementCat);
-        xOffset += spacing;
-
-        List<Module> render = new ArrayList<>(renderModules);
-        render.removeIf(m -> m == null);
-        render.sort(comparator);
-        CategoryComponent renderCat = new CategoryComponent("render", render);
-        renderCat.setX(xOffset);
-        renderCat.setY(25);
-        categoryList.add(renderCat);
-        xOffset += spacing;
-
-        List<Module> player = new ArrayList<>(playerModules);
-        player.removeIf(m -> m == null);
-        player.sort(comparator);
-        CategoryComponent playerCat = new CategoryComponent("player", player);
-        playerCat.setX(xOffset);
-        playerCat.setY(25);
-        categoryList.add(playerCat);
-        xOffset += spacing;
-
-        List<Module> misc = new ArrayList<>(miscModules);
-        misc.removeIf(m -> m == null);
-        misc.sort(comparator);
-        CategoryComponent miscCat = new CategoryComponent("misc", misc);
-        miscCat.setX(xOffset);
-        miscCat.setY(25);
-        categoryList.add(miscCat);
-
+        int x = 25;
+        for (String category : myau.module.ModuleCatalog.CATEGORIES) {
+            CategoryComponent component = new CategoryComponent(category, myau.module.ModuleCatalog.modules(category));
+            component.setX(x);
+            component.setY(25);
+            categoryList.add(component);
+            x += 105;
+        }
         loadPositions();
     }
 
@@ -308,8 +211,10 @@ public class CheadleClickGui extends GuiScreen {
         try (FileReader reader = new FileReader(configFile)) {
             JsonObject json = new JsonParser().parse(reader).getAsJsonObject();
             for (CategoryComponent cat : categoryList) {
-                if (json.has(cat.getName())) {
-                    JsonObject pos = json.getAsJsonObject(cat.getName());
+                String key = json.has(cat.getName()) ? cat.getName()
+                        : cat.getName().toLowerCase(java.util.Locale.ROOT);
+                if (json.has(key)) {
+                    JsonObject pos = json.getAsJsonObject(key);
                     cat.setX(pos.get("x").getAsInt());
                     cat.setY(pos.get("y").getAsInt());
                     cat.setOpened(pos.get("open").getAsBoolean());

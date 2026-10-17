@@ -91,7 +91,7 @@ public final class RiseBloomShader {
         GL20.glUseProgram(programId);
         updateKernel(radius);
         GL20.glUniform1i(getUniform("u_diffuse_sampler"), 0);
-        GL20.glUniform1i(getUniform("u_other_sampler"), 16);
+        GL20.glUniform1i(getUniform("u_other_sampler"), 2);
         GL20.glUniform2f(getUniform("u_texel_size"), 1.0F / mc.displayWidth, 1.0F / mc.displayHeight);
 
         outputFramebuffer.bindFramebuffer(true);
@@ -106,9 +106,9 @@ public final class RiseBloomShader {
         GlStateManager.blendFunc(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA);
         GL20.glUniform2f(getUniform("u_direction"), 0.0F, compression);
         outputFramebuffer.bindFramebufferTexture();
-        GL13.glActiveTexture(GL13.GL_TEXTURE16);
+        GlStateManager.setActiveTexture(GL13.GL_TEXTURE2);
         RenderUtil.bindTexture(framebufferTexture);
-        GL13.glActiveTexture(GL13.GL_TEXTURE0);
+        GlStateManager.setActiveTexture(GL13.GL_TEXTURE0);
         drawQuad();
 
         GlStateManager.disableBlend();

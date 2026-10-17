@@ -42,7 +42,7 @@ public class KawaseBlur implements Utils {
 
 
         for (int i = 1; i <= iterations; i++) {
-            Framebuffer currentBuffer = new Framebuffer((int) (mc.displayWidth / Math.pow(2, i)), (int) (mc.displayHeight / Math.pow(2, i)), false);
+            Framebuffer currentBuffer = new Framebuffer(Math.max(1, (int) (mc.displayWidth / Math.pow(2, i))), Math.max(1, (int) (mc.displayHeight / Math.pow(2, i))), false);
             currentBuffer.setFramebufferFilter(GL_LINEAR);
             GlStateManager.bindTexture(currentBuffer.framebufferTexture);
             GL11.glTexParameteri(GL11.GL_TEXTURE_2D, GL11.GL_TEXTURE_WRAP_S, GL14.GL_MIRRORED_REPEAT);
@@ -80,12 +80,12 @@ public class KawaseBlur implements Utils {
         kawaseUp.setUniformf("offset", offset, offset);
         kawaseUp.setUniformi("inTexture", 0);
         kawaseUp.setUniformi("check", 1);
-        kawaseUp.setUniformi("textureToCheck", 16);
+        kawaseUp.setUniformi("textureToCheck", 2);
         kawaseUp.setUniformf("halfpixel", 1.0f / lastBuffer.framebufferWidth, 1.0f / lastBuffer.framebufferHeight);
         kawaseUp.setUniformf("iResolution", lastBuffer.framebufferWidth, lastBuffer.framebufferHeight);
-        GL13.glActiveTexture(GL13.GL_TEXTURE16);
+        GlStateManager.setActiveTexture(GL13.GL_TEXTURE2);
         RenderUtil.bindTexture(stencilFrameBufferTexture);
-        GL13.glActiveTexture(GL13.GL_TEXTURE0);
+        GlStateManager.setActiveTexture(GL13.GL_TEXTURE0);
         RenderUtil.bindTexture(framebufferList.get(1).framebufferTexture);
         ShaderUtil.drawQuads();
         kawaseUp.unload();

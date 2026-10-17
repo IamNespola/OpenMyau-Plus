@@ -38,6 +38,8 @@ public class AccountManager {
                 }
             } catch (IOException e) {
                 System.err.print("Couldn't create openmyau.accounts.json!");
+            } catch (IOException e) {
+                System.err.print("Couldn't read openmyau.accounts.json!");
             }
         }
     }

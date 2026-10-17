@@ -104,6 +104,9 @@ public class MyauMainMenu extends GuiScreen implements GuiYesNoCallback
 
     public void initGui()
     {
+        if (this.viewportTexture != null) {
+            this.viewportTexture.deleteGlTexture();
+        }
         this.viewportTexture = new DynamicTexture(256, 256);
         Calendar calendar = Calendar.getInstance();
         calendar.setTime(new Date());

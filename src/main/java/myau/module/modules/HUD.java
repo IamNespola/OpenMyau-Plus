@@ -52,7 +52,7 @@ public class HUD extends Module {
             TargetESP.class, TargetHUD.class, Indicators.class, BedESP.class, ItemESP.class,
             ViewClip.class, NoHurtCam.class, HUD.class, ClickGUIModule.class,
             ChestESP.class, Trajectories.class, Radar.class, RenderFixes.class, FPScounter.class,
-            WaterMark.class, WaterMark2.class, HitParticleEffects.class, DynamicIsland.class, Notifications.class,
+            WaterMark.class, HitParticleEffects.class, DynamicIsland.class, Notifications.class,
             ESP2D.class, TeamHealthDisplay.class, Statistics.class, Animations.class, Hotbar.class
     ));
     private static final Set<Class<?>> PLAYER_MODULES = new HashSet<>(Arrays.<Class<?>>asList(
